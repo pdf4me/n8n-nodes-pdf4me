@@ -172,7 +172,7 @@ The package can be installed in different locations:
 If the issue persists:
 
 1. Check the [n8n Community Nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-2. Review the [PDF4ME API documentation](https://developer.pdf4me.com/)
+2. Review the [PDF4ME API documentation](https://dev.pdf4me.com/apiv2/documentation/)
 3. Contact support at support@pdf4me.com
 4. Open an issue on the GitHub repository
 

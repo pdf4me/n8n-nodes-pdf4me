@@ -323,7 +323,7 @@ export function sanitizeProfiles(data: IDataObject): void {
 		data.profiles = sanitized;
 	} catch (error) {
 		throw new Error(
-			'Invalid JSON in Profiles. Check https://developer.pdf4me.com/api/profiles/ or contact support@pdf4me.com for help. ' +
+			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/apiv2/documentation/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
 	}

@@ -61,7 +61,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^0.1.0"
+    "n8n-nodes-pdf4me": "^0.8.0"
   }
 }
 ```
@@ -185,7 +185,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 
 To use this node, you need a PDF4ME API key. Here's how to get started:
 
-1. Sign up for a PDF4ME account at [PDF4ME Developer Portal](https://developer.pdf4me.com/)
+1. Sign up for a PDF4ME account at [PDF4ME Developer Portal](https://dev.pdf4me.com/)
 2. Navigate to your dashboard and obtain your API key
 3. In n8n, add your PDF4ME credentials by providing your API key
 
@@ -234,14 +234,16 @@ For detailed examples and workflow templates, visit our documentation.
 ## Resources
 
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-- [PDF4ME API Documentation](https://developer.pdf4me.com/api/)
-- [PDF4ME Developer Portal](https://developer.pdf4me.com/)
+- [PDF4ME API Documentation](https://dev.pdf4me.com/apiv2/documentation/)
+- [PDF4ME Developer Portal](https://dev.pdf4me.com/)
 - [PDF4ME Support](mailto:support@pdf4me.com)
+- [Troubleshooting Guide](TROUBLESHOOTING.md)
+- [Publishing Guide](PUBLISHING_GUIDE.md)
 
 ## Version History
 
-### 0.1.0
-- Initial release with comprehensive document processing capabilities
+### 0.8.0
+- **Current Version**: Comprehensive document processing capabilities
 - Full integration with PDF4ME API services
 - Support for barcode generation, URL to PDF conversion, PDF to Word conversion, JSON to Excel conversion, and image cropping
 - Enhanced timeout handling for complex PDF to Word conversions (up to 25 minutes)
@@ -249,3 +251,16 @@ For detailed examples and workflow templates, visit our documentation.
 - Support for multiple input types (Binary Data, Base64, URL, File Path)
 - Advanced OCR capabilities with multi-language support
 - Comprehensive barcode generation with 100+ supported formats
+- Standardized API documentation URLs across all files
+- Global installation support for cross-project availability
+
+### 0.1.9
+- Fixed package structure and build validation
+- Improved error handling and debugging capabilities
+
+### 0.1.3
+- Added global installation support
+- Enhanced package configuration for npm publishing
+
+### 0.1.2
+- Initial release with core functionality

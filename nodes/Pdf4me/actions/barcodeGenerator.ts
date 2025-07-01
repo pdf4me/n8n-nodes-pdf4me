@@ -199,7 +199,7 @@ export const description: INodeProperties[] = [
 				name: 'profiles',
 				type: 'string',
 				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf.co/api/profiles/index.html to set extra options for API calls and may be specific to certain APIs.',
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls and may be specific to certain APIs.',
 				placeholder: `{ 'outputDataFormat': 'base64' }`,
 			},
 		],

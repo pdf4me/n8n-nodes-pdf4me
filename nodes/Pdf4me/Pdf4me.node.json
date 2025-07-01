@@ -8,12 +8,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://developer.pdf4me.com/api/introduction/index.html"
+				"url": "https://dev.pdf4me.com/apiv2/documentation/"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://developer.pdf4me.com/api/index.html"
+				"url": "https://dev.pdf4me.com/apiv2/documentation/"
 			}
 		]
 	}
