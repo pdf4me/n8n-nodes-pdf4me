@@ -1,53 +1,57 @@
 {
-  "name": "n8n-nodes-<...>",
-  "version": "0.1.0",
-  "description": "",
+  "name": "n8n-nodes-pdf4me",
+  "version": "0.1.11",
+  "description": "n8n community node for PDF4ME API integration",
   "keywords": [
     "n8n-community-node-package"
   ],
   "license": "MIT",
-  "homepage": "",
+  "homepage": "https://dev.pdf4me.com",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "PDF4ME",
+    "email": "support@pdf4me.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/<...>/n8n-nodes-<...>.git"
-  },
-  "engines": {
-    "node": ">=20.15"
+    "url": "git+https://github.com/pdf4me/n8n-nodes-pdf4me.git"
   },
   "main": "index.js",
+  "bin": {
+    "n8n-nodes-pdf4me": "./index.js"
+  },
   "scripts": {
-    "build": "npx rimraf dist && tsc && gulp build:icons",
+    "build": "tsc && gulp build",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+    "prepublishOnly": "npm run build && npm run validate-build && eslint -c .eslintrc.prepublish.js nodes credentials package.json",
+    "validate-build": "node -e \"const fs=require('fs'); const path=require('path'); const requiredFiles=['dist/nodes/Pdf4me/Pdf4me.node.js','dist/credentials/Pdf4meApi.credentials.js']; requiredFiles.forEach(f=>{if(!fs.existsSync(f))throw new Error('Missing required file: '+f);}); console.log('✅ All required files present');\"",
+    "postinstall": "echo 'PDF4ME n8n node installed successfully. Restart n8n to use the node.'"
   },
   "files": [
-    "dist"
+    "dist",
+    "index.js",
+    "LICENSE.md",
+    "README.md"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/ExampleCredentialsApi.credentials.js",
-      "dist/credentials/HttpBinApi.credentials.js"
+      "dist/credentials/Pdf4meApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/ExampleNode/ExampleNode.node.js",
-      "dist/nodes/HttpBin/HttpBin.node.js"
+      "dist/nodes/Pdf4me/Pdf4me.node.js"
     ]
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "~8.32.0",
-    "eslint": "^8.57.0",
-    "eslint-plugin-n8n-nodes-base": "^1.16.3",
-    "gulp": "^5.0.0",
-    "prettier": "^3.5.3",
-    "typescript": "^5.8.2"
+    "@typescript-eslint/parser": "~5.45",
+    "eslint-plugin-n8n-nodes-base": "^1.11.0",
+    "gulp": "^4.0.2",
+    "merge-stream": "^2.0.0",
+    "n8n-workflow": "*",
+    "prettier": "^2.7.1",
+    "typescript": "~4.8.4"
   },
   "peerDependencies": {
     "n8n-workflow": "*"

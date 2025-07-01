@@ -1,2 +1,41 @@
+# Source files
+nodes/
+credentials/
+*.ts
+tsconfig.json
+gulpfile.js
+
+# Development files
+.idea/
+.vscode/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+test/
+tests/
+__tests__/
+*.test.*
+*.spec.*
+
+# Documentation source
+README_TEMPLATE.md
+
+# Git
+.git/
+.gitignore
+
+# Temporary files
+temp/
+tmp/
+custom/
 .DS_Store
-*.tsbuildinfo
+Thumbs.db
+
+# Node modules
+node_modules/
+
+# Build artifacts (keep dist/)
+!dist/
