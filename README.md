@@ -53,7 +53,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
 ```json
 {
   "name": "n8n-custom",
-  "version": "1.0.0",
+  "version": "0.8.0",
   "description": "",
   "main": "index.js",
   "scripts": {
