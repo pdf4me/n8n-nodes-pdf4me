@@ -34,7 +34,7 @@ npm uninstall n8n-nodes-pdf4me
 npm cache clean --force
 
 # Reinstall the package
-npm install n8n-nodes-pdf4me
+npm install n8n-nodes-pdf4me@latest
 ```
 
 ##### Solution 2: Use the Latest Version
@@ -47,8 +47,8 @@ npm install n8n-nodes-pdf4me@latest
 If the npm package has issues, you can install manually:
 ```bash
 # Download and extract the package
-wget https://registry.npmjs.org/n8n-nodes-pdf4me/-/n8n-nodes-pdf4me-0.1.9.tgz
-tar -xzf n8n-nodes-pdf4me-0.1.9.tgz
+wget https://registry.npmjs.org/n8n-nodes-pdf4me/-/n8n-nodes-pdf4me-0.8.0.tgz
+tar -xzf n8n-nodes-pdf4me-0.8.0.tgz
 cd package
 
 # Install dependencies and build
@@ -59,11 +59,153 @@ npm run build
 cp -r dist /path/to/n8n/custom/nodes/
 ```
 
-##### Solution 4: Global Installation
+##### Solution 4: Global Installation (Recommended)
 Try installing globally instead:
 ```bash
 npm install -g n8n-nodes-pdf4me
 ```
+
+### ❌ Error: "Invalid API Key" or "Authentication Failed"
+
+This error occurs when the PDF4ME API credentials are incorrect or expired.
+
+#### 🔍 Diagnosis Steps
+
+1. **Verify your API key**:
+   - Check your PDF4ME dashboard at https://dev.pdf4me.com/
+   - Ensure the API key is active and has sufficient credits
+   - Verify the key format (should be a valid string)
+
+2. **Check credential configuration in n8n**:
+   - Go to Settings > Credentials
+   - Verify the PDF4ME API credential is properly configured
+   - Test the credential connection
+
+#### ✅ Solutions
+
+##### Solution 1: Update API Key
+1. Get a new API key from your PDF4ME dashboard
+2. Update the credential in n8n Settings > Credentials
+3. Test the connection
+
+##### Solution 2: Check API Quotas
+1. Verify your PDF4ME account has sufficient credits
+2. Check usage limits in your dashboard
+3. Upgrade your plan if needed
+
+### ❌ Error: "Request Timeout" or "Operation Timed Out"
+
+This error occurs during long-running operations like PDF to Word conversion.
+
+#### 🔍 Diagnosis Steps
+
+1. **Check operation complexity**:
+   - Large PDF files (>50MB) may take longer
+   - Complex layouts with images and tables
+   - OCR processing on scanned documents
+
+2. **Verify network connectivity**:
+   - Check internet connection stability
+   - Test API endpoint accessibility
+
+#### ✅ Solutions
+
+##### Solution 1: Enable Async Processing
+For PDF to Word conversion:
+1. Set "Use Async Processing" to `true`
+2. Increase "Max Retries" to 30-50
+3. Set "Retry Delay" to 5-10 seconds
+
+##### Solution 2: Optimize Input
+1. Reduce PDF file size if possible
+2. Use "Draft" quality for faster processing
+3. Split large documents into smaller chunks
+
+### ❌ Error: "Invalid JSON in Profiles"
+
+This error occurs when the Custom Profiles JSON is malformed.
+
+#### 🔍 Diagnosis Steps
+
+1. **Validate JSON syntax**:
+   ```bash
+   echo '{"your": "json"}' | jq .
+   ```
+
+2. **Check profile documentation**:
+   - Review available profiles at https://dev.pdf4me.com/apiv2/documentation/
+   - Ensure profile names and values are correct
+
+#### ✅ Solutions
+
+##### Solution 1: Fix JSON Syntax
+1. Use a JSON validator to check syntax
+2. Ensure all quotes and brackets are properly closed
+3. Remove any trailing commas
+
+##### Solution 2: Use Valid Profiles
+```json
+{
+  "outputDataFormat": "base64",
+  "quality": "high"
+}
+```
+
+### ❌ Error: "File Not Found" or "Invalid File Path"
+
+This error occurs when the input file cannot be accessed.
+
+#### 🔍 Diagnosis Steps
+
+1. **Check file path**:
+   - Verify the file exists at the specified path
+   - Ensure proper file permissions
+   - Check for special characters in file names
+
+2. **Verify file format**:
+   - Ensure the file is in the expected format
+   - Check file size limits
+
+#### ✅ Solutions
+
+##### Solution 1: Use Binary Data
+Instead of file paths, use Binary Data from previous nodes:
+1. Set "Input Data Type" to "Binary Data"
+2. Specify the correct "Input Binary Field" name
+3. Ensure the previous node outputs binary data
+
+##### Solution 2: Use Base64
+For direct file content:
+1. Set "Input Data Type" to "Base64 String"
+2. Provide the base64-encoded file content
+3. Ensure proper encoding
+
+### ❌ Error: "Barcode Generation Failed"
+
+This error occurs when barcode parameters are invalid.
+
+#### 🔍 Diagnosis Steps
+
+1. **Check barcode type compatibility**:
+   - Verify the text content is valid for the selected barcode type
+   - Some barcodes have character limits or format requirements
+
+2. **Validate text content**:
+   - Ensure text is not empty
+   - Check for unsupported characters
+
+#### ✅ Solutions
+
+##### Solution 1: Use Compatible Barcode Types
+- **QR Code**: Accepts any text content
+- **Code 128**: Alphanumeric characters
+- **EAN-13**: Exactly 13 digits
+- **UPC-A**: Exactly 12 digits
+
+##### Solution 2: Validate Input
+1. Clean and validate input text
+2. Use appropriate barcode type for your data
+3. Test with simple text first
 
 #### 🔧 Package Structure Verification
 
@@ -167,19 +309,42 @@ The package can be installed in different locations:
    ls -la node_modules/n8n-nodes-pdf4me/dist/nodes/Pdf4me/
    ```
 
+4. **Test API connectivity**:
+   ```bash
+   curl -H "Authorization: Bearer YOUR_API_KEY" https://api.pdf4me.com/health
+   ```
+
+#### 🔧 Performance Optimization
+
+1. **For large files**:
+   - Use async processing for PDF to Word conversion
+   - Increase timeout settings
+   - Consider splitting large documents
+
+2. **For high-volume processing**:
+   - Implement proper error handling and retries
+   - Use batch processing when possible
+   - Monitor API usage and quotas
+
+3. **For complex workflows**:
+   - Test individual operations first
+   - Use appropriate quality settings
+   - Validate input data formats
+
 #### 📞 Support
 
 If the issue persists:
 
 1. Check the [n8n Community Nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-2. Review the [PDF4ME API documentation](https://developer.pdf4me.com/)
+2. Review the [PDF4ME API documentation](https://dev.pdf4me.com/apiv2/documentation/)
 3. Contact support at support@pdf4me.com
 4. Open an issue on the GitHub repository
 
 #### 🔄 Version History
 
+- **v0.8.0**: Current version with comprehensive document processing, enhanced async processing, and improved error handling
 - **v0.1.9**: Fixed package structure and build validation
 - **v0.1.3**: Added global installation support
 - **v0.1.2**: Initial release
 
-Always use the latest version to avoid known issues. 
+Always use the latest version to avoid known issues and benefit from the latest improvements. 

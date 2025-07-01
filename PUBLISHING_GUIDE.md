@@ -14,7 +14,7 @@ The package is configured with the following key settings:
 ```json
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "0.1.2",
+  "version": "0.8.0",
   "main": "index.js",
   "bin": {
     "n8n-nodes-pdf4me": "./index.js"
@@ -175,5 +175,5 @@ When updating the node:
 
 For issues with the node:
 - Check the [n8n Community Nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-- Review the [PDF4ME API documentation](https://developer.pdf4me.com/)
+- Review the [PDF4ME API documentation](https://dev.pdf4me.com/apiv2/documentation/)
 - Contact support at support@pdf4me.com 

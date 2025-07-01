@@ -8,7 +8,7 @@ import {
 export class Pdf4meApi implements ICredentialType {
 	name = 'pdf4meApi';
 	displayName = 'PDF4ME API';
-	documentationUrl = 'https://developer.pdf4me.com/api/introduction/index.html';
+	documentationUrl = 'https://dev.pdf4me.com/apiv2/documentation/';
 			properties: INodeProperties[] = [
 		{
 			displayName: 'PDF4ME API Key',
