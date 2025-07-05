@@ -335,4 +335,5 @@ export class ActionConstants {
 	public static readonly PdfToWord: string = 'PDF to Word';
 	public static readonly JsonToExcel: string = 'JSON to Excel';
 	public static readonly CropImage: string = 'Crop Image';
+	public static readonly ConvertToPdf: string = 'Convert to PDF';
 }
