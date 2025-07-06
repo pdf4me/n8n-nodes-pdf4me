@@ -135,27 +135,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Page Number Format',
-		name: 'pageNumberFormat',
-		type: 'options',
-		options: [
-			{ name: 'Page {0}', value: 'Page {0}' },
-			{ name: '{0} of {1}', value: '{0} of {1}' },
-			{ name: 'Page {0} of {1}', value: 'Page {0} of {1}' },
-			{ name: '- {0} -', value: '- {0} -' },
-			{ name: '[{0}/{1}]', value: '[{0}/{1}]' },
-			{ name: '({0})', value: '({0})' },
-			{ name: '{0}', value: '{0}' },
-		],
-		default: 'Page {0} of {1}',
-		description: 'Format for page numbers where {0} is current page and {1} is total pages',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddPageNumberToPdf],
-			},
-		},
-	},
+
 	{
 		displayName: 'Horizontal Alignment',
 		name: 'alignX',
@@ -194,8 +174,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Horizontal Margin (mm)',
 		name: 'marginXinMM',
 		type: 'number',
-		default: 10,
-		description: 'Horizontal margin from edge in millimeters (0-100)',
+		default: 2,
+		description: 'Horizontal margin in millimeters (0-100)',
 		typeOptions: {
 			minValue: 0,
 			maxValue: 100,
@@ -210,8 +190,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Vertical Margin (mm)',
 		name: 'marginYinMM',
 		type: 'number',
-		default: 10,
-		description: 'Vertical margin from edge in millimeters (0-100)',
+		default: 2,
+		description: 'Vertical margin in millimeters (0-100)',
 		typeOptions: {
 			minValue: 0,
 			maxValue: 100,
@@ -227,7 +207,7 @@ export const description: INodeProperties[] = [
 		name: 'fontSize',
 		type: 'number',
 		default: 12,
-		description: 'Font size for page numbers (8-72)',
+		description: 'Font size for the page numbering (8-72)',
 		typeOptions: {
 			minValue: 8,
 			maxValue: 72,
@@ -239,11 +219,11 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Bold',
+		displayName: 'Set Bold',
 		name: 'isBold',
 		type: 'boolean',
 		default: true,
-		description: 'Make page numbers bold',
+		description: 'Set bold for page numbering',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddPageNumberToPdf],
@@ -251,11 +231,11 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Italic',
+		displayName: 'Set Italic',
 		name: 'isItalic',
 		type: 'boolean',
 		default: false,
-		description: 'Make page numbers italic',
+		description: 'Set italic for page numbering',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddPageNumberToPdf],
@@ -267,13 +247,14 @@ export const description: INodeProperties[] = [
 		name: 'skipFirstPage',
 		type: 'boolean',
 		default: false,
-		description: 'Skip numbering on first page',
+		description: 'Skip numbering in the first page of the document',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddPageNumberToPdf],
 			},
 		},
 	},
+
 	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
@@ -302,7 +283,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const pageNumberFormat = this.getNodeParameter('pageNumberFormat', index) as string;
 	const alignX = this.getNodeParameter('alignX', index) as string;
 	const alignY = this.getNodeParameter('alignY', index) as string;
 	const marginXinMM = this.getNodeParameter('marginXinMM', index) as number;
@@ -355,14 +335,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Build the request body
 	const body: IDataObject = {
-		docContent,
-		docName,
-		pageNumberFormat,
 		alignX,
 		alignY,
+		docContent,
+		docName,
+		fontSize,
 		marginXinMM,
 		marginYinMM,
-		fontSize,
 		isBold,
 		isItalic,
 		skipFirstPage,

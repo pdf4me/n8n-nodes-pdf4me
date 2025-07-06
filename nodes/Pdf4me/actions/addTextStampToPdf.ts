@@ -154,7 +154,7 @@ export const description: INodeProperties[] = [
 		name: 'pages',
 		type: 'string',
 		default: '1',
-		description: 'Page numbers to add text stamp (e.g., 1, 1-3, 1,3,5)',
+		description: 'Page range where text stamp should be applied',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddTextStampToPdf],
@@ -166,11 +166,11 @@ export const description: INodeProperties[] = [
 		name: 'alignX',
 		type: 'options',
 		options: [
-			{ name: 'Left', value: 'Left' },
-			{ name: 'Center', value: 'Center' },
-			{ name: 'Right', value: 'Right' },
+			{ name: 'Left', value: 'left' },
+			{ name: 'Center', value: 'center' },
+			{ name: 'Right', value: 'right' },
 		],
-		default: 'Center',
+		default: 'center',
 		description: 'Horizontal alignment of the text stamp',
 		displayOptions: {
 			show: {
@@ -183,11 +183,11 @@ export const description: INodeProperties[] = [
 		name: 'alignY',
 		type: 'options',
 		options: [
-			{ name: 'Top', value: 'Top' },
-			{ name: 'Center', value: 'Center' },
-			{ name: 'Bottom', value: 'Bottom' },
+			{ name: 'Top', value: 'top' },
+			{ name: 'Center', value: 'middle' },
+			{ name: 'Bottom', value: 'bottom' },
 		],
-		default: 'Center',
+		default: 'middle',
 		description: 'Vertical alignment of the text stamp',
 		displayOptions: {
 			show: {
@@ -199,8 +199,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Horizontal Margin (mm)',
 		name: 'marginXInMM',
 		type: 'number',
-		default: 20,
-		description: 'Horizontal margin in millimeters (0-100)',
+		default: 0,
+		description: 'Horizontal margin in millimeters',
 		typeOptions: {
 			minValue: 0,
 			maxValue: 100,
@@ -215,8 +215,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Vertical Margin (mm)',
 		name: 'marginYInMM',
 		type: 'number',
-		default: 20,
-		description: 'Vertical margin in millimeters (0-100)',
+		default: 0,
+		description: 'Vertical margin in millimeters',
 		typeOptions: {
 			minValue: 0,
 			maxValue: 100,
@@ -227,44 +227,13 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Horizontal Margin (px)',
-		name: 'marginXInPx',
-		type: 'number',
-		default: 57,
-		description: 'Horizontal margin in pixels (0-300)',
-		typeOptions: {
-			minValue: 0,
-			maxValue: 300,
-		},
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Vertical Margin (px)',
-		name: 'marginYInPx',
-		type: 'number',
-		default: 57,
-		description: 'Vertical margin in pixels (0-300)',
-		typeOptions: {
-			minValue: 0,
-			maxValue: 300,
-		},
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
+
 	{
 		displayName: 'Opacity',
 		name: 'opacity',
 		type: 'number',
 		default: 50,
-		description: 'Opacity (0-100): 0=invisible, 100=fully opaque',
+		description: 'Opacity of the text stamp (50 = 50% transparent)',
 		typeOptions: {
 			minValue: 0,
 			maxValue: 100,
@@ -275,24 +244,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Font Name',
-		name: 'fontName',
-		type: 'options',
-		options: [
-			{ name: 'Arial', value: 'Arial' },
-			{ name: 'Times New Roman', value: 'Times New Roman' },
-			{ name: 'Helvetica', value: 'Helvetica' },
-			{ name: 'Courier New', value: 'Courier New' },
-		],
-		default: 'Arial',
-		description: 'Font for the text stamp',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
+
 	{
 		displayName: 'Font Size',
 		name: 'fontSize',
@@ -314,55 +266,20 @@ export const description: INodeProperties[] = [
 		name: 'fontColor',
 		type: 'string',
 		default: '#FF0000',
-		description: 'Font color in hex: #000000 (black), #FF0000 (red), #0000FF (blue), #808080 (gray)',
+		description: 'Font color for the text stamp (hex color code)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddTextStampToPdf],
 			},
 		},
 	},
-	{
-		displayName: 'Bold',
-		name: 'isBold',
-		type: 'boolean',
-		default: true,
-		description: 'Make text bold',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Italic',
-		name: 'isItalics',
-		type: 'boolean',
-		default: false,
-		description: 'Make text italic',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Underline',
-		name: 'underline',
-		type: 'boolean',
-		default: false,
-		description: 'Underline the text',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
+
 	{
 		displayName: 'Rotation',
-		name: 'rotate',
+		name: 'rotation',
 		type: 'number',
 		default: 45,
-		description: 'Rotation angle: 0 (horizontal), 45 (diagonal), 90 (vertical), -45 (reverse diagonal)',
+		description: 'Rotation angle of the text stamp in degrees',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddTextStampToPdf],
@@ -370,47 +287,23 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Background Stamp',
+		displayName: 'Background',
 		name: 'isBackground',
 		type: 'boolean',
+		default: false,
+		description: 'Whether text stamp is in background',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddTextStampToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Async Processing',
+		name: 'async',
+		type: 'boolean',
 		default: true,
-		description: 'Place stamp in background (true) or foreground (false)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Show Only in Print',
-		name: 'showOnlyInPrint',
-		type: 'boolean',
-		default: false,
-		description: 'Show stamp only when printing (true) or in view and print (false)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Transverse',
-		name: 'transverse',
-		type: 'boolean',
-		default: false,
-		description: 'Transverse positioning',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Fit Text Over Page',
-		name: 'fitTextOverPage',
-		type: 'boolean',
-		default: false,
-		description: 'Fit text over entire page',
+		description: 'For big files and too many calls async is recommended to reduce the server load',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddTextStampToPdf],
@@ -446,25 +339,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const text = this.getNodeParameter('text', index) as string;
-	const pages = this.getNodeParameter('pages', index) as string;
 	const alignX = this.getNodeParameter('alignX', index) as string;
 	const alignY = this.getNodeParameter('alignY', index) as string;
-	const marginXInMM = this.getNodeParameter('marginXInMM', index) as number;
-	const marginYInMM = this.getNodeParameter('marginYInMM', index) as number;
-	const marginXInPx = this.getNodeParameter('marginXInPx', index) as number;
-	const marginYInPx = this.getNodeParameter('marginYInPx', index) as number;
-	const opacity = this.getNodeParameter('opacity', index) as number;
-	const fontName = this.getNodeParameter('fontName', index) as string;
 	const fontSize = this.getNodeParameter('fontSize', index) as number;
 	const fontColor = this.getNodeParameter('fontColor', index) as string;
-	const isBold = this.getNodeParameter('isBold', index) as boolean;
-	const isItalics = this.getNodeParameter('isItalics', index) as boolean;
-	const underline = this.getNodeParameter('underline', index) as boolean;
-	const rotate = this.getNodeParameter('rotate', index) as number;
+	const pages = this.getNodeParameter('pages', index) as string;
+	const marginXInMM = this.getNodeParameter('marginXInMM', index) as number;
+	const marginYInMM = this.getNodeParameter('marginYInMM', index) as number;
+	const opacity = this.getNodeParameter('opacity', index) as number;
 	const isBackground = this.getNodeParameter('isBackground', index) as boolean;
-	const showOnlyInPrint = this.getNodeParameter('showOnlyInPrint', index) as boolean;
-	const transverse = this.getNodeParameter('transverse', index) as boolean;
-	const fitTextOverPage = this.getNodeParameter('fitTextOverPage', index) as boolean;
+	const rotation = this.getNodeParameter('rotation', index) as number;
+	const async = this.getNodeParameter('async', index) as boolean;
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
@@ -511,26 +396,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName,
-		pages,
 		text,
 		alignX,
 		alignY,
-		marginXInMM,
-		marginYInMM,
-		marginXInPx,
-		marginYInPx,
-		opacity,
-		fontName,
 		fontSize,
 		fontColor,
-		isBold,
-		isItalics,
-		underline,
-		rotate,
+		pages,
+		marginXInMM,
+		marginYInMM,
+		opacity,
 		isBackground,
-		showOnlyInPrint,
-		transverse,
-		fitTextOverPage,
+		rotation,
+		async,
 	};
 
 	// Add profiles if provided

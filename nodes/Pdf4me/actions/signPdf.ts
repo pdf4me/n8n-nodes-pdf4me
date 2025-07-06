@@ -136,9 +136,61 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Signature Image',
-		name: 'imageFile',
+		displayName: 'Signature Image Input Type',
+		name: 'signatureImageInputType',
+		type: 'options',
+		required: true,
+		default: 'binaryData',
+		description: 'Choose how to provide the signature image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignPdf],
+			},
+		},
+		options: [
+			{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use signature image from previous node',
+			},
+			{
+				name: 'Base64 String',
+				value: 'base64',
+				description: 'Provide signature image content as base64 encoded string',
+			},
+			{
+				name: 'URL',
+				value: 'url',
+				description: 'Provide URL to signature image file',
+			},
+			{
+				name: 'File Path',
+				value: 'filePath',
+				description: 'Provide local file path to signature image file',
+			},
+		],
+	},
+	{
+		displayName: 'Signature Image Binary Field',
+		name: 'signatureBinaryPropertyName',
 		type: 'string',
+		required: true,
+		default: 'data',
+		description: 'Name of the binary property that contains the signature image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignPdf],
+				signatureImageInputType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Signature Image Content',
+		name: 'signatureBase64Content',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
 		required: true,
 		default: '',
 		description: 'Base64 encoded signature image content',
@@ -146,6 +198,37 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SignPdf],
+				signatureImageInputType: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'Signature Image URL',
+		name: 'signatureImageUrl',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'URL to the signature image file',
+		placeholder: 'https://example.com/signature.png',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignPdf],
+				signatureImageInputType: ['url'],
+			},
+		},
+	},
+	{
+		displayName: 'Signature Image File Path',
+		name: 'signatureImageFilePath',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Local file path to the signature image file',
+		placeholder: '/path/to/signature.png',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignPdf],
+				signatureImageInputType: ['filePath'],
 			},
 		},
 	},
@@ -403,7 +486,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const imageFile = this.getNodeParameter('imageFile', index) as string;
+	const signatureImageInputType = this.getNodeParameter('signatureImageInputType', index) as string;
 	const imageName = this.getNodeParameter('imageName', index) as string;
 	const pages = this.getNodeParameter('pages', index) as string;
 	const alignX = this.getNodeParameter('alignX', index) as string;
@@ -459,6 +542,45 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Validate PDF content
 	if (!docContent || docContent.trim() === '') {
 		throw new Error('PDF content is required');
+	}
+
+	// Handle signature image input
+	let imageFile: string;
+
+	if (signatureImageInputType === 'binaryData') {
+		// Get signature image from binary data
+		const signatureBinaryPropertyName = this.getNodeParameter('signatureBinaryPropertyName', index) as string;
+		const item = this.getInputData(index);
+
+		if (!item[0].binary || !item[0].binary[signatureBinaryPropertyName]) {
+			throw new Error(`No binary data found in property '${signatureBinaryPropertyName}'`);
+		}
+
+		const buffer = await this.helpers.getBinaryDataBuffer(index, signatureBinaryPropertyName);
+		imageFile = buffer.toString('base64');
+	} else if (signatureImageInputType === 'base64') {
+		// Use base64 content directly
+		imageFile = this.getNodeParameter('signatureBase64Content', index) as string;
+
+		// Remove data URL prefix if present (e.g., "data:image/png;base64,")
+		if (imageFile.includes(',')) {
+			imageFile = imageFile.split(',')[1];
+		}
+	} else if (signatureImageInputType === 'url') {
+		// Download signature image from URL
+		const signatureImageUrl = this.getNodeParameter('signatureImageUrl', index) as string;
+		imageFile = await downloadImageFromUrl(signatureImageUrl);
+	} else if (signatureImageInputType === 'filePath') {
+		// Read signature image from local file path
+		const signatureImageFilePath = this.getNodeParameter('signatureImageFilePath', index) as string;
+		imageFile = await readImageFromFile(signatureImageFilePath);
+	} else {
+		throw new Error(`Unsupported signature image input type: ${signatureImageInputType}`);
+	}
+
+	// Validate signature image content
+	if (!imageFile || imageFile.trim() === '') {
+		throw new Error('Signature image content is required');
 	}
 
 	// Build the request body
@@ -531,6 +653,86 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case
 	throw new Error('No response data received from PDF4ME API');
+}
+
+/**
+ * Download image from URL and convert to base64
+ */
+async function downloadImageFromUrl(imageUrl: string): Promise<string> {
+	const https = require('https');
+	const http = require('http');
+
+	const parsedUrl = new URL(imageUrl);
+	const isHttps = parsedUrl.protocol === 'https:';
+	const client = isHttps ? https : http;
+
+	const options = {
+		hostname: parsedUrl.hostname,
+		port: parsedUrl.port || (isHttps ? 443 : 80),
+		path: parsedUrl.pathname + parsedUrl.search,
+		method: 'GET',
+		timeout: 30000,
+		headers: {
+			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
+			'Accept': 'image/*,application/octet-stream,*/*',
+		},
+	};
+
+	return new Promise((resolve, reject) => {
+		const req = client.request(options, (res: any) => {
+			if (res.statusCode !== 200) {
+				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
+				return;
+			}
+
+			const chunks: any[] = [];
+			res.on('data', (chunk: any) => {
+				chunks.push(chunk);
+			});
+
+			res.on('end', () => {
+				const buffer = Buffer.concat(chunks);
+				const base64Content = buffer.toString('base64');
+				resolve(base64Content);
+			});
+
+			res.on('error', (error: any) => {
+				reject(new Error(`Download error: ${error.message}`));
+			});
+		});
+
+		req.on('error', (error: any) => {
+			reject(new Error(`Request error: ${error.message}`));
+		});
+
+		req.on('timeout', () => {
+			req.destroy();
+			reject(new Error('Download timeout'));
+		});
+
+		req.end();
+	});
+}
+
+/**
+ * Read image from local file path and convert to base64
+ */
+async function readImageFromFile(filePath: string): Promise<string> {
+	const fs = require('fs');
+	
+	try {
+		const fileBuffer = fs.readFileSync(filePath);
+		const base64Content = fileBuffer.toString('base64');
+		return base64Content;
+	} catch (error) {
+		if (error.code === 'ENOENT') {
+			throw new Error(`File not found: ${filePath}`);
+		} else if (error.code === 'EACCES') {
+			throw new Error(`Permission denied: ${filePath}`);
+		} else {
+			throw new Error(`Error reading file: ${error.message}`);
+		}
+	}
 }
 
 /**
