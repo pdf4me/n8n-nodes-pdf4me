@@ -12,6 +12,13 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as classifyDocument from './actions/classifyDocument';
+import * as extractAttachmentFromPdf from './actions/extractAttachmentFromPdf';
+import * as extractFormDataFromPdf from './actions/extractFormDataFromPdf';
+import * as extractResources from './actions/extractResources';
+import * as extractTableFromPdf from './actions/extractTableFromPdf';
+import * as extractTextByExpression from './actions/extractTextByExpression';
+import * as extractTextFromWord from './actions/extractTextFromWord';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -42,6 +49,20 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await jsonToExcel.execute.call(this, i)));
 				} else if (action === ActionConstants.CropImage) {
 					operationResult.push(...(await cropImage.execute.call(this, i)));
+				} else if (action === ActionConstants.ClassifyDocument) {
+					operationResult.push(...(await classifyDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractAttachmentFromPdf) {
+					operationResult.push(...(await extractAttachmentFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractFormDataFromPdf) {
+					operationResult.push(...(await extractFormDataFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractResources) {
+					operationResult.push(...(await extractResources.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractTableFromPdf) {
+					operationResult.push(...(await extractTableFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractTextByExpression) {
+					operationResult.push(...(await extractTextByExpression.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractTextFromWord) {
+					operationResult.push(...(await extractTextFromWord.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

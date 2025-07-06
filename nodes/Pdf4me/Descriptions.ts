@@ -5,6 +5,13 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as classifyDocument from './actions/classifyDocument';
+import * as extractAttachmentFromPdf from './actions/extractAttachmentFromPdf';
+import * as extractFormDataFromPdf from './actions/extractFormDataFromPdf';
+import * as extractResources from './actions/extractResources';
+import * as extractTableFromPdf from './actions/extractTableFromPdf';
+import * as extractTextByExpression from './actions/extractTextByExpression';
+import * as extractTextFromWord from './actions/extractTextFromWord';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -61,6 +68,48 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.CropImage,
 					action: ActionConstants.CropImage,
 				},
+				{
+					name: 'Classify Document',
+					description: 'Classify or identify documents based on file content using AI analysis',
+					value: ActionConstants.ClassifyDocument,
+					action: ActionConstants.ClassifyDocument,
+				},
+				{
+					name: 'Extract Attachment From PDF',
+					description: 'Extract all file attachments embedded within PDF documents',
+					value: ActionConstants.ExtractAttachmentFromPdf,
+					action: ActionConstants.ExtractAttachmentFromPdf,
+				},
+				{
+					name: 'Extract Form Data From PDF',
+					description: 'Extract form field data and values from PDF documents containing fillable forms',
+					value: ActionConstants.ExtractFormDataFromPdf,
+					action: ActionConstants.ExtractFormDataFromPdf,
+				},
+				{
+					name: 'Extract Resources',
+					description: 'Extract text content and embedded images from PDF documents',
+					value: ActionConstants.ExtractResources,
+					action: ActionConstants.ExtractResources,
+				},
+				{
+					name: 'Extract Table From PDF',
+					description: 'Extract table data and structures from PDF documents',
+					value: ActionConstants.ExtractTableFromPdf,
+					action: ActionConstants.ExtractTableFromPdf,
+				},
+				{
+					name: 'Extract Text by Expression',
+					description: 'Extract specific text from PDF documents using regular expressions',
+					value: ActionConstants.ExtractTextByExpression,
+					action: ActionConstants.ExtractTextByExpression,
+				},
+				{
+					name: 'Extract Text from Word',
+					description: 'Extract text content from Word documents with page range and filtering options',
+					value: ActionConstants.ExtractTextFromWord,
+					action: ActionConstants.ExtractTextFromWord,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -69,6 +118,13 @@ export const descriptions: INodeTypeDescription = {
 		...pdfToWord.description,
 		...jsonToExcel.description,
 		...cropImage.description,
+		...classifyDocument.description,
+		...extractAttachmentFromPdf.description,
+		...extractFormDataFromPdf.description,
+		...extractResources.description,
+		...extractTableFromPdf.description,
+		...extractTextByExpression.description,
+		...extractTextFromWord.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

@@ -329,10 +329,24 @@ export function sanitizeProfiles(data: IDataObject): void {
 	}
 }
 
-export class ActionConstants {
-	public static readonly BarcodeGenerator: string = 'Barcode Generator';
-	public static readonly UrlToPdf: string = 'URL to PDF';
-	public static readonly PdfToWord: string = 'PDF to Word';
-	public static readonly JsonToExcel: string = 'JSON to Excel';
-	public static readonly CropImage: string = 'Crop Image';
-}
+	export class ActionConstants {
+		public static readonly BarcodeGenerator: string = 'Barcode Generator';
+		public static readonly UrlToPdf: string = 'URL to PDF';
+		public static readonly PdfToWord: string = 'PDF to Word';
+		public static readonly JsonToExcel: string = 'JSON to Excel';
+		public static readonly CropImage: string = 'Crop Image';
+		public static readonly AddAttachmentToPdf: string = 'Add Attachment to PDF';
+		public static readonly AddHtmlHeaderFooter: string = 'Add HTML Header Footer';
+		public static readonly AddImageStampToPdf: string = 'Add Image Stamp to PDF';
+		public static readonly AddMarginToPdf: string = 'Add Margin to PDF';
+		public static readonly AddPageNumberToPdf: string = 'Add Page Number to PDF';
+		public static readonly AddTextStampToPdf: string = 'Add Text Stamp to PDF';
+		public static readonly SignPdf: string = 'Sign PDF';
+		public static readonly ClassifyDocument: string = 'Classify Document';
+		public static readonly ExtractAttachmentFromPdf: string = 'Extract Attachment From PDF';
+		public static readonly ExtractFormDataFromPdf: string = 'Extract Form Data From PDF';
+		public static readonly ExtractResources: string = 'Extract Resources';
+		public static readonly ExtractTableFromPdf: string = 'Extract Table From PDF';
+		public static readonly ExtractTextByExpression: string = 'Extract Text by Expression';
+		public static readonly ExtractTextFromWord: string = 'Extract Text from Word';
+	}
