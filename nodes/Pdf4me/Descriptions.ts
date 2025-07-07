@@ -33,10 +33,10 @@ export const descriptions: INodeTypeDescription = {
 			noDataExpression: true,
 			options: [
 				{
-					name: 'Generate Barcode',
-					description: 'Generate various types of barcodes including QR codes, Code 128, Code 39, and more',
-					value: ActionConstants.BarcodeGenerator,
-					action: ActionConstants.BarcodeGenerator,
+					name: 'Barcode',
+					description: 'All barcode-related features: create, add to PDF, read from PDF, read Swiss QR',
+					value: ActionConstants.Barcode,
+					action: ActionConstants.Barcode,
 				},
 				{
 					name: 'URL to PDF',
@@ -69,7 +69,26 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.ConvertToPdf,
 				},
 			],
-			default: ActionConstants.BarcodeGenerator,
+			default: ActionConstants.Barcode,
+		},
+		{
+			displayName: 'Barcode Feature',
+			name: 'barcodeFeature',
+			type: 'options',
+			required: true,
+			default: 'createBarcode',
+			description: 'Select the barcode feature to use',
+			displayOptions: {
+				show: {
+					operation: [ActionConstants.Barcode],
+				},
+			},
+			options: [
+				{ name: 'Create Barcode', value: 'createBarcode', description: 'Create a standalone barcode image' },
+				{ name: 'Add Barcode to PDF', value: 'addBarcodeToPdf', description: 'Add a barcode to an existing PDF' },
+				{ name: 'Read Barcode from PDF', value: 'readBarcodeFromPdf', description: 'Extract barcode or QR code data from a PDF' },
+				{ name: 'Read Swiss QR Code from PDF', value: 'readSwissQrCodeFromPdf', description: 'Extract Swiss QR bill data from a PDF' },
+			],
 		},
 		...barcodeGenerator.description,
 		...urlToPdf.description,

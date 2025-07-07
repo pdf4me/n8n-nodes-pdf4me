@@ -45,7 +45,7 @@ export async function pdf4meApiRequest(
 
 	try {
 		const response = await this.helpers.request(options);
-		
+
 		// Check if response is successful
 		if (response.statusCode === 200) {
 			// Return binary content
@@ -66,12 +66,12 @@ export async function pdf4meApiRequest(
 			} else {
 				result = Buffer.from(response.body, 'binary');
 			}
-			
+
 			// Validate the result
 			if (!Buffer.isBuffer(result)) {
 				throw new Error('Failed to convert response to Buffer');
 			}
-			
+
 			return result;
 		} else {
 			// Error response - try to parse as JSON for error details
@@ -144,12 +144,12 @@ export async function pdf4meAsyncRequest(
 			} else {
 				result = Buffer.from(response.body, 'binary');
 			}
-			
+
 			// Validate the result
 			if (!Buffer.isBuffer(result)) {
 				throw new Error('Failed to convert response to Buffer');
 			}
-			
+
 			return result;
 		} else if (response.statusCode === 202) {
 			// Async processing - poll for result
@@ -178,7 +178,7 @@ export async function pdf4meAsyncRequest(
 				const baseDelay = Math.min(initialDelay * Math.pow(1.3, attempt), maxDelay);
 				const jitter = Math.random() * 0.3 + 0.85; // 85-115% of base delay
 				const delay = Math.round(baseDelay * jitter);
-				
+
 				if (attempt > 0) {
 					const elapsedMinutes = Math.round((Date.now() - startTime) / 60000);
 					console.log(`Polling attempt ${attempt + 1}/${maxRetries} (waiting ${Math.round(delay/1000)}s, elapsed: ${elapsedMinutes}m)...`);
@@ -206,7 +206,7 @@ export async function pdf4meAsyncRequest(
 					if (pollResponse.statusCode === 200) {
 						// Success - return binary content
 						console.log('Processing completed successfully!');
-						
+
 						// Ensure we return a Buffer
 						let result;
 						if (Buffer.isBuffer(pollResponse.body)) {
@@ -225,17 +225,17 @@ export async function pdf4meAsyncRequest(
 						} else {
 							result = Buffer.from(pollResponse.body, 'binary');
 						}
-						
+
 						// Validate the result
 						if (!Buffer.isBuffer(result)) {
 							throw new Error('Failed to convert response to Buffer');
 						}
-						
+
 						// Validate file size (should be reasonable for a Word document)
 						if (result.length < 1000) {
 							throw new Error(`Response too small (${result.length} bytes). This might indicate an error response.`);
 						}
-						
+
 						return result;
 					} else if (pollResponse.statusCode === 202) {
 						// Still processing, continue polling
@@ -267,12 +267,12 @@ export async function pdf4meAsyncRequest(
 				} catch (pollError) {
 					// Network or timeout error during polling
 					console.log(`Polling request failed: ${pollError.message}`);
-					
+
 					// If this is the last attempt, throw the error
 					if (attempt === maxRetries - 1) {
 						throw new Error(`Polling failed after ${maxRetries} attempts. Last error: ${pollError.message}`);
 					}
-					
+
 					// Otherwise, continue with next attempt
 					continue;
 				}
@@ -330,7 +330,11 @@ export function sanitizeProfiles(data: IDataObject): void {
 }
 
 export class ActionConstants {
+	public static readonly Barcode: string = 'Barcode';
 	public static readonly BarcodeGenerator: string = 'Barcode Generator';
+	public static readonly AddBarcodeToPdf: string = 'Add Barcode to PDF';
+	public static readonly ReadBarcodeFromPdf: string = 'Read Barcode from PDF';
+	public static readonly ReadSwissQrCodeFromPdf: string = 'Read Swiss QR Code from PDF';
 	public static readonly UrlToPdf: string = 'URL to PDF';
 	public static readonly PdfToWord: string = 'PDF to Word';
 	public static readonly JsonToExcel: string = 'JSON to Excel';

@@ -33,7 +33,7 @@ export class Pdf4me implements INodeType {
 			const action = this.getNodeParameter('operation', i);
 
 			try {
-				if (action === ActionConstants.BarcodeGenerator) {
+				if (action === ActionConstants.Barcode) {
 					operationResult.push(...(await barcodeGenerator.execute.call(this, i)));
 				} else if (action === ActionConstants.UrlToPdf) {
 					operationResult.push(...(await urlToPdf.execute.call(this, i)));
