@@ -335,4 +335,9 @@ export class ActionConstants {
 	public static readonly PdfToWord: string = 'PDF to Word';
 	public static readonly JsonToExcel: string = 'JSON to Excel';
 	public static readonly CropImage: string = 'Crop Image';
+	public static readonly ExtractPagesFromPdf: string = 'Extract Pages from PDF';
+	public static readonly RotateDocument: string = 'Rotate Document';
+	public static readonly RotatePage: string = 'Rotate Page';
+	public static readonly DeleteBlankPagesFromPdf: string = 'Delete Blank Pages from PDF';
+	public static readonly DeleteUnwantedPagesFromPdf: string = 'Delete Unwanted Pages from PDF';
 }

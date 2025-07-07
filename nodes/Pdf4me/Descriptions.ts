@@ -5,12 +5,17 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as extractPagesFromPdf from './actions/extractPagesFromPdf';
+import * as rotateDocument from './actions/rotateDocument';
+import * as rotatePage from './actions/rotatePage';
+import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
+import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
 	displayName: 'PDF4ME',
 	name: 'pdf4me',
-	description: 'Generate barcodes, convert URLs to PDF, convert PDFs to Word, convert JSON to Excel, crop images, and more using PDF4ME API',
+	description: 'Generate barcodes, convert URLs to PDF, convert PDFs to Word, convert JSON to Excel, crop images, extract pages, rotate documents, delete pages, and more using PDF4ME API',
 	defaults: {
 		name: 'PDF4ME',
 	},
@@ -61,6 +66,36 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.CropImage,
 					action: ActionConstants.CropImage,
 				},
+				{
+					name: 'Extract Pages from PDF',
+					description: 'Extract specific pages from a PDF document',
+					value: ActionConstants.ExtractPagesFromPdf,
+					action: ActionConstants.ExtractPagesFromPdf,
+				},
+				{
+					name: 'Rotate Document',
+					description: 'Rotate the entire PDF document by specified degrees',
+					value: ActionConstants.RotateDocument,
+					action: ActionConstants.RotateDocument,
+				},
+				{
+					name: 'Rotate Page',
+					description: 'Rotate specific pages in a PDF document',
+					value: ActionConstants.RotatePage,
+					action: ActionConstants.RotatePage,
+				},
+				{
+					name: 'Delete Blank Pages from PDF',
+					description: 'Remove blank pages from a PDF document',
+					value: ActionConstants.DeleteBlankPagesFromPdf,
+					action: ActionConstants.DeleteBlankPagesFromPdf,
+				},
+				{
+					name: 'Delete Unwanted Pages from PDF',
+					description: 'Remove specific pages from a PDF document',
+					value: ActionConstants.DeleteUnwantedPagesFromPdf,
+					action: ActionConstants.DeleteUnwantedPagesFromPdf,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -69,6 +104,11 @@ export const descriptions: INodeTypeDescription = {
 		...pdfToWord.description,
 		...jsonToExcel.description,
 		...cropImage.description,
+		...extractPagesFromPdf.description,
+		...rotateDocument.description,
+		...rotatePage.description,
+		...deleteBlankPagesFromPdf.description,
+		...deleteUnwantedPagesFromPdf.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

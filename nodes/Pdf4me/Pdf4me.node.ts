@@ -12,6 +12,11 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as extractPagesFromPdf from './actions/extractPagesFromPdf';
+import * as rotateDocument from './actions/rotateDocument';
+import * as rotatePage from './actions/rotatePage';
+import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
+import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -42,6 +47,16 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await jsonToExcel.execute.call(this, i)));
 				} else if (action === ActionConstants.CropImage) {
 					operationResult.push(...(await cropImage.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractPagesFromPdf) {
+					operationResult.push(...(await extractPagesFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.RotateDocument) {
+					operationResult.push(...(await rotateDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.RotatePage) {
+					operationResult.push(...(await rotatePage.execute.call(this, i)));
+				} else if (action === ActionConstants.DeleteBlankPagesFromPdf) {
+					operationResult.push(...(await deleteBlankPagesFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.DeleteUnwantedPagesFromPdf) {
+					operationResult.push(...(await deleteUnwantedPagesFromPdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {
