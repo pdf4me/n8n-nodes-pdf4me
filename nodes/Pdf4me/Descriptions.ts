@@ -5,6 +5,8 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as getPdfMetadata from './actions/getPdfMetadata';
+import * as repairPdfDocument from './actions/repairPdfDocument';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -61,6 +63,18 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.CropImage,
 					action: ActionConstants.CropImage,
 				},
+				{
+					name: 'Get PDF Metadata',
+					description: 'Extract metadata from a PDF document as JSON',
+					value: ActionConstants.GetPdfMetadata,
+					action: ActionConstants.GetPdfMetadata,
+				},
+				{
+					name: 'Repair PDF Document',
+					description: 'Repair a corrupted or damaged PDF document',
+					value: ActionConstants.RepairPdfDocument,
+					action: ActionConstants.RepairPdfDocument,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -69,6 +83,8 @@ export const descriptions: INodeTypeDescription = {
 		...pdfToWord.description,
 		...jsonToExcel.description,
 		...cropImage.description,
+		...getPdfMetadata.description,
+		...repairPdfDocument.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,
