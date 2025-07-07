@@ -1,5 +1,6 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { readFileSync } from 'fs';
+import { Buffer } from 'buffer';
 import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [

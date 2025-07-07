@@ -6,6 +6,8 @@ import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
 import * as convertToPdf from './actions/convertToPdf';
+import * as mergePdf from './actions/MergePDF';
+import * as splitPdf from './actions/SplitPDF';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -68,6 +70,18 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.ConvertToPdf,
 					action: ActionConstants.ConvertToPdf,
 				},
+				{
+					name: 'Merge PDF',
+					description: 'Merge multiple PDFs into one or overlay PDFs',
+					value: ActionConstants.MergePDF,
+					action: ActionConstants.MergePDF,
+				},
+				{
+					name: 'Split PDF',
+					description: 'Split PDFs by pages, barcodes, Swiss QR codes, or text content',
+					value: ActionConstants.SplitPDF,
+					action: ActionConstants.SplitPDF,
+				},
 			],
 			default: ActionConstants.Barcode,
 		},
@@ -86,8 +100,8 @@ export const descriptions: INodeTypeDescription = {
 			options: [
 				{ name: 'Create Barcode', value: 'createBarcode', description: 'Create a standalone barcode image' },
 				{ name: 'Add Barcode to PDF', value: 'addBarcodeToPdf', description: 'Add a barcode to an existing PDF' },
-				{ name: 'Read Barcode from PDF', value: 'readBarcodeFromPdf', description: 'Extract barcode or QR code data from a PDF' },
-				{ name: 'Read Swiss QR Code from PDF', value: 'readSwissQrCodeFromPdf', description: 'Extract Swiss QR bill data from a PDF' },
+				{ name: 'Read Barcode From PDF', value: 'readBarcodeFromPdf', description: 'Extract barcode or QR code data from a PDF' },
+				{ name: 'Read Swiss QR Code From PDF', value: 'readSwissQrCodeFromPdf', description: 'Extract Swiss QR bill data from a PDF' },
 			],
 		},
 		...barcodeGenerator.description,
@@ -96,6 +110,8 @@ export const descriptions: INodeTypeDescription = {
 		...jsonToExcel.description,
 		...cropImage.description,
 		...convertToPdf.description,
+		...mergePdf.description,
+		...splitPdf.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

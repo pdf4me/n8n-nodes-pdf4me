@@ -340,4 +340,6 @@ export class ActionConstants {
 	public static readonly JsonToExcel: string = 'JSON to Excel';
 	public static readonly CropImage: string = 'Crop Image';
 	public static readonly ConvertToPdf: string = 'Convert to PDF';
+	public static readonly MergePDF: string = 'Merge PDF';
+	public static readonly SplitPDF: string = 'Split PDF';
 }

@@ -65,7 +65,6 @@ export const description: INodeProperties[] = [
 		name: 'inputFileName',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Name of the input file (including extension). If not provided, will use the filename from binary data.',
 		placeholder: 'document.docx',
 		displayOptions: {
