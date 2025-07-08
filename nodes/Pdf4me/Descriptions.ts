@@ -5,6 +5,8 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as protectDocument from './actions/protectDocument';
+import * as unlockPdf from './actions/unlockPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -61,6 +63,18 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.CropImage,
 					action: ActionConstants.CropImage,
 				},
+				{
+					name: 'Protect Document',
+					description: 'Protect PDF documents with password and permission settings',
+					value: ActionConstants.ProtectDocument,
+					action: ActionConstants.ProtectDocument,
+				},
+				{
+					name: 'Unlock PDF',
+					description: 'Unlock password-protected PDF documents',
+					value: ActionConstants.UnlockPdf,
+					action: ActionConstants.UnlockPdf,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -69,6 +83,8 @@ export const descriptions: INodeTypeDescription = {
 		...pdfToWord.description,
 		...jsonToExcel.description,
 		...cropImage.description,
+		...protectDocument.description,
+		...unlockPdf.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

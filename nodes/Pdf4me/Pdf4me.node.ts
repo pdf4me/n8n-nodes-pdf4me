@@ -12,6 +12,8 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/pdfToWord';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as protectDocument from './actions/protectDocument';
+import * as unlockPdf from './actions/unlockPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -42,6 +44,10 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await jsonToExcel.execute.call(this, i)));
 				} else if (action === ActionConstants.CropImage) {
 					operationResult.push(...(await cropImage.execute.call(this, i)));
+				} else if (action === ActionConstants.ProtectDocument) {
+					operationResult.push(...(await protectDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.UnlockPdf) {
+					operationResult.push(...(await unlockPdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {
