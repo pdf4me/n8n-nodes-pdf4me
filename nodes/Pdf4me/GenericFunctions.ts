@@ -24,7 +24,7 @@ export async function pdf4meApiRequest(
 ): Promise<any> {
 	const credentials = await this.getCredentials('pdf4meApi');
 	let options: IRequestOptions = {
-		baseURL: 'https://api-dev.pdf4me.com',
+		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
 			'Authorization': `Basic ${credentials.apiKey}`,
@@ -103,7 +103,7 @@ export async function pdf4meAsyncRequest(
 	const asyncBody = { ...body, async: true };
 
 	let options: IRequestOptions = {
-		baseURL: 'https://api-dev.pdf4me.com',
+		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
 			'Authorization': `Basic ${credentials.apiKey}`,
@@ -337,4 +337,45 @@ export class ActionConstants {
 	public static readonly CropImage: string = 'Crop Image';
 	public static readonly ConvertToPdf: string = 'Convert to PDF';
 	public static readonly MergePDF: string = 'Merge PDF';
+	public static readonly SplitPDF: string = 'Split PDF';
+	public static readonly AddAttachmentToPdf: string = 'Add Attachment to PDF';
+	public static readonly AddHtmlHeaderFooter: string = 'Add HTML Header Footer';
+	public static readonly AddImageStampToPdf: string = 'Add Image Stamp to PDF';
+	public static readonly AddMarginToPdf: string = 'Add Margin to PDF';
+	public static readonly AddPageNumberToPdf: string = 'Add Page Number to PDF';
+	public static readonly AddTextStampToPdf: string = 'Add Text Stamp to PDF';
+	public static readonly ClassifyDocument: string = 'Classify Document';
+	public static readonly DeleteBlankPagesFromPdf: string = 'Delete Blank Pages from PDF';
+	public static readonly DeleteUnwantedPagesFromPdf: string = 'Delete Unwanted Pages from PDF';
+	public static readonly DocumentToPdf: string = 'Document to PDF';
+	public static readonly Edit: string = 'Edit';
+	public static readonly Extract: string = 'Extract';
+	public static readonly ExtractAttachmentFromPdf: string = 'Extract Attachment from PDF';
+	public static readonly ExtractFormDataFromPdf: string = 'Extract Form Data from PDF';
+	public static readonly ExtractPagesFromPdf: string = 'Extract Pages from PDF';
+	public static readonly ExtractResources: string = 'Extract Resources';
+	public static readonly ExtractTableFromPdf: string = 'Extract Table from PDF';
+	public static readonly ExtractTextByExpression: string = 'Extract Text by Expression';
+	public static readonly ExtractTextFromWord: string = 'Extract Text from Word';
+	public static readonly FindSearch: string = 'Find Search';
+	public static readonly Form: string = 'Form';
+	public static readonly HtmlToPdf: string = 'HTML to PDF';
+	public static readonly Image: string = 'Image';
+	public static readonly MarkdownToPdf: string = 'Markdown to PDF';
+	public static readonly OptimizeCompress: string = 'Optimize Compress';
+	public static readonly OptimizePdf: string = 'Optimize PDF';
+	public static readonly Organize: string = 'Organize';
+	public static readonly Pdf4me: string = 'PDF4ME';
+	public static readonly PngToPdf: string = 'PNG to PDF';
+	public static readonly PptxToPdf: string = 'PPTX to PDF';
+	public static readonly ProtectDocument: string = 'Protect Document';
+	public static readonly RotateDocument: string = 'Rotate Document';
+	public static readonly RotatePage: string = 'Rotate Page';
+	public static readonly SignPdf: string = 'Sign PDF';
+	public static readonly UnlockPdf: string = 'Unlock PDF';
+	public static readonly UploadFile: string = 'Upload File';
+	public static readonly VisioToPdf: string = 'Visio to PDF';
+	public static readonly Word: string = 'Word';
+	public static readonly WordToPdfForm: string = 'Word to PDF Form';
+	public static readonly XlsxToPdf: string = 'XLSX to PDF';
 }
