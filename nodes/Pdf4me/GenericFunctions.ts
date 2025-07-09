@@ -335,4 +335,26 @@ export class ActionConstants {
 	public static readonly PdfToWord: string = 'PDF to Word';
 	public static readonly JsonToExcel: string = 'JSON to Excel';
 	public static readonly CropImage: string = 'Crop Image';
+	public static readonly ProtectDocument: string = 'Protect Document';
+	public static readonly UnlockPdf: string = 'Unlock PDF';
+	public static readonly HtmlToPdf: string = 'HTML to PDF';
+	public static readonly ConvertToPdf: string = 'Convert to PDF';
+	public static readonly PptxToPdf: string = 'PPTX to PDF';
+	public static readonly XlsxToPdf: string = 'XLSX to PDF';
+	public static readonly PngToPdf: string = 'PNG to PDF';
+	public static readonly DocumentToPdf: string = 'Document to PDF';
+	public static readonly MarkdownToPdf: string = 'Markdown to PDF';
+	public static readonly VisioToPdf: string = 'Visio to PDF';
+	public static readonly WordToPdfForm: string = 'Word to PDF Form';
+
+	// Convert from PDF actions
+	public static readonly ConvertFromPdf: string = 'Convert from PDF';
+	public static readonly PdfToExcel: string = 'PDF to Excel';
+	public static readonly PdfToPowerpoint: string = 'PDF to PowerPoint';
+
+	// Optimize PDF actions
+	public static readonly OptimizePdf: string = 'Optimize PDF';
+	public static readonly CreatePdfA: string = 'Create PDF/A';
+	public static readonly FlattenPdf: string = 'Flatten PDF';
+	public static readonly LinearizePdf: string = 'Linearize PDF';
 }
