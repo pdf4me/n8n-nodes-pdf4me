@@ -1,21 +1,26 @@
-import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
-import { readFileSync } from 'fs';
-import { Buffer } from 'buffer';
-import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
+import type { INodeProperties } from 'n8n-workflow';
+import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import {
+	pdf4meAsyncRequest,
+	sanitizeProfiles,
+	ActionConstants,
+} from '../GenericFunctions';
+
+// Make Buffer available (it's a Node.js global)
+declare const Buffer: any;
 
 export const description: INodeProperties[] = [
-	// --- Create Barcode ---
 	{
 		displayName: 'Text',
 		name: 'text',
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Text to encode in the barcode',
+		description: 'Add the text to be generated as Barcode',
+		placeholder: 'hello',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['createBarcode'],
+				operation: [ActionConstants.BarcodeGenerator],
 			},
 		},
 	},
@@ -24,561 +29,222 @@ export const description: INodeProperties[] = [
 		name: 'barcodeType',
 		type: 'options',
 		default: 'qrCode',
-		description: 'Type of barcode to create',
-		options: [
-			{ name: 'Aztec', value: 'aztec' },
-			{ name: 'Code 128', value: 'code128' },
-			{ name: 'Data Matrix', value: 'dataMatrix' },
-			{ name: 'PDF417', value: 'pdf417' },
-			{ name: 'QR Code', value: 'qrCode' },
-		],
+		description: 'Select the type of barcode to be created',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['createBarcode'],
+				operation: [ActionConstants.BarcodeGenerator],
 			},
 		},
+		options: [
+			{ name: 'Australian Post Custom', value: 'australianPostCustom' },
+			{ name: 'Australian Post Custom 2', value: 'australianPostCustom2' },
+			{ name: 'Australian Post Custom 3', value: 'australianPostCustom3' },
+			{ name: 'Australian Post Redirection', value: 'australianPostRedirection' },
+			{ name: 'Australian Post Reply Paid', value: 'australianPostReplyPaid' },
+			{ name: 'Australian Post Routing', value: 'australianPostRouting' },
+			{ name: 'Aztec', value: 'aztec' },
+			{ name: 'CEPNet', value: 'cepNet' },
+			{ name: 'Codabar 18', value: 'codabar18' },
+			{ name: 'Codabar 2', value: 'codabar2' },
+			{ name: 'Codablock F', value: 'codablockF' },
+			{ name: 'Code 11', value: 'code11' },
+			{ name: 'Code 128', value: 'code128' },
+			{ name: 'Code 128 Subset A', value: 'code128SubsetA' },
+			{ name: 'Code 128 Subset B', value: 'code128SubsetB' },
+			{ name: 'Code 128 Subset C', value: 'code128SubsetC' },
+			{ name: 'Code 2 of 5 Data Logic', value: 'code2Of5DataLogic' },
+			{ name: 'Code 2 of 5 IATA', value: 'code2Of5Iata' },
+			{ name: 'Code 2 of 5 Industry', value: 'code2Of5Industry' },
+			{ name: 'Code 2 of 5 Interleaved', value: 'code2Of5Interleaved' },
+			{ name: 'Code 2 of 5 Matrix', value: 'code2Of5Matrix' },
+			{ name: 'Code 2 of 5 Standard', value: 'code2Of5Standard' },
+			{ name: 'Code 32', value: 'code32' },
+			{ name: 'Code 39', value: 'code39' },
+			{ name: 'Code 39 Extended', value: 'code39Extended' },
+			{ name: 'Code 93', value: 'code93' },
+			{ name: 'Code 93 Extended', value: 'code93Extended' },
+			{ name: 'Data Matrix', value: 'dataMatrix' },
+			{ name: 'Deutsche Post Identcode', value: 'deutschePostIdentcode' },
+			{ name: 'Deutsche Post Leitcode', value: 'deutschePostLeitcode' },
+			{ name: 'DotCode', value: 'dotCode' },
+			{ name: 'DPD', value: 'dpd' },
+			{ name: 'EAN UCC-128', value: 'eanUcc128' },
+			{ name: 'EAN-13', value: 'ean13' },
+			{ name: 'EAN-13 with 2 Addon', value: 'ean13With2Addon' },
+			{ name: 'EAN-13 with 5 Addon', value: 'ean13With5Addon' },
+			{ name: 'EAN-14', value: 'ean14' },
+			{ name: 'EAN-8', value: 'ean8' },
+			{ name: 'EAN-8 with 2 Addon', value: 'ean8With2Addon' },
+			{ name: 'EAN-8 with 5 Addon', value: 'ean8With5Addon' },
+			{ name: 'FIM', value: 'fim' },
+			{ name: 'Flattermarken', value: 'flattermarken' },
+			{ name: 'GS1 DataBar', value: 'gs1DataBar' },
+			{ name: 'GS1 DataBar Expanded', value: 'gs1DataBarExpanded' },
+			{ name: 'GS1 DataBar Expanded Stacked', value: 'gs1DataBarExpandedStacked' },
+			{ name: 'GS1 DataBar Limited', value: 'gs1DataBarLimited' },
+			{ name: 'GS1 DataBar Stacked', value: 'gs1DataBarStacked' },
+			{ name: 'GS1 DataBar Stacked Omnidirectional', value: 'gs1DataBarStackedOmnidirectional' },
+			{ name: 'GS1 DataBar Truncated', value: 'gs1DataBarTruncated' },
+			{ name: 'GS1-128', value: 'gs1_128' },
+			{ name: 'Han Xin', value: 'hanXin' },
+			{ name: 'HIBC LIC 128', value: 'hibcLic128' },
+			{ name: 'HIBC LIC 3OF9', value: 'hibcLic3OF9' },
+			{ name: 'HIBC LIC Aztec', value: 'hibcLicAztec' },
+			{ name: 'HIBC LIC CODABLOCK F', value: 'hibcLicCODABLOCK_F' },
+			{ name: 'HIBC LIC Data Matrix', value: 'hibcLicDataMatrix' },
+			{ name: 'HIBC LIC MPDF417', value: 'hibcLicMPDF417' },
+			{ name: 'HIBC LIC PDF417', value: 'hibcLicPDF417' },
+			{ name: 'HIBC LIC QR Code', value: 'hibcLicQRCode' },
+			{ name: 'HIBC PAS 128', value: 'hibcPas128' },
+			{ name: 'HIBC PAS 3OF9', value: 'hibcPas3OF9' },
+			{ name: 'HIBC PAS Aztec', value: 'hibcPasAztec' },
+			{ name: 'HIBC PAS CODABLOCK F', value: 'hibcPasCODABLOCK_F' },
+			{ name: 'HIBC PAS Data Matrix', value: 'hibcPasDataMatrix' },
+			{ name: 'HIBC PAS MPDF417', value: 'hibcPasMPDF417' },
+			{ name: 'HIBC PAS PDF417', value: 'hibcPasPDF417' },
+			{ name: 'HIBC PAS QR Code', value: 'hibcPasQRCode' },
+			{ name: 'ISBN-13', value: 'isbn13' },
+			{ name: 'ISBN-13 with 5 Addon', value: 'isbn13With5Addon' },
+			{ name: 'ISMN', value: 'ismn' },
+			{ name: 'ISSN', value: 'issn' },
+			{ name: 'ISSN with 2 Addon', value: 'issnWith2Addon' },
+			{ name: 'Italian Postal 2 of 5', value: 'italianPostal2Of5' },
+			{ name: 'Italian Postal 3 of 9', value: 'italianPostal3Of9' },
+			{ name: 'ITF-14', value: 'itf14' },
+			{ name: 'Japanese Postal', value: 'japanesePostal' },
+			{ name: 'KIX', value: 'kix' },
+			{ name: 'Korean Postal Authority', value: 'koreanPostalAuthority' },
+			{ name: 'LOGMARS', value: 'logmars' },
+			{ name: 'Mailmark 2D', value: 'mailmark_2D' },
+			{ name: 'Mailmark 4-State', value: 'mailmark_4state' },
+			{ name: 'MaxiCode', value: 'maxicode' },
+			{ name: 'Micro PDF417', value: 'microPdf417' },
+			{ name: 'Micro QR Code', value: 'microQRCode' },
+			{ name: 'MSI', value: 'msi' },
+			{ name: 'None', value: 'none' },
+			{ name: 'NTIN', value: 'ntin' },
+			{ name: 'NVE-18', value: 'nve18' },
+			{ name: 'PDF417', value: 'pdf417' },
+			{ name: 'PDF417 Truncated', value: 'pdf417Truncated' },
+			{ name: 'Pharmacode One Track', value: 'pharmacodeOneTrack' },
+			{ name: 'Pharmacode Two Track', value: 'pharmacodeTwoTrack' },
+			{ name: 'Planet 12', value: 'planet12' },
+			{ name: 'Planet 14', value: 'planet14' },
+			{ name: 'Plessey', value: 'plessey' },
+			{ name: 'Plessey Bidirectional', value: 'plesseyBidirectional' },
+			{ name: 'PPN', value: 'ppn' },
+			{ name: 'PZN-7', value: 'pzn7' },
+			{ name: 'PZN-8', value: 'pzn8' },
+			{ name: 'QR Code', value: 'qrCode' },
+			{ name: 'QR Code 2005', value: 'qrcode2005' },
+			{ name: 'RM4SCC', value: 'rm4Scc' },
+			{ name: 'SSCC-18', value: 'sscc18' },
+			{ name: 'Swedish Postal Shipment ID', value: 'swedishPostalShipmentId' },
+			{ name: 'Swiss QR Code', value: 'swissQrCode' },
+			{ name: 'Telepen', value: 'telepen' },
+			{ name: 'Telepen Alpha', value: 'telepenAlpha' },
+			{ name: 'UCC-128', value: 'ucc128' },
+			{ name: 'UPC-12', value: 'upc12' },
+			{ name: 'UPC-A', value: 'upcA' },
+			{ name: 'UPC-A with 2 Addon', value: 'upcAWith2Addon' },
+			{ name: 'UPC-A with 5 Addon', value: 'upcAWith5Addon' },
+			{ name: 'UPC-E', value: 'upcE' },
+			{ name: 'UPC-E with 2 Addon', value: 'upcEWith2Addon' },
+			{ name: 'UPC-E with 5 Addon', value: 'upcEWith5Addon' },
+			{ name: 'UPU S10', value: 'upuS10' },
+			{ name: 'USPS IM Package', value: 'uSPSIMPackage' },
+			{ name: 'USPS Intelligent Mail', value: 'uspsIntelligentMail' },
+			{ name: 'USPS Postnet 10', value: 'uspsPostnet10' },
+			{ name: 'USPS Postnet 11', value: 'uspsPostnet11' },
+			{ name: 'USPS Postnet 12', value: 'uspsPostnet12' },
+			{ name: 'USPS Postnet 5', value: 'uspsPostnet5' },
+			{ name: 'USPS Postnet 6', value: 'uspsPostnet6' },
+			{ name: 'USPS Postnet 9', value: 'uspsPostnet9' },
+			{ name: 'VIN', value: 'vin' },
+		],
 	},
 	{
 		displayName: 'Hide Text',
 		name: 'hideText',
 		type: 'boolean',
-		default: false,
-		description: 'Whether to hide the barcode text (true=hide, false=show text alongside barcode)',
+		default: true,
+		description: 'Whether to hide or display the text alongside the barcode',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['createBarcode'],
+				operation: [ActionConstants.BarcodeGenerator],
 			},
 		},
 	},
 	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'Barcode_create_output.png',
-		description: 'Name for the output barcode image',
-		placeholder: 'output.png',
+		displayName: 'Advanced Options',
+		name: 'advancedOptions',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['createBarcode'],
-			},
-		},
-	},
-	// --- Add Barcode to PDF ---
-	{
-		displayName: 'Input Type',
-		name: 'inputType',
-		type: 'options',
-		required: true,
-		default: 'binaryData',
-		description: 'How to provide the input PDF',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
+				operation: [ActionConstants.BarcodeGenerator],
 			},
 		},
 		options: [
-			{ name: 'Binary Data', value: 'binaryData', description: 'Use binary data from previous node' },
-			{ name: 'Base64 String', value: 'base64', description: 'Provide base64 encoded PDF' },
-			{ name: 'URL', value: 'url', description: 'Provide a URL to the PDF' },
-			{ name: 'Local Path', value: 'localPath', description: 'Provide a local file path to the PDF' },
-		],
-	},
-	{
-		displayName: 'Binary Property',
-		name: 'binaryPropertyName',
-		type: 'string',
-		default: 'data',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-				inputType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Input File Name',
-		name: 'inputFileName',
-		type: 'string',
-		default: '',
-		placeholder: 'document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-				inputType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Base64 Content',
-		name: 'base64Content',
-		type: 'string',
-		default: '',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-				inputType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Input File Name',
-		name: 'inputFileName',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: 'document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-				inputType: ['base64', 'localPath', 'url'],
-			},
-		},
-	},
-	{
-		displayName: 'File URL',
-		name: 'fileUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: 'https://example.com/sample.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-				inputType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'localFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: '/path/to/sample.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-				inputType: ['localPath'],
-			},
-		},
-	},
-	{
-		displayName: 'Barcode Text',
-		name: 'barcodeText',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Text to encode in the barcode',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Barcode Type',
-		name: 'barcodeType',
-		type: 'options',
-		default: 'qrCode',
-		description: 'Type of barcode to add',
-		options: [
-			{ name: 'Aztec', value: 'aztec' },
-			{ name: 'Code 128', value: 'code128' },
-			{ name: 'Data Matrix', value: 'dataMatrix' },
-			{ name: 'PDF417', value: 'pdf417' },
-			{ name: 'QR Code', value: 'qrCode' },
-		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Pages',
-		name: 'pages',
-		type: 'string',
-		default: '',
-		description: 'Pages to apply the barcode (e.g., "1", "1-3", "2-", empty for all)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Align X',
-		name: 'alignX',
-		type: 'options',
-		default: 'Right',
-		options: [
-			{ name: 'Left', value: 'Left' },
-			{ name: 'Center', value: 'Center' },
-			{ name: 'Right', value: 'Right' },
-		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Align Y',
-		name: 'alignY',
-		type: 'options',
-		default: 'Bottom',
-		options: [
-			{ name: 'Top', value: 'Top' },
-			{ name: 'Middle', value: 'Middle' },
-			{ name: 'Bottom', value: 'Bottom' },
-		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'Add_barcode_to_PDF_output.pdf',
-		description: 'Name for the output PDF file',
-		placeholder: 'output.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['addBarcodeToPdf'],
-			},
-		},
-	},
-	// --- Read Barcode from PDF ---
-	{
-		displayName: 'Input Type',
-		name: 'inputType',
-		type: 'options',
-		required: true,
-		default: 'binaryData',
-		description: 'How to provide the input PDF',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-			},
-		},
-		options: [
-			{ name: 'Binary Data', value: 'binaryData', description: 'Use binary data from previous node' },
-			{ name: 'Base64 String', value: 'base64', description: 'Provide base64 encoded PDF' },
-			{ name: 'URL', value: 'url', description: 'Provide a URL to the PDF' },
-			{ name: 'Local Path', value: 'localPath', description: 'Provide a local file path to the PDF' },
-		],
-	},
-	{
-		displayName: 'Binary Property',
-		name: 'binaryPropertyName',
-		type: 'string',
-		default: 'data',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-				inputType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Input File Name',
-		name: 'inputFileName',
-		type: 'string',
-		default: '',
-		placeholder: 'document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-				inputType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Base64 Content',
-		name: 'base64Content',
-		type: 'string',
-		default: '',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-				inputType: ['base64'],
-			},
-		},
+			{
+				displayName: 'Generate Inline URL',
+				name: 'inline',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to generate an inline image URL',
 			},
 			{
-		displayName: 'Input File Name',
-		name: 'inputFileName',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: 'document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-				inputType: ['base64', 'localPath', 'url'],
-			},
-		},
-	},
-	{
-		displayName: 'File URL',
-		name: 'fileUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: 'https://example.com/sample.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-				inputType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'localFilePath',
+				displayName: 'Custom Profiles',
+				name: 'profiles',
 				type: 'string',
 				default: '',
-		required: true,
-		placeholder: '/path/to/sample.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-				inputType: ['localPath'],
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls and may be specific to certain APIs.',
+				placeholder: `{ 'outputDataFormat': 'base64' }`,
 			},
-		},
-	},
-	{
-		displayName: 'Barcode Types',
-		name: 'barcodeTypes',
-		type: 'multiOptions',
-		default: ['all'],
-		options: [
-			{ name: 'All', value: 'all' },
-			{ name: 'Aztec', value: 'aztec' },
-			{ name: 'Code 128', value: 'code128' },
-			{ name: 'Data Matrix', value: 'dataMatrix' },
-			{ name: 'PDF417', value: 'pdf417' },
-			{ name: 'QR Code', value: 'qrCode' },
 		],
-		description: 'Types of barcodes to read',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Pages',
-		name: 'pages',
-		type: 'string',
-		default: 'all',
-		description: 'Pages to scan for barcodes (e.g., "all", "1", "1-3", "2-", etc.)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-			},
-		},
-	},
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'Read_barcode_output.json',
-		description: 'Name for the output JSON file',
-		placeholder: 'output.json',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readBarcodeFromPdf'],
-			},
-		},
-	},
-	// --- Read Swiss QR Code from PDF ---
-	{
-		displayName: 'Input Type',
-		name: 'inputType',
-		type: 'options',
-		required: true,
-		default: 'binaryData',
-		description: 'How to provide the input PDF',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-			},
-		},
-		options: [
-			{ name: 'Binary Data', value: 'binaryData', description: 'Use binary data from previous node' },
-			{ name: 'Base64 String', value: 'base64', description: 'Provide base64 encoded PDF' },
-			{ name: 'URL', value: 'url', description: 'Provide a URL to the PDF' },
-			{ name: 'Local Path', value: 'localPath', description: 'Provide a local file path to the PDF' },
-		],
-	},
-	{
-		displayName: 'Binary Property',
-		name: 'binaryPropertyName',
-		type: 'string',
-		default: 'data',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-				inputType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Input File Name',
-		name: 'inputFileName',
-		type: 'string',
-		default: '',
-		placeholder: 'document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-				inputType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Base64 Content',
-		name: 'base64Content',
-		type: 'string',
-		default: '',
-		required: true,
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-				inputType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Input File Name',
-		name: 'inputFileName',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: 'document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-				inputType: ['base64', 'localPath', 'url'],
-			},
-		},
-	},
-	{
-		displayName: 'File URL',
-		name: 'fileUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: 'https://example.com/sample.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-				inputType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'localFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		placeholder: '/path/to/sample.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-				inputType: ['localPath'],
-			},
-		},
-	},
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'read_swissqr_code_output.json',
-		description: 'Name for the output JSON file',
-		placeholder: 'output.json',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.Barcode],
-				barcodeFeature: ['readSwissQrCodeFromPdf'],
-			},
-		},
 	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
-	const operation = this.getNodeParameter('operation', index) as string;
-	const barcodeFeature = this.getNodeParameter('barcodeFeature', index) as string;
-
-	if (operation !== ActionConstants.Barcode) {
-		throw new Error('This action only supports the Barcode operation.');
-	}
-
-	if (barcodeFeature === 'createBarcode') {
 	const text = this.getNodeParameter('text', index) as string;
 	const barcodeType = this.getNodeParameter('barcodeType', index) as string;
 	const hideText = this.getNodeParameter('hideText', index) as boolean;
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const payload = {
+
+	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+
+	const body: IDataObject = {
 		text,
 		barcodeType,
 		hideText,
-			async: true,
-		};
-		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/CreateBarcode', payload);
+	};
+
+	const profiles = advancedOptions?.profiles as string | undefined;
+	if (profiles) body.profiles = profiles;
+
+	const inline = advancedOptions?.inline as boolean | undefined;
+	if (inline !== undefined) body.inline = inline;
+
+	sanitizeProfiles(body);
+
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/CreateBarcode', body);
+	
+	// Handle the binary response (PNG data) directly like Python code
 	if (responseData) {
+		// Generate filename based on text and barcode type
+		const fileName = `${text.replace(/[^a-zA-Z0-9]/g, '_')}_${barcodeType}.png`;
+		
+		// responseData is already binary data (Buffer)
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
-				outputFileName || 'Barcode_create_output.png',
+			fileName,
 			'image/png',
 		);
+		
 		return [
 			{
 				json: {
-						fileName: outputFileName || 'Barcode_create_output.png',
+					fileName,
 					mimeType: 'image/png',
 					fileSize: responseData.length,
 					success: true,
@@ -589,212 +255,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			},
 		];
 	}
-		throw new Error('No response data received from PDF4ME API');
-	}
-
-	if (barcodeFeature === 'addBarcodeToPdf') {
-		const inputType = this.getNodeParameter('inputType', index) as string;
-		let pdfContent: string;
-		let pdfName: string;
-		if (inputType === 'binaryData') {
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const inputFileName = this.getNodeParameter('inputFileName', index) as string;
-			const item = this.getInputData(index);
-			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error('No binary data found in the input.');
-			}
-			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-			pdfContent = buffer.toString('base64');
-			const binaryData = item[0].binary[binaryPropertyName];
-			pdfName = inputFileName || binaryData.fileName || 'document.pdf';
-		} else if (inputType === 'base64') {
-			pdfContent = this.getNodeParameter('base64Content', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-		} else if (inputType === 'url') {
-			const fileUrl = this.getNodeParameter('fileUrl', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-			const response = await this.helpers.request({ method: 'GET', url: fileUrl, encoding: null });
-			pdfContent = Buffer.from(response).toString('base64');
-		} else if (inputType === 'localPath') {
-			const localFilePath = this.getNodeParameter('localFilePath', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-			const fileBuffer = readFileSync(localFilePath);
-			pdfContent = fileBuffer.toString('base64');
-		} else {
-			throw new Error(`Unsupported input type: ${inputType}`);
-		}
-		const barcodeText = this.getNodeParameter('barcodeText', index) as string;
-		const barcodeType = this.getNodeParameter('barcodeType', index) as string;
-		const pages = this.getNodeParameter('pages', index) as string;
-		const alignX = this.getNodeParameter('alignX', index) as string;
-		const alignY = this.getNodeParameter('alignY', index) as string;
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const payload = {
-			docContent: pdfContent,
-			docName: pdfName,
-			text: barcodeText,
-			barcodeType,
-			pages,
-			alignX,
-			alignY,
-			heightInMM: '40',
-			widthInMM: '40',
-			marginXInMM: '20',
-			marginYInMM: '20',
-			heightInPt: '20',
-			widthInPt: '20',
-			marginXInPt: '10',
-			marginYInPt: '10',
-			opacity: 100,
-			displayText: 'above',
-			hideText: true,
-			showOnlyInPrint: false,
-			isTextAbove: true,
-			async: true,
-		};
-		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/addbarcode', payload);
-		if (responseData) {
-			const binaryData = await this.helpers.prepareBinaryData(
-				responseData,
-				outputFileName || 'Add_barcode_to_PDF_output.pdf',
-				'application/pdf',
-			);
-			return [
-				{
-					json: {
-						fileName: outputFileName || 'Add_barcode_to_PDF_output.pdf',
-						mimeType: 'application/pdf',
-						fileSize: responseData.length,
-						success: true,
-					},
-					binary: {
-						data: binaryData,
-					},
-				},
-			];
-		}
-		throw new Error('No response data received from PDF4ME API');
-	}
-
-	if (barcodeFeature === 'readBarcodeFromPdf') {
-		const inputType = this.getNodeParameter('inputType', index) as string;
-		let pdfContent: string;
-		let pdfName: string;
-		if (inputType === 'binaryData') {
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const inputFileName = this.getNodeParameter('inputFileName', index) as string;
-			const item = this.getInputData(index);
-			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error('No binary data found in the input.');
-			}
-			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-			pdfContent = buffer.toString('base64');
-			const binaryData = item[0].binary[binaryPropertyName];
-			pdfName = inputFileName || binaryData.fileName || 'document.pdf';
-		} else if (inputType === 'base64') {
-			pdfContent = this.getNodeParameter('base64Content', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-		} else if (inputType === 'url') {
-			const fileUrl = this.getNodeParameter('fileUrl', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-			const response = await this.helpers.request({ method: 'GET', url: fileUrl, encoding: null });
-			pdfContent = Buffer.from(response).toString('base64');
-		} else if (inputType === 'localPath') {
-			const localFilePath = this.getNodeParameter('localFilePath', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-			const fileBuffer = readFileSync(localFilePath);
-			pdfContent = fileBuffer.toString('base64');
-		} else {
-			throw new Error(`Unsupported input type: ${inputType}`);
-		}
-		const barcodeTypes = this.getNodeParameter('barcodeTypes', index) as string[];
-		const pages = this.getNodeParameter('pages', index) as string;
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const payload = {
-			docContent: pdfContent,
-			docName: pdfName,
-			barcodeType: barcodeTypes,
-			pages,
-			async: true,
-		};
-		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ReadBarcodes', payload);
-		if (responseData) {
-			let jsonData: any;
-			try {
-				jsonData = JSON.parse(responseData.toString('utf8'));
-			} catch {
-				jsonData = responseData.toString('utf8');
-			}
-			return [
-				{
-					json: {
-						outputFileName: outputFileName || 'Read_barcode_output.json',
-						data: jsonData,
-						success: true,
-					},
-				},
-			];
-		}
-		throw new Error('No response data received from PDF4ME API');
-	}
-
-	if (barcodeFeature === 'readSwissQrCodeFromPdf') {
-		const inputType = this.getNodeParameter('inputType', index) as string;
-		let pdfContent: string;
-		let pdfName: string;
-		if (inputType === 'binaryData') {
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const inputFileName = this.getNodeParameter('inputFileName', index) as string;
-			const item = this.getInputData(index);
-			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error('No binary data found in the input.');
-			}
-			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-			pdfContent = buffer.toString('base64');
-			const binaryData = item[0].binary[binaryPropertyName];
-			pdfName = inputFileName || binaryData.fileName || 'document.pdf';
-		} else if (inputType === 'base64') {
-			pdfContent = this.getNodeParameter('base64Content', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-		} else if (inputType === 'url') {
-			const fileUrl = this.getNodeParameter('fileUrl', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-			const response = await this.helpers.request({ method: 'GET', url: fileUrl, encoding: null });
-			pdfContent = Buffer.from(response).toString('base64');
-		} else if (inputType === 'localPath') {
-			const localFilePath = this.getNodeParameter('localFilePath', index) as string;
-			pdfName = this.getNodeParameter('inputFileName', index) as string;
-			const fileBuffer = readFileSync(localFilePath);
-			pdfContent = fileBuffer.toString('base64');
-		} else {
-			throw new Error(`Unsupported input type: ${inputType}`);
-		}
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const payload = {
-			docContent: pdfContent,
-			docName: pdfName,
-			async: true,
-		};
-		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ReadSwissQRBill', payload);
-		if (responseData) {
-			let jsonData: any;
-			try {
-				jsonData = JSON.parse(responseData.toString('utf8'));
-			} catch {
-				jsonData = responseData.toString('utf8');
-			}
-			return [
-				{
-					json: {
-						outputFileName: outputFileName || 'read_swissqr_code_output.json',
-						data: jsonData,
-						success: true,
-					},
-				},
-			];
-		}
+	
+	// Error case
 	throw new Error('No response data received from PDF4ME API');
-	}
-
-	throw new Error(`Unknown barcode feature: ${barcodeFeature}`);
 }
