@@ -8,6 +8,16 @@ import * as cropImage from './actions/cropImage';
 import * as convertToPdf from './actions/convertToPdf';
 import * as mergePdf from './actions/MergePDF';
 import * as splitPdf from './actions/SplitPDF';
+import * as edit from './actions/edit';
+import * as extract from './actions/extract';
+import * as findSearch from './actions/findSearch';
+import * as form from './actions/form';
+import * as image from './actions/image';
+import * as optimizeCompress from './actions/optimizeCompress';
+import * as organize from './actions/organize';
+import * as pdf4me from './actions/pdf4me';
+import * as uploadFile from './actions/uploadFile';
+import * as word from './actions/word';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -82,6 +92,66 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.SplitPDF,
 					action: ActionConstants.SplitPDF,
 				},
+				{
+					name: 'Edit',
+					description: 'Edit PDFs with attachments, headers/footers, stamps, margins, page numbers, and signatures',
+					value: ActionConstants.Edit,
+					action: ActionConstants.Edit,
+				},
+				{
+					name: 'Extract',
+					description: 'Extract text, images, and other content from PDFs',
+					value: ActionConstants.Extract,
+					action: ActionConstants.Extract,
+				},
+				{
+					name: 'Find Search',
+					description: 'Search and find content within PDFs',
+					value: ActionConstants.FindSearch,
+					action: ActionConstants.FindSearch,
+				},
+				{
+					name: 'Form',
+					description: 'Handle PDF forms and form data',
+					value: ActionConstants.Form,
+					action: ActionConstants.Form,
+				},
+				{
+					name: 'Image',
+					description: 'Process and manipulate images',
+					value: ActionConstants.Image,
+					action: ActionConstants.Image,
+				},
+				{
+					name: 'Optimize Compress',
+					description: 'Optimize and compress PDFs and images',
+					value: ActionConstants.OptimizeCompress,
+					action: ActionConstants.OptimizeCompress,
+				},
+				{
+					name: 'Organize',
+					description: 'Organize and structure PDF documents',
+					value: ActionConstants.Organize,
+					action: ActionConstants.Organize,
+				},
+				{
+					name: 'Pdf4me',
+					description: 'General PDF4ME operations',
+					value: ActionConstants.Pdf4me,
+					action: ActionConstants.Pdf4me,
+				},
+				{
+					name: 'Upload File',
+					description: 'Upload files to PDF4ME for processing',
+					value: ActionConstants.UploadFile,
+					action: ActionConstants.UploadFile,
+				},
+				{
+					name: 'Word',
+					description: 'Convert Word documents and handle Word operations',
+					value: ActionConstants.Word,
+					action: ActionConstants.Word,
+				},
 			],
 			default: ActionConstants.Barcode,
 		},
@@ -112,6 +182,16 @@ export const descriptions: INodeTypeDescription = {
 		...convertToPdf.description,
 		...mergePdf.description,
 		...splitPdf.description,
+		...edit.description,
+		...extract.description,
+		...findSearch.description,
+		...form.description,
+		...image.description,
+		...optimizeCompress.description,
+		...organize.description,
+		...pdf4me.description,
+		...uploadFile.description,
+		...word.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

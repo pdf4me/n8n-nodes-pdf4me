@@ -342,4 +342,14 @@ export class ActionConstants {
 	public static readonly ConvertToPdf: string = 'Convert to PDF';
 	public static readonly MergePDF: string = 'Merge PDF';
 	public static readonly SplitPDF: string = 'Split PDF';
+	public static readonly Edit: string = 'Edit';
+	public static readonly Extract: string = 'Extract';
+	public static readonly FindSearch: string = 'Find Search';
+	public static readonly Form: string = 'Form';
+	public static readonly Image: string = 'Image';
+	public static readonly OptimizeCompress: string = 'Optimize Compress';
+	public static readonly Organize: string = 'Organize';
+	public static readonly Pdf4me: string = 'Pdf4me';
+	public static readonly UploadFile: string = 'Upload File';
+	public static readonly Word: string = 'Word';
 }

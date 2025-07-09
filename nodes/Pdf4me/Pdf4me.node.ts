@@ -15,6 +15,16 @@ import * as cropImage from './actions/cropImage';
 import * as convertToPdf from './actions/convertToPdf';
 import * as mergePdf from './actions/MergePDF';
 import * as splitPdf from './actions/SplitPDF';
+import * as edit from './actions/edit';
+import * as extract from './actions/extract';
+import * as findSearch from './actions/findSearch';
+import * as form from './actions/form';
+import * as image from './actions/image';
+import * as optimizeCompress from './actions/optimizeCompress';
+import * as organize from './actions/organize';
+import * as pdf4me from './actions/pdf4me';
+import * as uploadFile from './actions/uploadFile';
+import * as word from './actions/word';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -51,6 +61,26 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await mergePdf.execute.call(this, i)));
 				} else if (action === ActionConstants.SplitPDF) {
 					operationResult.push(...(await splitPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.Edit) {
+					operationResult.push(...(await edit.execute.call(this, i)));
+				} else if (action === ActionConstants.Extract) {
+					operationResult.push(...(await extract.execute.call(this, i)));
+				} else if (action === ActionConstants.FindSearch) {
+					operationResult.push(...(await findSearch.execute.call(this, i)));
+				} else if (action === ActionConstants.Form) {
+					operationResult.push(...(await form.execute.call(this, i)));
+				} else if (action === ActionConstants.Image) {
+					operationResult.push(...(await image.execute.call(this, i)));
+				} else if (action === ActionConstants.OptimizeCompress) {
+					operationResult.push(...(await optimizeCompress.execute.call(this, i)));
+				} else if (action === ActionConstants.Organize) {
+					operationResult.push(...(await organize.execute.call(this, i)));
+				} else if (action === ActionConstants.Pdf4me) {
+					operationResult.push(...(await pdf4me.execute.call(this, i)));
+				} else if (action === ActionConstants.UploadFile) {
+					operationResult.push(...(await uploadFile.execute.call(this, i)));
+				} else if (action === ActionConstants.Word) {
+					operationResult.push(...(await word.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

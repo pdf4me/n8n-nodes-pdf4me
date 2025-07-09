@@ -1,9 +1,9 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	pdf4meAsyncRequest,
 } from '../GenericFunctions';
 
 // Make Buffer and other Node.js globals available
@@ -12,6 +12,8 @@ declare const URL: any;
 declare const console: any;
 declare const require: any;
 declare const setTimeout: any;
+declare const unzipper: any;
+declare const stream: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -400,12 +402,12 @@ export const description: INodeProperties[] = [
 		name: 'returnAsZip',
 		type: 'boolean',
 		required: true,
-		default: false,
-		description: 'Whether to return files as a ZIP archive',
+		default: true,
+		description: 'Whether to return files as a ZIP archive (recommended for multiple files)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPDF],
-				splitType: ['swissQr'],
+				splitType: ['regular', 'barcode', 'swissQr', 'text'],
 			},
 		},
 	},
@@ -564,34 +566,233 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`Unsupported split type: ${splitType}`);
 		}
 
-		// Handle the binary response (split PDF files data)
+		// Handle the binary response (ZIP file, direct PDF files, or JSON response)
 		if (responseData) {
-			// Generate filename based on split type
-			const baseName = docName || 'split_output';
-			const fileName = `${baseName}.pdf`;
+			// First, check if it's a JSON response (error or structured data)
+			const responseString = responseData.toString('utf8', 0, Math.min(1000, responseData.length));
+			if (responseString.trim().startsWith('{') || responseString.trim().startsWith('[')) {
+				try {
+					const jsonResponse = JSON.parse(responseString);
+					
+					// Check if it's an error response
+					if (jsonResponse.error || jsonResponse.message) {
+						throw new Error(`API Error: ${jsonResponse.message || jsonResponse.error || 'Unknown error'}`);
+					}
+					
+					// Check if it's a structured response with documents
+					if (Array.isArray(jsonResponse)) {
+						// Handle array of documents (each with docContent and docName)
+						const results = [];
+						for (let i = 0; i < jsonResponse.length; i++) {
+							const doc = jsonResponse[i];
+							if (doc.docContent && doc.docName) {
+								const pdfBuffer = Buffer.from(doc.docContent, 'base64');
+								const fileName = doc.docName;
+								
+								// Validate PDF content
+								const header = pdfBuffer.toString('ascii', 0, 10);
+								if (!header.startsWith('%PDF')) {
+									console.log(`Skipping invalid PDF file: ${fileName}`);
+									continue;
+								}
+								
+								const binaryData = await this.helpers.prepareBinaryData(
+									pdfBuffer,
+									fileName,
+									'application/pdf',
+								);
 
-			// responseData is already binary data (Buffer)
-			const binaryData = await this.helpers.prepareBinaryData(
-				responseData,
-				fileName,
-				'application/pdf',
-			);
+								results.push({
+									json: {
+										fileName,
+										mimeType: 'application/pdf',
+										fileSize: pdfBuffer.length,
+										success: true,
+										splitType,
+										fileIndex: i + 1,
+										totalFiles: jsonResponse.length,
+										inputFileCount: 1,
+										responseType: 'json_array',
+									},
+									binary: {
+										data: binaryData,
+									},
+								});
+							}
+						}
+						
+						if (results.length === 0) {
+							throw new Error('No valid PDF files found in the JSON response');
+						}
+						
+						return results;
+					} else if (jsonResponse.splitedDocuments && Array.isArray(jsonResponse.splitedDocuments)) {
+						// Handle splitedDocuments structure
+						const results = [];
+						for (let i = 0; i < jsonResponse.splitedDocuments.length; i++) {
+							const doc = jsonResponse.splitedDocuments[i];
+							if (doc.streamFile && doc.fileName) {
+								const pdfBuffer = Buffer.from(doc.streamFile, 'base64');
+								const fileName = doc.fileName;
+								
+								// Validate PDF content
+								const header = pdfBuffer.toString('ascii', 0, 10);
+								if (!header.startsWith('%PDF')) {
+									console.log(`Skipping invalid PDF file: ${fileName}`);
+									continue;
+								}
+								
+								const binaryData = await this.helpers.prepareBinaryData(
+									pdfBuffer,
+									fileName,
+									'application/pdf',
+								);
 
-			return [
-				{
+								results.push({
+									json: {
+										fileName,
+										mimeType: 'application/pdf',
+										fileSize: pdfBuffer.length,
+										success: true,
+										splitType,
+										fileIndex: i + 1,
+										totalFiles: jsonResponse.splitedDocuments.length,
+										inputFileCount: 1,
+										responseType: 'json_splited_documents',
+									},
+									binary: {
+										data: binaryData,
+									},
+								});
+							}
+						}
+						
+						if (results.length === 0) {
+							throw new Error('No valid PDF files found in the splitedDocuments response');
+						}
+						
+						return results;
+					} else if (jsonResponse.docContent && jsonResponse.docName) {
+						// Handle single document response
+						const pdfBuffer = Buffer.from(jsonResponse.docContent, 'base64');
+						const fileName = jsonResponse.docName;
+						
+						// Validate PDF content
+						const header = pdfBuffer.toString('ascii', 0, 10);
+						if (!header.startsWith('%PDF')) {
+							throw new Error('Response contains invalid PDF content');
+						}
+						
+						const binaryData = await this.helpers.prepareBinaryData(
+							pdfBuffer,
+							fileName,
+							'application/pdf',
+						);
+
+						return [{
+							json: {
+								fileName,
+								mimeType: 'application/pdf',
+								fileSize: pdfBuffer.length,
+								success: true,
+								splitType,
+								fileIndex: 1,
+								totalFiles: 1,
+								inputFileCount: 1,
+								responseType: 'json_single_document',
+							},
+							binary: {
+								data: binaryData,
+							},
+						}];
+					} else {
+						// Unknown JSON structure
+						throw new Error(`Unexpected JSON response structure: ${JSON.stringify(jsonResponse, null, 2)}`);
+					}
+				} catch (parseError) {
+					throw new Error(`Failed to parse JSON response: ${parseError.message}. Response preview: ${responseString.substring(0, 200)}`);
+				}
+			}
+			
+			// Check if response is a ZIP file (ZIP files start with PK\x03\x04)
+			const isZipFile = responseData.length >= 4 && 
+				responseData[0] === 0x50 && responseData[1] === 0x4B && 
+				responseData[2] === 0x03 && responseData[3] === 0x04;
+
+			if (isZipFile) {
+				// Extract files from ZIP
+				const extractedFiles = await extractFilesFromZip(responseData);
+				
+				if (extractedFiles.length === 0) {
+					throw new Error('No files found in the ZIP response from PDF4ME API');
+				}
+
+				// Return each extracted file as a separate item
+				const results = [];
+				for (let i = 0; i < extractedFiles.length; i++) {
+					const file = extractedFiles[i];
+					const fileName = file.name || `split_${i + 1}.pdf`;
+					
+					// Prepare binary data for each file
+					const binaryData = await this.helpers.prepareBinaryData(
+						file.content,
+						fileName,
+						'application/pdf',
+					);
+
+					results.push({
+						json: {
+							fileName,
+							mimeType: 'application/pdf',
+							fileSize: file.content.length,
+							success: true,
+							splitType,
+							fileIndex: i + 1,
+							totalFiles: extractedFiles.length,
+							inputFileCount: 1,
+							responseType: 'zip',
+						},
+						binary: {
+							data: binaryData,
+						},
+					});
+				}
+
+				return results;
+			} else {
+				// Handle direct PDF response (single file)
+				const fileName = `${docName || 'split_output'}.pdf`;
+				
+				// Validate that it's actually a PDF
+				const header = responseData.toString('ascii', 0, 10);
+				if (!header.startsWith('%PDF')) {
+					throw new Error(`Response is not a valid PDF file. Expected PDF header but got: ${header}. Response preview: ${responseData.toString('utf8', 0, 200)}`);
+				}
+
+				// Prepare binary data for the single file
+				const binaryData = await this.helpers.prepareBinaryData(
+					responseData,
+					fileName,
+					'application/pdf',
+				);
+
+				return [{
 					json: {
 						fileName,
 						mimeType: 'application/pdf',
 						fileSize: responseData.length,
 						success: true,
 						splitType,
+						fileIndex: 1,
+						totalFiles: 1,
 						inputFileCount: 1,
+						responseType: 'direct',
 					},
 					binary: {
 						data: binaryData,
 					},
-				},
-			];
+				}];
+			}
 		}
 
 		// Error case
@@ -606,6 +807,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 async function handleRegularSplit(this: IExecuteFunctions, index: number, inputDataType: string, docName: string, advancedOptions: IDataObject): Promise<Buffer> {
 	const splitAction = this.getNodeParameter('splitAction', index) as string;
 	const fileNaming = this.getNodeParameter('fileNaming', index) as string;
+	const returnAsZip = this.getNodeParameter('returnAsZip', index) as boolean;
 
 	let pdfContentBase64: string;
 
@@ -648,6 +850,7 @@ async function handleRegularSplit(this: IExecuteFunctions, index: number, inputD
 		docName,
 		splitAction,
 		fileNaming,
+		returnAsZip,
 	};
 
 	// Add split-specific parameters
@@ -685,6 +888,7 @@ async function handleBarcodeSplit(this: IExecuteFunctions, index: number, inputD
 	const splitBarcodePage = this.getNodeParameter('splitBarcodePage', index) as string;
 	const combinePagesWithSameConsecutiveBarcodes = this.getNodeParameter('combinePagesWithSameConsecutiveBarcodes', index) as boolean;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
+	const returnAsZip = this.getNodeParameter('returnAsZip', index) as boolean;
 
 	let pdfContentBase64: string;
 
@@ -731,6 +935,7 @@ async function handleBarcodeSplit(this: IExecuteFunctions, index: number, inputD
 		splitBarcodePage,
 		combinePagesWithSameConsecutiveBarcodes,
 		pdfRenderDpi,
+		returnAsZip,
 	};
 
 	// Add profiles if provided
@@ -806,6 +1011,7 @@ async function handleTextSplit(this: IExecuteFunctions, index: number, inputData
 	const textToSearch = this.getNodeParameter('textToSearch', index) as string;
 	const splitTextPage = this.getNodeParameter('splitTextPage', index) as string;
 	const fileNaming = this.getNodeParameter('fileNaming', index) as string;
+	const returnAsZip = this.getNodeParameter('returnAsZip', index) as boolean;
 
 	let pdfContentBase64: string;
 
@@ -849,6 +1055,7 @@ async function handleTextSplit(this: IExecuteFunctions, index: number, inputData
 		text: textToSearch,
 		splitTextPage,
 		fileNaming,
+		returnAsZip,
 	};
 
 	// Add profiles if provided
@@ -859,6 +1066,8 @@ async function handleTextSplit(this: IExecuteFunctions, index: number, inputData
 
 	return await pdf4meAsyncRequest.call(this, '/api/v2/SplitByText', body);
 }
+
+
 
 /**
  * Download PDF from URL and convert to base64
@@ -1033,4 +1242,70 @@ async function readPdfFromFile(filePath: string): Promise<string> {
 			throw new Error(`Error reading file: ${error.message}`);
 		}
 	}
+}
+
+/**
+ * Extract files from ZIP buffer
+ */
+async function extractFilesFromZip(zipBuffer: Buffer): Promise<Array<{ name: string; content: Buffer }>> {
+	const unzipper = require('unzipper');
+	
+	return new Promise((resolve, reject) => {
+		const files: Array<{ name: string; content: Buffer }> = [];
+		
+		// Create a readable stream from the buffer
+		const stream = require('stream');
+		const readable = new stream.Readable();
+		readable.push(zipBuffer);
+		readable.push(null);
+		
+		readable
+			.pipe(unzipper.Parse())
+			.on('entry', (entry: any) => {
+				const fileName = entry.path;
+				
+				// Skip directories
+				if (entry.type === 'Directory') {
+					entry.autodrain();
+					return;
+				}
+				
+				// Only process PDF files
+				if (!fileName.toLowerCase().endsWith('.pdf')) {
+					entry.autodrain();
+					return;
+				}
+				
+				const chunks: Buffer[] = [];
+				
+				entry.on('data', (chunk: Buffer) => {
+					chunks.push(chunk);
+				});
+				
+				entry.on('end', () => {
+					const fileContent = Buffer.concat(chunks);
+					
+					// Validate that it's actually a PDF
+					if (fileContent.length > 0) {
+						const header = fileContent.toString('ascii', 0, 10);
+						if (header.startsWith('%PDF')) {
+							files.push({
+								name: fileName,
+								content: fileContent,
+							});
+						}
+					}
+				});
+				
+				entry.on('error', (error: any) => {
+					console.log(`Error processing entry ${fileName}: ${error.message}`);
+				});
+			})
+			.on('close', () => {
+				resolve(files);
+			})
+			.on('error', (error: any) => {
+				reject(new Error(`Failed to extract ZIP file: ${error.message}`));
+			});
+	});
 }
