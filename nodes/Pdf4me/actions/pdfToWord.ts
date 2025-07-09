@@ -269,13 +269,13 @@ export const description: INodeProperties[] = [
  * with exponential backoff and up to 25 minutes total processing time for large or complex documents.
  */
 export async function execute(this: IExecuteFunctions, index: number) {
-	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const docName = this.getNodeParameter('docName', index) as string;
-	const qualityType = this.getNodeParameter('qualityType', index) as string;
-	const language = this.getNodeParameter('language', index) as string;
+	const inputDataType = this.getNodeParameter('pdfToWordInputDataType', index) as string;
+	const outputFileName = this.getNodeParameter('pdfToWordOutputFileName', index) as string;
+	const docName = this.getNodeParameter('pdfToWordDocName', index) as string;
+	const qualityType = this.getNodeParameter('pdfToWordQualityType', index) as string;
+	const language = this.getNodeParameter('pdfToWordLanguage', index) as string;
 
-	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const advancedOptions = this.getNodeParameter('pdfToWordAdvancedOptions', index) as IDataObject;
 	const useAsync = advancedOptions?.useAsync !== false; // Default to true
 
 	let docContent: string;
@@ -283,7 +283,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
 		// Get PDF content from binary data
-		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const binaryPropertyName = this.getNodeParameter('pdfToWordBinaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
 		if (!item[0].binary) {
@@ -300,19 +300,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
-		console.log('PDF file successfully encoded to base64');
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
-		docContent = this.getNodeParameter('base64Content', index) as string;
+		docContent = this.getNodeParameter('pdfToWordBase64Content', index) as string;
 
 		// Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
-		console.log('Using provided base64 PDF content');
 	} else if (inputDataType === 'url') {
 		// Use PDF URL directly - download the file first
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+		const pdfUrl = this.getNodeParameter('pdfToWordUrl', index) as string;
 		
 		// Validate URL format
 		try {
@@ -321,21 +319,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
 
-		console.log(`Downloading PDF from URL: ${pdfUrl}`);
 		docContent = await downloadPdfFromUrl(pdfUrl);
-		console.log('PDF file successfully downloaded and encoded to base64');
 	} else if (inputDataType === 'filePath') {
 		// Use local file path - read the file and convert to base64
-		const filePath = this.getNodeParameter('filePath', index) as string;
+		const filePath = this.getNodeParameter('pdfToWordFilePath', index) as string;
 		
 		// Validate file path (basic check)
 		if (!filePath.includes('/') && !filePath.includes('\\')) {
 			throw new Error('Invalid file path. Please provide a complete path to the PDF file.');
 		}
 
-		console.log(`Reading PDF file from path: ${filePath}`);
 		docContent = await readPdfFromFile(filePath);
-		console.log('PDF file successfully read and encoded to base64');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -360,8 +354,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (!fileName.toLowerCase().endsWith('.docx')) {
 		fileName = `${fileName.replace(/\.[^.]*$/, '')}.docx`;
 	}
-
-	console.log(`Converting: ${docName || 'PDF'} → ${fileName}`);
 
 	// Build the request body
 	const body: IDataObject = {
@@ -393,19 +385,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// - language: Improves OCR accuracy for non-English text recognition
 	// - outputFormat: Tries to maintain original fonts, colors, paragraph styles, and layout
 
-	console.log('Sending PDF to Word conversion request to PDF4Me API...');
-	console.log('Transforming PDF content into editable Word document format...');
-
 	try {
 		let responseData: any;
 
 		if (useAsync) {
 			// Use async processing with improved polling from GenericFunctions
-			console.log('Using asynchronous processing mode with enhanced timeout handling');
 			responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToWord', body);
 		} else {
 			// Use synchronous processing
-			console.log('Using synchronous processing mode');
 			responseData = await pdf4meApiRequest.call(this, '/api/v2/ConvertPdfToWord', body);
 		}
 
@@ -417,8 +404,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Check if the response looks like a Word document (should start with PK for ZIP format)
 		const firstBytes = responseData.toString('ascii', 0, 4);
 		if (!firstBytes.startsWith('PK')) {
-			console.warn('Response does not appear to be a valid Word document (should start with PK for ZIP format)');
-			console.warn('First 20 bytes:', responseData.toString('ascii', 0, 20));
 		}
 
 		// Create binary data for output
@@ -428,16 +413,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 		);
 
-		console.log('PDF to Word conversion completed successfully!');
-		console.log(`Word document prepared: ${fileName}`);
-		console.log('PDF content has been transformed into editable Word document format');
-		console.log('You can now open the file in Microsoft Word, LibreOffice Writer, or Google Docs');
-
 		return [
 			{
 				json: {
 					fileName,
-					mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 					fileSize: responseData.length,
 					success: true,
 					qualityType,

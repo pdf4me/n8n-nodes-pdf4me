@@ -208,20 +208,40 @@ export const description: INodeProperties[] = [
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
-	const webUrl = this.getNodeParameter('webUrl', index) as string;
-	const docName = this.getNodeParameter('docName', index) as string;
-	const authType = this.getNodeParameter('authType', index) as string;
-	const layout = this.getNodeParameter('layout', index) as string;
-	const format = this.getNodeParameter('format', index) as string;
-
-	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	// Check if this is called from Convert to PDF or standalone
+	const operation = this.getNodeParameter('operation', index) as string;
+	
+	let webUrl: string;
+	let docName: string;
+	let authType: string;
+	let layout: string;
+	let format: string;
+	let advancedOptions: IDataObject;
+	
+	if (operation === ActionConstants.ConvertToPdf) {
+		// Use the parameters from the Convert to PDF action
+		webUrl = this.getNodeParameter('urlWebUrl', index) as string;
+		docName = this.getNodeParameter('urlDocName', index) as string;
+		authType = this.getNodeParameter('urlAuthType', index) as string;
+		layout = this.getNodeParameter('urlLayout', index) as string;
+		format = this.getNodeParameter('urlFormat', index) as string;
+		advancedOptions = this.getNodeParameter('urlAdvancedOptions', index) as IDataObject;
+	} else {
+		// Use the original parameters (for backward compatibility)
+		webUrl = this.getNodeParameter('webUrl', index) as string;
+		docName = this.getNodeParameter('docName', index) as string;
+		authType = this.getNodeParameter('authType', index) as string;
+		layout = this.getNodeParameter('layout', index) as string;
+		format = this.getNodeParameter('format', index) as string;
+		advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	}
 
 	// Build the request body
 	const body: IDataObject = {
 		webUrl,
 		authType,
-		username: authType === 'Basic' ? (this.getNodeParameter('username', index) as string) : '',
-		password: authType === 'Basic' ? (this.getNodeParameter('password', index) as string) : '',
+		username: authType === 'Basic' ? (operation === ActionConstants.ConvertToPdf ? this.getNodeParameter('urlUsername', index) as string : this.getNodeParameter('username', index) as string) : '',
+		password: authType === 'Basic' ? (operation === ActionConstants.ConvertToPdf ? this.getNodeParameter('urlPassword', index) as string : this.getNodeParameter('password', index) as string) : '',
 		docContent: '', // Empty for URL conversion
 		docName,
 		layout,
