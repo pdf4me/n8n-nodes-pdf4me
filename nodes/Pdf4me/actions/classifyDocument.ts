@@ -1,7 +1,10 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { sanitizeProfiles } from '../GenericFunctions';
-import { pdf4meAsyncRequest } from '../GenericFunctions';
+import {
+	pdf4meAsyncRequest,
+	sanitizeProfiles,
+	ActionConstants,
+} from '../GenericFunctions';
 
 // Make Node.js globals available
 declare const Buffer: any;
@@ -15,10 +18,10 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'Choose how to provide the PDF file to rotate pages from',
+		description: 'Choose how to provide the PDF file to classify',
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 			},
 		},
 		options: [
@@ -54,7 +57,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 				inputDataType: ['binaryData'],
 			},
 		},
@@ -72,7 +75,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 				inputDataType: ['base64'],
 			},
 		},
@@ -83,11 +86,11 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'URL to the PDF file to rotate pages from',
+		description: 'URL to the PDF file to classify',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 				inputDataType: ['url'],
 			},
 		},
@@ -98,11 +101,11 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Local file path to the PDF file to rotate pages from',
+		description: 'Local file path to the PDF file to classify',
 		placeholder: '/path/to/document.pdf',
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 				inputDataType: ['filePath'],
 			},
 		},
@@ -111,59 +114,11 @@ export const description: INodeProperties[] = [
 		displayName: 'Document Name',
 		name: 'docName',
 		type: 'string',
-		default: 'output.pdf',
-		description: 'Name of the output PDF document',
+		default: 'document.pdf',
+		description: 'Name of the document (used for processing)',
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
-			},
-		},
-	},
-	{
-		displayName: 'Rotation Type',
-		name: 'rotationType',
-		type: 'options',
-		required: true,
-		default: 'Clockwise',
-		description: 'Type of rotation to apply to the specified pages',
-		displayOptions: {
-			show: {
-				operation: ['Rotate Page'],
-			},
-		},
-		options: [
-			{
-				name: 'No Rotation',
-				value: 'NoRotation',
-				description: 'Keep the pages as is',
-			},
-			{
-				name: 'Clockwise',
-				value: 'Clockwise',
-				description: 'Rotate 90 degrees clockwise',
-			},
-			{
-				name: 'Counter Clockwise',
-				value: 'CounterClockwise',
-				description: 'Rotate 90 degrees counter-clockwise',
-			},
-			{
-				name: 'Upside Down',
-				value: 'UpsideDown',
-				description: 'Rotate 180 degrees (upside down)',
-			},
-		],
-	},
-	{
-		displayName: 'Page Numbers',
-		name: 'page',
-		type: 'string',
-		required: true,
-		default: '1',
-		description: 'Page numbers to rotate (e.g. "1" or "1,3,5" or "2-4")',
-		displayOptions: {
-			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 			},
 		},
 	},
@@ -175,7 +130,7 @@ export const description: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				operation: ['Rotate Page'],
+				operation: [ActionConstants.ClassifyDocument],
 			},
 		},
 		options: [
@@ -194,8 +149,6 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const rotationType = this.getNodeParameter('rotationType', index) as string;
-	const page = this.getNodeParameter('page', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -203,10 +156,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		
+		// Get binary data from previous node
 		const item = this.getInputData(index);
+
 		if (!item[0].binary) {
 			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
 		}
+
 		if (!item[0].binary[binaryPropertyName]) {
 			const availableProperties = Object.keys(item[0].binary).join(', ');
 			throw new Error(
@@ -214,6 +171,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'Common property names are "data" for file uploads or the filename without extension.'
 			);
 		}
+
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
 	} else if (inputDataType === 'base64') {
@@ -232,8 +190,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName,
-		rotationType,
-		page,
 		async: true, // Enable asynchronous processing
 	};
 
@@ -244,28 +200,48 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Sanitize profiles
 	sanitizeProfiles(body);
 
-	// Replace direct API call with helper
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/RotatePage', body);
+	// Make API call
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ClassifyDocument', body);
 
-	// Handle the response
+	// Handle the response (classification results)
 	if (responseData) {
-		const fileName = docName || `output_${Date.now()}.pdf`;
+		let jsonString: string;
+		if (Buffer.isBuffer(responseData)) {
+			jsonString = responseData.toString('utf8');
+		} else if (typeof responseData === 'string') {
+			// If it's base64, decode it
+			jsonString = Buffer.from(responseData, 'base64').toString('utf8');
+		} else if (typeof responseData === 'object') {
+			// Already JSON
+			jsonString = JSON.stringify(responseData, null, 2);
+		} else {
+			throw new Error('Unexpected response type');
+		}
+
+		// Try to parse as JSON
+		let parsedJson: any;
+		try {
+			parsedJson = JSON.parse(jsonString);
+		} catch (err) {
+			throw new Error('Response is not valid JSON');
+		}
+
+		// Save as JSON file
+		const fileName = `classification_results_${Date.now()}.json`;
 		const binaryData = await this.helpers.prepareBinaryData(
-			responseData,
+			Buffer.from(JSON.stringify(parsedJson, null, 2), 'utf8'),
 			fileName,
-			'application/pdf',
+			'application/json',
 		);
 		return [
 			{
 				json: {
 					fileName,
-					mimeType: 'application/pdf',
-					fileSize: responseData.length,
+					mimeType: 'application/json',
+					fileSize: Buffer.byteLength(JSON.stringify(parsedJson, null, 2)),
 					success: true,
-					message: 'Pages rotated successfully',
+					message: 'Document classification completed successfully',
 					docName,
-					rotationType,
-					page,
 				},
 				binary: {
 					data: binaryData,
@@ -275,10 +251,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Error case
-	throw new Error('No response received from PDF4me API');
+	throw new Error('No classification results received from PDF4ME API');
 }
 
-// Helper functions for downloading and reading files
 async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
 	try {
 		const response = await this.helpers.request({
@@ -286,6 +261,7 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Prom
 			url: pdfUrl,
 			encoding: null,
 		});
+		
 		return Buffer.from(response).toString('base64');
 	} catch (error) {
 		throw new Error(`Failed to download PDF from URL: ${error.message}`);

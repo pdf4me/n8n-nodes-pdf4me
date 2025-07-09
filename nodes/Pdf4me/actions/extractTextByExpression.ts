@@ -1,8 +1,14 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { pdf4meAsyncRequest, sanitizeProfiles, ActionConstants } from '../GenericFunctions';
+import {
+	pdf4meAsyncRequest,
+	sanitizeProfiles,
+	ActionConstants,
+} from '../GenericFunctions';
 
+// Make Node.js globals available
 declare const Buffer: any;
+declare const URL: any;
 declare const require: any;
 
 export const description: INodeProperties[] = [
@@ -12,10 +18,10 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'Choose how to provide the PDF file to extract metadata from',
+		description: 'Choose how to provide the PDF file to extract text from',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.GetPdfMetadata],
+				operation: [ActionConstants.ExtractTextByExpression],
 			},
 		},
 		options: [
@@ -51,7 +57,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.GetPdfMetadata],
+				operation: [ActionConstants.ExtractTextByExpression],
 				inputDataType: ['binaryData'],
 			},
 		},
@@ -69,23 +75,8 @@ export const description: INodeProperties[] = [
 		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.GetPdfMetadata],
+				operation: [ActionConstants.ExtractTextByExpression],
 				inputDataType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to extract metadata from',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GetPdfMetadata],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -95,12 +86,27 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'URL to the PDF file to extract metadata from',
+		description: 'URL to the PDF file to extract text from',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.GetPdfMetadata],
+				operation: [ActionConstants.ExtractTextByExpression],
 				inputDataType: ['url'],
+			},
+		},
+	},
+	{
+		displayName: 'Local File Path',
+		name: 'filePath',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Local file path to the PDF file to extract text from',
+		placeholder: '/path/to/document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractTextByExpression],
+				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -108,11 +114,38 @@ export const description: INodeProperties[] = [
 		displayName: 'Document Name',
 		name: 'docName',
 		type: 'string',
-		default: 'output.pdf',
-		description: 'Name of the output PDF document',
+		default: 'document.pdf',
+		description: 'Name of the document (used for processing)',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.GetPdfMetadata],
+				operation: [ActionConstants.ExtractTextByExpression],
+			},
+		},
+	},
+	{
+		displayName: 'Expression',
+		name: 'expression',
+		type: 'string',
+		default: '%',
+		required: true,
+		description: 'Regular expression pattern to search for in the PDF',
+		placeholder: '%|US|email@example.com',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractTextByExpression],
+			},
+		},
+	},
+	{
+		displayName: 'Page Sequence',
+		name: 'pageSequence',
+		type: 'string',
+		default: '1-',
+		description: 'Page range to process: "1-" for all pages, "1,2,3" for specific pages, "1-5" for range',
+		placeholder: '1-3',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractTextByExpression],
 			},
 		},
 	},
@@ -124,7 +157,7 @@ export const description: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.GetPdfMetadata],
+				operation: [ActionConstants.ExtractTextByExpression],
 			},
 		},
 		options: [
@@ -133,7 +166,7 @@ export const description: INodeProperties[] = [
 				name: 'profiles',
 				type: 'string',
 				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls and may be specific to certain APIs.',
 				placeholder: `{ 'outputDataFormat': 'json' }`,
 			},
 		],
@@ -143,60 +176,65 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const expression = this.getNodeParameter('expression', index) as string;
+	const pageSequence = this.getNodeParameter('pageSequence', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
-	let originalFileName = docName;
 
+	// Handle different input data types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		
+		// Get binary data from previous node
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
 		}
-		const binaryData = item[0].binary[binaryPropertyName];
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.'
+			);
+		}
+
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		const pathParts = filePath.replace(/\\/g, '/').split('/');
-		originalFileName = pathParts[pathParts.length - 1];
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await this.helpers.request({ method: 'GET', url: pdfUrl, encoding: null });
-		docContent = Buffer.from(response).toString('base64');
-		const urlParts = pdfUrl.replace(/\\/g, '/').split('/');
-		originalFileName = urlParts[urlParts.length - 1];
+		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
+	} else if (inputDataType === 'filePath') {
+		const filePath = this.getNodeParameter('filePath', index) as string;
+		docContent = await readPdfFromFile(filePath);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
-	}
-
+	// Prepare request body
 	const body: IDataObject = {
 		docContent,
-		docName: originalFileName,
-		async: true,
+		docName,
+		expression,
+		pageSequence,
+		async: true, // Enable asynchronous processing
 	};
 
+	// Add custom profiles if provided
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
+	// Sanitize profiles
 	sanitizeProfiles(body);
 
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/GetPdfMetadata', body);
+	// Make API call
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ExtractTextByExpression', body);
 
-	// Robustly handle the response (Buffer, base64, or object)
+	// Handle the response (text extraction results)
 	if (responseData) {
 		let jsonString: string;
 		if (Buffer.isBuffer(responseData)) {
@@ -205,6 +243,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// If it's base64, decode it
 			jsonString = Buffer.from(responseData, 'base64').toString('utf8');
 		} else if (typeof responseData === 'object') {
+			// Already JSON
 			jsonString = JSON.stringify(responseData, null, 2);
 		} else {
 			throw new Error('Unexpected response type');
@@ -219,7 +258,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		// Save as JSON file
-		const fileName = originalFileName.replace(/\.[^.]*$/, '') + '.metadata.json';
+		const fileName = `text_extraction_results_${Date.now()}.json`;
 		const binaryData = await this.helpers.prepareBinaryData(
 			Buffer.from(JSON.stringify(parsedJson, null, 2), 'utf8'),
 			fileName,
@@ -232,9 +271,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					mimeType: 'application/json',
 					fileSize: Buffer.byteLength(JSON.stringify(parsedJson, null, 2)),
 					success: true,
-					message: 'PDF metadata extracted successfully',
-					originalFileName,
-					...parsedJson, // Show metadata in JSON tab
+					message: 'Text extraction by expression completed successfully',
+					docName,
+					expression,
+					pageSequence,
 				},
 				binary: {
 					data: binaryData,
@@ -242,5 +282,31 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			},
 		];
 	}
-	throw new Error('No response data received from PDF4ME API');
+
+	// Error case
+	throw new Error('No text extraction results received from PDF4ME API');
+}
+
+async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
+	try {
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			encoding: null,
+		});
+		
+		return Buffer.from(response).toString('base64');
+	} catch (error) {
+		throw new Error(`Failed to download PDF from URL: ${error.message}`);
+	}
+}
+
+async function readPdfFromFile(filePath: string): Promise<string> {
+	try {
+		const fs = require('fs');
+		const fileBuffer = fs.readFileSync(filePath);
+		return fileBuffer.toString('base64');
+	} catch (error) {
+		throw new Error(`Failed to read PDF file from path: ${error.message}`);
+	}
 } 
