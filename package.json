@@ -45,6 +45,7 @@
     ]
   },
   "devDependencies": {
+    "@types/node": "^24.0.12",
     "@typescript-eslint/parser": "~5.45",
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
     "gulp": "^4.0.2",
@@ -55,5 +56,9 @@
   },
   "peerDependencies": {
     "n8n-workflow": "*"
+  },
+  "dependencies": {
+    "file-type": "^21.0.0",
+    "unzipper": "^0.10.14"
   }
 }
