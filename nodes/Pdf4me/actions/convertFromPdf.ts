@@ -16,6 +16,31 @@ declare const setTimeout: any;
 
 export const description: INodeProperties[] = [
 	{
+		displayName: 'Convert Type',
+		name: 'convertType',
+		type: 'options',
+		required: true,
+		default: 'toWord',
+		description: 'Choose the target format for conversion',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertFromPDF],
+			},
+		},
+		options: [
+			{
+				name: 'PDF to Word',
+				value: 'toWord',
+				description: 'Convert PDF to editable Word document format',
+			},
+			{
+				name: 'PDF to Excel',
+				value: 'toExcel',
+				description: 'Convert PDF to Excel spreadsheet format, extracting tables and data',
+			},
+		]
+	},
+	{
 		displayName: 'Input Data Type',
 		name: 'inputDataType',
 		type: 'options',
@@ -24,7 +49,7 @@ export const description: INodeProperties[] = [
 		description: 'Choose how to provide the PDF file to convert',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 			},
 		},
 		options: [
@@ -60,7 +85,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 				inputDataType: ['binaryData'],
 			},
 		},
@@ -78,7 +103,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 				inputDataType: ['base64'],
 			},
 		},
@@ -93,7 +118,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 				inputDataType: ['url'],
 			},
 		},
@@ -108,7 +133,7 @@ export const description: INodeProperties[] = [
 		placeholder: '/path/to/document.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 				inputDataType: ['filePath'],
 			},
 		},
@@ -117,12 +142,12 @@ export const description: INodeProperties[] = [
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
-		default: 'converted_document.docx',
-		description: 'Name for the output Word document file',
-		placeholder: 'my-document.docx',
+		default: 'converted_document',
+		description: 'Name for the output file (extension will be added automatically)',
+		placeholder: 'my-document',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 			},
 		},
 	},
@@ -135,7 +160,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'original-file.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 			},
 		},
 	},
@@ -147,7 +172,7 @@ export const description: INodeProperties[] = [
 		description: 'Conversion quality setting',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 			},
 		},
 		options: [
@@ -171,7 +196,7 @@ export const description: INodeProperties[] = [
 		description: 'OCR language for text recognition in images/scanned PDFs',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 			},
 		},
 		options: [
@@ -202,7 +227,7 @@ export const description: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.PdfToWord],
+				operation: [ActionConstants.ConvertFromPDF],
 			},
 		},
 		options: [
@@ -211,7 +236,7 @@ export const description: INodeProperties[] = [
 				name: 'profiles',
 				type: 'string',
 				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
 				placeholder: `{ 'outputDataFormat': 'base64' }`,
 			},
 			{
@@ -226,7 +251,7 @@ export const description: INodeProperties[] = [
 				name: 'mergeAllSheets',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to combine multiple pages into single document flow',
+				description: 'Whether to combine multiple pages into single document flow for Word, or combine all sheets into one for Excel',
 			},
 			{
 				displayName: 'Preserve Output Format',
@@ -261,21 +286,24 @@ export const description: INodeProperties[] = [
 ];
 
 /**
- * Convert a PDF file to Word document format using PDF4Me API
- * Process: Read PDF file → Encode to base64 → Send API request → Poll for completion → Save Word document
+ * Convert a PDF file to Word document or Excel format using PDF4Me API
+ * Process: Read PDF file → Encode to base64 → Send API request → Poll for completion → Save document
  * PDF to Word conversion transforms PDF content into editable document format with preserved formatting
- * 
+ * PDF to Excel conversion extracts tables, text, and data from PDF into spreadsheet format
+ *
  * Note: Complex PDFs may take several minutes to convert. The system now includes enhanced timeout handling
  * with exponential backoff and up to 25 minutes total processing time for large or complex documents.
  */
 export async function execute(this: IExecuteFunctions, index: number) {
-	const inputDataType = this.getNodeParameter('pdfToWordInputDataType', index) as string;
-	const outputFileName = this.getNodeParameter('pdfToWordOutputFileName', index) as string;
-	const docName = this.getNodeParameter('pdfToWordDocName', index) as string;
-	const qualityType = this.getNodeParameter('pdfToWordQualityType', index) as string;
-	const language = this.getNodeParameter('pdfToWordLanguage', index) as string;
+	const operation = this.getNodeParameter('operation', index) as string;
+	const convertType = this.getNodeParameter('convertType', index) as string;
+	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const docName = this.getNodeParameter('docName', index) as string;
+	const qualityType = this.getNodeParameter('qualityType', index) as string;
+	const language = this.getNodeParameter('language', index) as string;
 
-	const advancedOptions = this.getNodeParameter('pdfToWordAdvancedOptions', index) as IDataObject;
+	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const useAsync = advancedOptions?.useAsync !== false; // Default to true
 
 	let docContent: string;
@@ -283,7 +311,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
 		// Get PDF content from binary data
-		const binaryPropertyName = this.getNodeParameter('pdfToWordBinaryPropertyName', index) as string;
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
 		if (!item[0].binary) {
@@ -300,18 +328,20 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
+		console.log('PDF file successfully encoded to base64');
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
-		docContent = this.getNodeParameter('pdfToWordBase64Content', index) as string;
+		docContent = this.getNodeParameter('base64Content', index) as string;
 
 		// Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+		console.log('Using provided base64 PDF content');
 	} else if (inputDataType === 'url') {
 		// Use PDF URL directly - download the file first
-		const pdfUrl = this.getNodeParameter('pdfToWordUrl', index) as string;
-		
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
 		// Validate URL format
 		try {
 			new URL(pdfUrl);
@@ -319,17 +349,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
 
+		console.log(`Downloading PDF from URL: ${pdfUrl}`);
 		docContent = await downloadPdfFromUrl(pdfUrl);
+		console.log('PDF file successfully downloaded and encoded to base64');
 	} else if (inputDataType === 'filePath') {
 		// Use local file path - read the file and convert to base64
-		const filePath = this.getNodeParameter('pdfToWordFilePath', index) as string;
-		
+		const filePath = this.getNodeParameter('filePath', index) as string;
+
 		// Validate file path (basic check)
 		if (!filePath.includes('/') && !filePath.includes('\\')) {
 			throw new Error('Invalid file path. Please provide a complete path to the PDF file.');
 		}
 
+		console.log(`Reading PDF file from path: ${filePath}`);
 		docContent = await readPdfFromFile(filePath);
+		console.log('PDF file successfully read and encoded to base64');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -342,18 +376,40 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Validate PDF content
 	validatePdfContent(docContent, inputDataType);
 
+	// Determine conversion type and set appropriate endpoint and file extension
+	let endpoint: string;
+	let fileExtension: string;
+	let mimeType: string;
+	let operationDescription: string;
+
+	if (convertType === 'toWord') {
+		endpoint = '/api/v2/ConvertPdfToWord';
+		fileExtension = '.docx';
+		mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+		operationDescription = 'PDF to Word conversion';
+	} else if (convertType === 'toExcel') {
+		endpoint = '/api/v2/ConvertPdfToExcel';
+		fileExtension = '.xlsx';
+		mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+		operationDescription = 'PDF to Excel conversion';
+	} else {
+		throw new Error(`Unsupported convert type: ${convertType}`);
+	}
+
 	// Generate filename if not provided
 	let fileName = outputFileName;
 	if (!fileName || fileName.trim() === '') {
 		// Extract name from docName if available, otherwise use default
 		const baseName = docName ? docName.replace(/\.pdf$/i, '') : 'converted_document';
-		fileName = `${baseName}.docx`;
+		fileName = `${baseName}${fileExtension}`;
 	}
 
-	// Ensure .docx extension
-	if (!fileName.toLowerCase().endsWith('.docx')) {
-		fileName = `${fileName.replace(/\.[^.]*$/, '')}.docx`;
+	// Ensure correct extension
+	if (!fileName.toLowerCase().endsWith(fileExtension)) {
+		fileName = `${fileName.replace(/\.[^.]*$/, '')}${fileExtension}`;
 	}
+
+	console.log(`Converting: ${docName || 'PDF'} → ${fileName}`);
 
 	// Build the request body
 	const body: IDataObject = {
@@ -377,23 +433,33 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	// About PDF to Word conversion features:
-	// - qualityType "Draft": Faster conversion, good for simple PDFs with clear text
+	// About conversion features:
+	// - qualityType "Draft": Faster conversion, good for simple PDFs with clear text/tables
 	// - qualityType "Quality": Slower but more accurate, better for complex layouts
-	// - mergeAllSheets: Maintains document flow across multiple PDF pages
+	// - mergeAllSheets: For Word: maintains document flow across multiple PDF pages
+	// - mergeAllSheets: For Excel: combines all Excel sheets into one (True) or separate sheets (False)
 	// - ocrWhenNeeded: Essential for scanned PDFs or PDFs with image-based text
 	// - language: Improves OCR accuracy for non-English text recognition
-	// - outputFormat: Tries to maintain original fonts, colors, paragraph styles, and layout
+	// - outputFormat: Tries to maintain original formatting when possible
+
+	console.log(`Sending ${operationDescription} request to PDF4Me API...`);
+	if (convertType === 'toWord') {
+		console.log('Transforming PDF content into editable Word document format...');
+	} else {
+		console.log('Extracting tables, text, and data from PDF into spreadsheet format...');
+	}
 
 	try {
 		let responseData: any;
 
 		if (useAsync) {
 			// Use async processing with improved polling from GenericFunctions
-			responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToWord', body);
+			console.log('Using asynchronous processing mode with enhanced timeout handling');
+			responseData = await pdf4meAsyncRequest.call(this, endpoint, body);
 		} else {
 			// Use synchronous processing
-			responseData = await pdf4meApiRequest.call(this, '/api/v2/ConvertPdfToWord', body);
+			console.log('Using synchronous processing mode');
+			responseData = await pdf4meApiRequest.call(this, endpoint, body);
 		}
 
 		// Validate response data
@@ -401,22 +467,36 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`API returned too little data (${responseData?.length || 0} bytes). This might indicate an error response.`);
 		}
 
-		// Check if the response looks like a Word document (should start with PK for ZIP format)
+		// Check if the response looks like a valid document (should start with PK for ZIP format)
 		const firstBytes = responseData.toString('ascii', 0, 4);
 		if (!firstBytes.startsWith('PK')) {
+			console.warn(`Response does not appear to be a valid ${convertType === 'toWord' ? 'Word document' : 'Excel file'} (should start with PK for ZIP format)`);
+			console.warn('First 20 bytes:', responseData.toString('ascii', 0, 20));
 		}
 
 		// Create binary data for output
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
 			fileName,
-			'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			mimeType,
 		);
+
+		console.log(`${operationDescription} completed successfully!`);
+		console.log(`${convertType === 'toWord' ? 'Word document' : 'Excel file'} prepared: ${fileName}`);
+
+		if (convertType === 'toWord') {
+			console.log('PDF content has been transformed into editable Word document format');
+			console.log('You can now open the file in Microsoft Word, LibreOffice Writer, or Google Docs');
+		} else {
+			console.log('PDF data has been extracted and converted to Excel spreadsheet format');
+			console.log('You can now open the file in Excel, LibreOffice Calc, or Google Sheets');
+		}
 
 		return [
 			{
 				json: {
 					fileName,
+					mimeType,
 					fileSize: responseData.length,
 					success: true,
 					qualityType,
@@ -424,6 +504,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					ocrUsed: advancedOptions?.ocrWhenNeeded !== false,
 					inputType: inputDataType,
 					processingMode: useAsync ? 'async' : 'sync',
+					operation,
+					convertType,
 				},
 				binary: {
 					data: binaryData,
@@ -505,7 +587,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 			res.on('data', (chunk: any) => {
 				chunks.push(chunk);
 				totalSize += chunk.length;
-				
+
 				// Check if we're getting too much data (likely HTML error page)
 				if (totalSize > 1024 * 1024) { // 1MB limit
 					req.destroy();
@@ -541,9 +623,9 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 				if (!decodedContent.startsWith('%PDF')) {
 					// Try to get more info about what we actually downloaded
 					const first100Chars = Buffer.from(base64Content, 'base64').toString('ascii', 0, 100);
-					const isHtml = first100Chars.toLowerCase().includes('<html') || 
+					const isHtml = first100Chars.toLowerCase().includes('<html') ||
 								  first100Chars.toLowerCase().includes('<!doctype');
-					
+
 					let errorMessage = `The downloaded file does not appear to be a valid PDF file. ` +
 						`PDF files should start with "%PDF".\n\n` +
 						`Downloaded content starts with: "${decodedContent}"\n\n`;
@@ -594,22 +676,22 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
  */
 async function readPdfFromFile(filePath: string): Promise<string> {
 	const fs = require('fs');
-	
+
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
-		
+
 		// Validate the PDF content
 		if (base64Content.length < 100) {
 			throw new Error('PDF file appears to be too small. Please ensure the file is a valid PDF.');
 		}
-		
+
 		// Check if it starts with PDF header
 		const decodedContent = Buffer.from(base64Content, 'base64').toString('ascii', 0, 10);
 		if (!decodedContent.startsWith('%PDF')) {
 			throw new Error('The file does not appear to be a valid PDF file. PDF files should start with "%PDF".');
 		}
-		
+
 		return base64Content;
 	} catch (error) {
 		if (error.code === 'ENOENT') {
@@ -630,11 +712,10 @@ function validatePdfContent(docContent: string, inputDataType: string): void {
 	if (docContent.length < 100) {
 		throw new Error('PDF content appears to be too short. Please ensure the file is a valid PDF.');
 	}
-	
+
 	// Check if it starts with PDF header
 	const decodedContent = Buffer.from(docContent, 'base64').toString('ascii', 0, 10);
 	if (!decodedContent.startsWith('%PDF')) {
 		throw new Error('The provided content does not appear to be a valid PDF file. PDF files should start with "%PDF".');
 	}
 }
-//check

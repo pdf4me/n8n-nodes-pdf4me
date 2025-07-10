@@ -28,6 +28,7 @@ export const description: INodeProperties[] = [
 		displayName: 'File Name',
 		name: 'docName',
 		type: 'string',
+
 		default: 'converted_page.pdf',
 		description: 'Output PDF file name with extension',
 		placeholder: 'my-webpage.pdf',
@@ -41,6 +42,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Authentication Type',
 		name: 'authType',
 		type: 'options',
+
 		default: 'NoAuth',
 		description: 'Authentication type for the target website',
 		displayOptions: {
@@ -57,6 +59,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Username',
 		name: 'username',
 		type: 'string',
+
 		default: '',
 		description: 'Username if authentication is required',
 		displayOptions: {
@@ -73,6 +76,7 @@ export const description: INodeProperties[] = [
 		typeOptions: {
 			password: true,
 		},
+
 		default: '',
 		description: 'Password if authentication is required',
 		displayOptions: {
@@ -86,6 +90,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Page Layout',
 		name: 'layout',
 		type: 'options',
+
 		default: 'portrait',
 		description: 'Page orientation for the PDF',
 		displayOptions: {
@@ -102,6 +107,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Page Format',
 		name: 'format',
 		type: 'options',
+
 		default: 'A4',
 		description: 'Page format for the PDF',
 		displayOptions: {
@@ -119,10 +125,10 @@ export const description: INodeProperties[] = [
 			{ name: 'A6', value: 'A6' },
 			{ name: 'A7', value: 'A7' },
 			{ name: 'A8', value: 'A8' },
-			{ name: 'Executive', value: 'Executive' },
+			{ name: 'Tabloid', value: 'Tabloid' },
 			{ name: 'Legal', value: 'Legal' },
 			{ name: 'Statement', value: 'Statement' },
-			{ name: 'Tabloid', value: 'Tabloid' },
+			{ name: 'Executive', value: 'Executive' },
 		],
 	},
 	{
@@ -137,52 +143,6 @@ export const description: INodeProperties[] = [
 			},
 		},
 		options: [
-			{
-				displayName: 'Bottom Margin',
-				name: 'bottomMargin',
-				type: 'string',
-				default: '20px',
-				description: 'Bottom margin of PDF (e.g., 20px, 1cm, 0.5in)',
-				placeholder: '20px',
-			},
-			{
-				displayName: 'Custom Profiles',
-				name: 'profiles',
-				type: 'string',
-				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
-			},
-			{
-				displayName: 'Display Header Footer',
-				name: 'displayHeaderFooter',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to show header and footer in PDF',
-			},
-			{
-				displayName: 'Left Margin',
-				name: 'leftMargin',
-				type: 'string',
-				default: '20px',
-				description: 'Left margin of PDF (e.g., 20px, 1cm, 0.5in)',
-				placeholder: '20px',
-			},
-			{
-				displayName: 'Print Background',
-				name: 'printBackground',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to include background colors and images',
-			},
-			{
-				displayName: 'Right Margin',
-				name: 'rightMargin',
-				type: 'string',
-				default: '20px',
-				description: 'Right margin of PDF (e.g., 20px, 1cm, 0.5in)',
-				placeholder: '20px',
-			},
 			{
 				displayName: 'Scale',
 				name: 'scale',
@@ -203,45 +163,71 @@ export const description: INodeProperties[] = [
 				description: 'Top margin of PDF (e.g., 20px, 1cm, 0.5in)',
 				placeholder: '20px',
 			},
+			{
+				displayName: 'Left Margin',
+				name: 'leftMargin',
+				type: 'string',
+				default: '20px',
+				description: 'Left margin of PDF (e.g., 20px, 1cm, 0.5in)',
+				placeholder: '20px',
+			},
+			{
+				displayName: 'Right Margin',
+				name: 'rightMargin',
+				type: 'string',
+				default: '20px',
+				description: 'Right margin of PDF (e.g., 20px, 1cm, 0.5in)',
+				placeholder: '20px',
+			},
+			{
+				displayName: 'Bottom Margin',
+				name: 'bottomMargin',
+				type: 'string',
+				default: '20px',
+				description: 'Bottom margin of PDF (e.g., 20px, 1cm, 0.5in)',
+				placeholder: '20px',
+			},
+			{
+				displayName: 'Print Background',
+				name: 'printBackground',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to include background colors and images',
+			},
+			{
+				displayName: 'Display Header Footer',
+				name: 'displayHeaderFooter',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to show header and footer in PDF',
+			},
+			{
+				displayName: 'Custom Profiles',
+				name: 'profiles',
+				type: 'string',
+				default: '',
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
+				placeholder: `{ 'outputDataFormat': 'base64' }`,
+			},
 		],
 	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
-	// Check if this is called from Convert to PDF or standalone
-	const operation = this.getNodeParameter('operation', index) as string;
-	
-	let webUrl: string;
-	let docName: string;
-	let authType: string;
-	let layout: string;
-	let format: string;
-	let advancedOptions: IDataObject;
-	
-	if (operation === ActionConstants.ConvertToPdf) {
-		// Use the parameters from the Convert to PDF action
-		webUrl = this.getNodeParameter('urlWebUrl', index) as string;
-		docName = this.getNodeParameter('urlDocName', index) as string;
-		authType = this.getNodeParameter('urlAuthType', index) as string;
-		layout = this.getNodeParameter('urlLayout', index) as string;
-		format = this.getNodeParameter('urlFormat', index) as string;
-		advancedOptions = this.getNodeParameter('urlAdvancedOptions', index) as IDataObject;
-	} else {
-		// Use the original parameters (for backward compatibility)
-		webUrl = this.getNodeParameter('webUrl', index) as string;
-		docName = this.getNodeParameter('docName', index) as string;
-		authType = this.getNodeParameter('authType', index) as string;
-		layout = this.getNodeParameter('layout', index) as string;
-		format = this.getNodeParameter('format', index) as string;
-		advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	}
+	const webUrl = this.getNodeParameter('webUrl', index) as string;
+	const docName = this.getNodeParameter('docName', index) as string;
+	const authType = this.getNodeParameter('authType', index) as string;
+	const layout = this.getNodeParameter('layout', index) as string;
+	const format = this.getNodeParameter('format', index) as string;
+
+	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	// Build the request body
 	const body: IDataObject = {
 		webUrl,
 		authType,
-		username: authType === 'Basic' ? (operation === ActionConstants.ConvertToPdf ? this.getNodeParameter('urlUsername', index) as string : this.getNodeParameter('username', index) as string) : '',
-		password: authType === 'Basic' ? (operation === ActionConstants.ConvertToPdf ? this.getNodeParameter('urlPassword', index) as string : this.getNodeParameter('password', index) as string) : '',
+		username: authType === 'Basic' ? (this.getNodeParameter('username', index) as string) : '',
+		password: authType === 'Basic' ? (this.getNodeParameter('password', index) as string) : '',
 		docContent: '', // Empty for URL conversion
 		docName,
 		layout,
