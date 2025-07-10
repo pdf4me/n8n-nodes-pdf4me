@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	sanitizeProfiles,
 	ActionConstants,
+	pdf4meAsyncRequest,
 } from '../GenericFunctions';
 
 // Make Buffer and setTimeout available (Node.js globals)
@@ -398,8 +399,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	// Custom request for crop image with query parameter
-	const responseData = await cropImageRequest.call(this, body, cropType);
+	// Use generic async request function with query parameter
+	const responseData = await pdf4meAsyncRequest.call(
+		this,
+		`/api/v2/CropImage?schemaVal=${cropType}`,
+		body,
+		'POST'
+	);
 
 	// Handle the binary response (cropped image data)
 	if (responseData) {
@@ -471,102 +477,4 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case
 	throw new Error('No response data received from PDF4ME API');
-}
-
-// Custom function for crop image API request with query parameter
-async function cropImageRequest(
-	this: IExecuteFunctions,
-	body: IDataObject,
-	cropType: string,
-): Promise<any> {
-	const credentials = await this.getCredentials('pdf4meApi');
-
-	// Add async flag to body
-	const asyncBody = { ...body, async: true };
-
-	// Construct URL with query parameter
-	const baseUrl = 'https://api.pdf4me.com';
-	const endpoint = `/api/v2/CropImage?schemaVal=${cropType}`;
-
-	let options = {
-		baseURL: baseUrl,
-		url: endpoint,
-		headers: {
-			'Authorization': `Basic ${credentials.apiKey}`,
-			'Content-Type': 'application/json',
-		},
-		method: 'POST' as const,
-		body: asyncBody,
-		json: true,
-		resolveWithFullResponse: true,
-		simple: false,
-		encoding: null,
-	};
-
-	try {
-		// Make initial request
-		const response = await this.helpers.request(options);
-
-		if (response.statusCode === 200) {
-			// Immediate success - return binary content
-			if (Buffer.isBuffer(response.body)) {
-				return response.body;
-			} else {
-				return Buffer.from(response.body, 'binary');
-			}
-		} else if (response.statusCode === 202) {
-			// Async processing - poll for result
-			const locationUrl = response.headers.location;
-			if (!locationUrl) {
-				throw new Error('No polling URL found in response');
-			}
-
-			// Poll for completion
-			const maxRetries = 10;
-			const retryDelay = 10000; // 10 seconds
-
-			for (let attempt = 0; attempt < maxRetries; attempt++) {
-				// Wait before polling
-				await new Promise(resolve => setTimeout(resolve, retryDelay));
-
-				// Poll the status
-				const pollOptions = {
-					url: locationUrl,
-					headers: {
-						'Authorization': `Basic ${credentials.apiKey}`,
-					},
-					method: 'GET' as const,
-					resolveWithFullResponse: true,
-					simple: false,
-					encoding: null,
-					json: false,
-				};
-
-				const pollResponse = await this.helpers.request(pollOptions);
-
-				if (pollResponse.statusCode === 200) {
-					// Success - return binary content
-					if (Buffer.isBuffer(pollResponse.body)) {
-						return pollResponse.body;
-					} else {
-						return Buffer.from(pollResponse.body, 'binary');
-					}
-				} else if (pollResponse.statusCode === 202) {
-					// Still processing, continue polling
-					continue;
-				} else {
-					// Error during processing
-					throw new Error(`Error during processing: ${pollResponse.statusCode} - ${pollResponse.body}`);
-				}
-			}
-
-			// Timeout
-			throw new Error('Timeout: Processing did not complete after multiple retries');
-		} else {
-			// Error
-			throw new Error(`API Error: ${response.statusCode} - ${response.body}`);
-		}
-	} catch (error) {
-		throw error;
-	}
 }

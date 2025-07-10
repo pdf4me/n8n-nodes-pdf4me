@@ -335,4 +335,6 @@ export class ActionConstants {
 	public static readonly ConvertFromPDF: string = 'Convert From PDF';
 	public static readonly JsonToExcel: string = 'JSON to Excel';
 	public static readonly CropImage: string = 'Crop Image';
+	public static readonly MergeMultiplePDFs: string = 'Merge Multiple PDFs';
+	public static readonly OverlayPDFs: string = 'Overlay PDFs';
 }

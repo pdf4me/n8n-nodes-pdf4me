@@ -5,6 +5,8 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/convertFromPdf';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
+import * as overlayPDFs from './actions/OverlayPDFs';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -55,6 +57,18 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.CropImage,
 					action: ActionConstants.CropImage,
 				},
+				{
+					name: 'Merge Multiple PDFs',
+					description: 'Combine multiple PDF files into a single PDF document',
+					value: ActionConstants.MergeMultiplePDFs,
+					action: ActionConstants.MergeMultiplePDFs,
+				},
+				{
+					name: 'Overlay PDFs',
+					description: 'Merge two PDF files one over another as overlay',
+					value: ActionConstants.OverlayPDFs,
+					action: ActionConstants.OverlayPDFs,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -63,6 +77,8 @@ export const descriptions: INodeTypeDescription = {
 		...pdfToWord.description,
 		...jsonToExcel.description,
 		...cropImage.description,
+		...mergeMultiplePDFs.description,
+		...overlayPDFs.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,
