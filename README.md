@@ -181,6 +181,20 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Advanced Options**:
   - **Custom Profiles**: Additional API configuration options
 
+### 6. PDF Page Management
+**Extract Pages**: Extract specific pages from PDF documents to create shorter versions or digital booklets
+
+#### Parameters
+- **Input Data Type**: Choose between Binary Data (from previous node), Base64 String, URL, or File Path
+- **Input Binary Field**: Name of the binary property containing the PDF file (when using Binary Data)
+- **Base64 PDF Content**: Direct base64 encoded PDF content (when using Base64 String)
+- **PDF URL**: URL to the PDF file to extract pages from (when using URL)
+- **Local File Path**: Path to PDF file on local filesystem (when using File Path)
+- **Document Name**: Name of the output PDF document
+- **Page Numbers**: Page numbers to extract (e.g. "1" or "1,3,5" or "2-4" or "1, 2, 3-7"). Page indices start from 1.
+- **Advanced Options**:
+  - **Custom Profiles**: Additional API configuration options
+
 ## Credentials
 
 To use this node, you need a PDF4ME API key. Here's how to get started:
@@ -198,6 +212,7 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Process complex PDFs with enhanced timeout handling (up to 25 minutes)
 - Extract text from PDF documents for data processing
 - Convert various document formats to PDF
+- Extract specific pages from PDF documents for creating shorter versions or digital booklets
 
 ### Barcode Operations
 - Generate QR codes for product tracking
@@ -245,12 +260,13 @@ For detailed examples and workflow templates, visit our documentation.
 ### 0.8.0
 - **Current Version**: Comprehensive document processing capabilities
 - Full integration with PDF4ME API services
-- Support for barcode generation, URL to PDF conversion, PDF to Word conversion, JSON to Excel conversion, and image cropping
+- Support for barcode generation, URL to PDF conversion, PDF to Word conversion, JSON to Excel conversion, image cropping, and PDF page extraction
 - Enhanced timeout handling for complex PDF to Word conversions (up to 25 minutes)
 - Improved async processing with exponential backoff and better error handling
 - Support for multiple input types (Binary Data, Base64, URL, File Path)
 - Advanced OCR capabilities with multi-language support
 - Comprehensive barcode generation with 100+ supported formats
+- PDF page extraction for creating shorter versions and digital booklets
 - Standardized API documentation URLs across all files
 - Global installation support for cross-project availability
 

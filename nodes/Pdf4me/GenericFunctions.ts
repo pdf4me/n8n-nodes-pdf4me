@@ -337,4 +337,9 @@ export class ActionConstants {
 	public static readonly CropImage: string = 'Crop Image';
 	public static readonly MergeMultiplePDFs: string = 'Merge Multiple PDFs';
 	public static readonly OverlayPDFs: string = 'Overlay PDFs';
+	public static readonly DeleteBlankPagesFromPdf: string = 'Delete Blank Pages From PDF';
+	public static readonly DeleteUnwantedPagesFromPdf: string = 'Delete Unwanted Pages From PDF';
+	public static readonly RotateDocument: string = 'Rotate Document';
+	public static readonly RotatePage: string = 'Rotate Page';
+	public static readonly ExtractPages: string = 'Extract Pages';
 }
