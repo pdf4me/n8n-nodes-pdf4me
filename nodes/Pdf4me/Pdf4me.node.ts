@@ -12,6 +12,8 @@ import * as urlToPdf from './actions/urlToPdf';
 import * as pdfToWord from './actions/convertFromPdf';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
+import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
+import * as overlayPDFs from './actions/OverlayPDFs';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -42,6 +44,10 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await jsonToExcel.execute.call(this, i)));
 				} else if (action === ActionConstants.CropImage) {
 					operationResult.push(...(await cropImage.execute.call(this, i)));
+				} else if (action === ActionConstants.MergeMultiplePDFs) {
+					operationResult.push(...(await mergeMultiplePDFs.execute.call(this, i)));
+				} else if (action === ActionConstants.OverlayPDFs) {
+					operationResult.push(...(await overlayPDFs.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {
