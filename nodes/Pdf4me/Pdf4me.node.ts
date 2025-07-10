@@ -14,6 +14,11 @@ import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
 import * as overlayPDFs from './actions/OverlayPDFs';
+import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
+import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
+import * as rotateDocument from './actions/rotateDocument';
+import * as rotatePage from './actions/rotatePage';
+import * as extractPages from './actions/extractPages';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -48,6 +53,16 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await mergeMultiplePDFs.execute.call(this, i)));
 				} else if (action === ActionConstants.OverlayPDFs) {
 					operationResult.push(...(await overlayPDFs.execute.call(this, i)));
+				} else if (action === ActionConstants.DeleteBlankPagesFromPdf) {
+					operationResult.push(...(await deleteBlankPagesFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.DeleteUnwantedPagesFromPdf) {
+					operationResult.push(...(await deleteUnwantedPagesFromPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.RotateDocument) {
+					operationResult.push(...(await rotateDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.RotatePage) {
+					operationResult.push(...(await rotatePage.execute.call(this, i)));
+				} else if (action === ActionConstants.ExtractPages) {
+					operationResult.push(...(await extractPages.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

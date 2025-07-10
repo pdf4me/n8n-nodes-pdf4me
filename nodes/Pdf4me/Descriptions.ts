@@ -7,12 +7,17 @@ import * as jsonToExcel from './actions/jsonToExcel';
 import * as cropImage from './actions/cropImage';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
 import * as overlayPDFs from './actions/OverlayPDFs';
+import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
+import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
+import * as rotateDocument from './actions/rotateDocument';
+import * as rotatePage from './actions/rotatePage';
+import * as extractPages from './actions/extractPages';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
 	displayName: 'PDF4ME',
 	name: 'pdf4me',
-	description: 'Generate barcodes, convert URLs to PDF, convert PDFs to Word, convert JSON to Excel, crop images, and more using PDF4ME API',
+	description: 'Generate barcodes, convert URLs to PDF, convert PDFs to Word, convert JSON to Excel, crop images, extract pages, and more using PDF4ME API',
 	defaults: {
 		name: 'PDF4ME',
 	},
@@ -69,6 +74,37 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.OverlayPDFs,
 					action: ActionConstants.OverlayPDFs,
 				},
+				{
+					name: 'Delete Blank Pages From PDF',
+					description: 'Remove blank pages from PDF documents based on specified criteria',
+					value: ActionConstants.DeleteBlankPagesFromPdf,
+					action: ActionConstants.DeleteBlankPagesFromPdf,
+				},
+				{
+					name: 'Delete Unwanted Pages From PDF',
+					description: 'Remove specific pages from PDF documents by page numbers',
+					value: ActionConstants.DeleteUnwantedPagesFromPdf,
+					action: ActionConstants.DeleteUnwantedPagesFromPdf,
+				},
+
+				{
+					name: 'Rotate Document',
+					description: 'Rotate entire PDF documents by 90, 180, or 270 degrees',
+					value: ActionConstants.RotateDocument,
+					action: ActionConstants.RotateDocument,
+				},
+				{
+					name: 'Rotate Page',
+					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
+					value: ActionConstants.RotatePage,
+					action: ActionConstants.RotatePage,
+				},
+				{
+					name: 'Extract Pages',
+					description: 'Extract specific pages from PDF documents to create shorter versions or digital booklets',
+					value: ActionConstants.ExtractPages,
+					action: ActionConstants.ExtractPages,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -79,6 +115,11 @@ export const descriptions: INodeTypeDescription = {
 		...cropImage.description,
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,
+		...deleteBlankPagesFromPdf.description,
+		...deleteUnwantedPagesFromPdf.description,
+		...rotateDocument.description,
+		...rotatePage.description,
+		...extractPages.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,
