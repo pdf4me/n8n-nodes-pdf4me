@@ -19,6 +19,7 @@ import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPd
 import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
 import * as extractPages from './actions/extractPages';
+import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -63,6 +64,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await rotatePage.execute.call(this, i)));
 				} else if (action === ActionConstants.ExtractPages) {
 					operationResult.push(...(await extractPages.execute.call(this, i)));
+				} else if (action === ActionConstants.AddAttachmentToPdf) {
+					operationResult.push(...(await addAttachmentToPdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {
