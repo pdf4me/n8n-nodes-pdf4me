@@ -49,7 +49,7 @@ export async function pdf4meApiRequest(
 		const apiKeyLength = apiKey ? apiKey.length : 0;
 		const apiKeyPrefix = apiKey ? apiKey.substring(0, 4) : 'none';
 		console.log(`API Authentication Debug: Key length: ${apiKeyLength}, Prefix: ${apiKeyPrefix}...`);
-		
+
 		const response = await this.helpers.request(options);
 
 		// Check if response is successful
@@ -67,6 +67,7 @@ export async function pdf4meApiRequest(
 				try {
 					result = Buffer.from(response.body, 'base64');
 				} catch (error) {
+					console.error('Base64 conversion failed:', error);
 					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 				}
 			} else {
@@ -85,7 +86,7 @@ export async function pdf4meApiRequest(
 			try {
 				const errorJson = JSON.parse(response.body);
 				errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
-			} catch (parseError) {
+			} catch {
 				errorMessage = `${errorMessage}: ${response.body}`;
 			}
 			throw new Error(errorMessage);
@@ -132,7 +133,7 @@ export async function pdf4meAsyncRequest(
 		const apiKeyLength = apiKey ? apiKey.length : 0;
 		const apiKeyPrefix = apiKey ? apiKey.substring(0, 4) : 'none';
 		console.log(`API Authentication Debug: Key length: ${apiKeyLength}, Prefix: ${apiKeyPrefix}...`);
-		
+
 		// Make initial request
 		const response = await this.helpers.request(options);
 
@@ -150,7 +151,7 @@ export async function pdf4meAsyncRequest(
 				// Try to convert from base64 if it's a long string
 				try {
 					result = Buffer.from(response.body, 'base64');
-				} catch (error) {
+				} catch {
 					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 				}
 			} else {
@@ -178,7 +179,7 @@ export async function pdf4meAsyncRequest(
 			const initialDelay = 3000; // Start with 3 seconds
 			const maxDelay = 30000; // Max 30 seconds between attempts (increased from 8s)
 			const totalTimeout = 25 * 60 * 1000; // 25 minutes total timeout
-			let startTime = Date.now();
+			const startTime = Date.now();
 
 			for (let attempt = 0; attempt < maxRetries; attempt++) {
 				// Check total timeout
@@ -232,6 +233,7 @@ export async function pdf4meAsyncRequest(
 							try {
 								result = Buffer.from(pollResponse.body, 'base64');
 							} catch (error) {
+								console.error('Base64 conversion failed:', error);
 								throw new Error(`API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
 							}
 						} else {
@@ -271,7 +273,7 @@ export async function pdf4meAsyncRequest(
 							} else {
 								errorMessage = `${errorMessage}: ${pollResponse.body}`;
 							}
-						} catch (parseError) {
+						} catch {
 							errorMessage = `${errorMessage}: ${pollResponse.body}`;
 						}
 						throw new Error(errorMessage);
@@ -303,7 +305,7 @@ export async function pdf4meAsyncRequest(
 				} else {
 					errorMessage = `${errorMessage}: ${response.body}`;
 				}
-			} catch (parseError) {
+			} catch {
 				errorMessage = `${errorMessage}: ${response.body}`;
 			}
 			throw new Error(errorMessage);
@@ -341,24 +343,45 @@ export function sanitizeProfiles(data: IDataObject): void {
 	}
 }
 
-export class ActionConstants {
-	public static readonly AddAttachmentToPdf: string = 'Add Attachment To PDF';
-	public static readonly AddHtmlHeaderFooter: string = 'Add HTML Header Footer';
-	public static readonly AddImageStampToPdf: string = 'Add Image Stamp To PDF';
-	public static readonly AddMarginToPdf: string = 'Add Margin To PDF';
-	public static readonly AddPageNumberToPdf: string = 'Add Page Number To PDF';
-	public static readonly AddTextStampToPdf: string = 'Add Text Stamp To PDF';
-	public static readonly BarcodeGenerator: string = 'Barcode Generator';
-	public static readonly ConvertFromPDF: string = 'Convert From PDF';
-	public static readonly CropImage: string = 'Crop Image';
-	public static readonly DeleteBlankPagesFromPdf: string = 'Delete Blank Pages From PDF';
-	public static readonly DeleteUnwantedPagesFromPdf: string = 'Delete Unwanted Pages From PDF';
-	public static readonly ExtractPages: string = 'Extract Pages';
-	public static readonly JsonToExcel: string = 'JSON to Excel';
-	public static readonly MergeMultiplePDFs: string = 'Merge Multiple PDFs';
-	public static readonly OverlayPDFs: string = 'Overlay PDFs';
-	public static readonly RotateDocument: string = 'Rotate Document';
-	public static readonly RotatePage: string = 'Rotate Page';
-	public static readonly SignPdf: string = 'Sign PDF';
-	public static readonly UrlToPdf: string = 'URL to PDF';
-}
+export const ActionConstants = {
+	AddAttachmentToPdf: 'Add Attachment To PDF',
+	AddHtmlHeaderFooter: 'Add HTML Header Footer',
+	AddImageStampToPdf: 'Add Image Stamp To PDF',
+	AddImageWatermarkToImage: 'Add Image Watermark To Image',
+	AddMarginToPdf: 'Add Margin To PDF',
+	AddPageNumberToPdf: 'Add Page Number To PDF',
+	AddTextStampToPdf: 'Add Text Stamp To PDF',
+	AddTextWatermarkToImage: 'Add Text Watermark To Image',
+	BarcodeGenerator: 'Barcode Generator',
+	CompressImage: 'Compress Image',
+	CompressPdf: 'Compress PDF',
+	ConvertFromPDF: 'Convert From PDF',
+	ConvertImageFormat: 'Convert Image Format',
+	CreateImagesFromPdf: 'Create Images From PDF',
+	CropImage: 'Crop Image',
+	DeleteBlankPagesFromPdf: 'Delete Blank Pages From PDF',
+	DeleteUnwantedPagesFromPdf: 'Delete Unwanted Pages From PDF',
+	ExtractPages: 'Extract Pages',
+	FlipImage: 'Flip Image',
+	GetImageMetadata: 'Get Image Metadata',
+	GetPdfMetadata: 'Get PDF Metadata',
+	GetDocumentFromPdf4me: 'getDocumentFromPdf4me',
+	ImageExtractText: 'Image Extract Text',
+	JsonToExcel: 'Json To Excel',
+	MergeMultiplePDFs: 'Merge Multiple PDFs',
+	OverlayPDFs: 'Overlay PDFs',
+	RemoveExifTagsFromImage: 'Remove Exif Tags From Image',
+	ReplaceTextWithImage: 'Replace Text With Image',
+	ResizeImage: 'Resize Image',
+	RepairPdfDocument: 'Repair PDF Document',
+	RotateDocument: 'Rotate Document',
+	RotateImage: 'Rotate Image',
+	RotateImageByExifData: 'Rotate Image By Exif Data',
+	RotatePage: 'Rotate Page',
+	SignPdf: 'Sign PDF',
+	UrlToPdf: 'URL to PDF',
+	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
+	ProtectDocument: 'Protect Document',
+	UnlockPdf: 'Unlock PDF',
+	DisableTrackingChangesInWord: 'Disable Tracking Changes in Word',
+};

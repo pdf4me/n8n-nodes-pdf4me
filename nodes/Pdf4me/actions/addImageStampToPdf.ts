@@ -7,9 +7,40 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-declare const Buffer: any;
-declare const URL: any;
+// declare const Buffer: any;
+// declare const URL: any;
 declare const require: any;
+// declare const console: any;
+
+// Simplified debug configuration
+interface DebugConfig {
+    enabled: boolean;
+    logLevel: 'none' | 'basic' | 'detailed';
+    logToConsole?: boolean;
+}
+
+// Simplified debug logger class
+class DebugLogger {
+	private config: DebugConfig;
+
+	constructor(config: DebugConfig) {
+		this.config = config;
+	}
+
+	log(level: string, message: string, data?: any): void {
+		if (!this.config.enabled) return;
+
+		const timestamp = new Date().toISOString();
+		const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+        
+		if (this.config.logToConsole !== false) {
+			console.log(logEntry);
+			if (data) {
+				console.log('Data:', data);
+			}
+		}
+	}
+}
 
 export const description: INodeProperties[] = [
 	{
@@ -476,17 +507,24 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
+			},
+			{
+				displayName: 'Enable Debug Mode',
+				name: 'enableDebug',
+				type: 'boolean',
+				default: false,
+				description: 'Enable debugging and logging',
 			},
 		],
 	},
 ];
 
+/**
+ * Add image stamp to a PDF document using PDF4Me API
+ * Process: Read PDF & Image → Encode to base64 → Send API request → Return PDF with image stamp
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
-	// Debug: Log function entry
-	console.log('=== PDF4ME AddImageStampToPdf Debug ===');
-	console.log(`[${new Date().toISOString()}] Starting execution...`);
-
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const imageInputDataType = this.getNodeParameter('imageInputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
@@ -506,321 +544,257 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const opacity = this.getNodeParameter('opacity', index) as number;
 	const isBackground = this.getNodeParameter('isBackground', index) as boolean;
 	const showOnlyInPrint = this.getNodeParameter('showOnlyInPrint', index) as boolean;
-
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	// Debug: Log all parameters
-	console.log('Parameters:');
-	console.log(`  - inputDataType: ${inputDataType}`);
-	console.log(`  - imageInputDataType: ${imageInputDataType}`);
-	console.log(`  - outputFileName: ${outputFileName}`);
-	console.log(`  - docName: ${docName}`);
-	console.log(`  - imageName: ${imageName}`);
-	console.log(`  - alignX: ${alignX} (type: ${typeof alignX})`);
-	console.log(`  - alignY: ${alignY} (type: ${typeof alignY})`);
-	console.log(`  - pages: ${pages}`);
-	console.log(`  - heightInMM: ${heightInMM}`);
-	console.log(`  - widthInMM: ${widthInMM}`);
-	console.log(`  - heightInPx: ${heightInPx}`);
-	console.log(`  - widthInPx: ${widthInPx}`);
-	console.log(`  - marginXInMM: ${marginXInMM}`);
-	console.log(`  - marginYInMM: ${marginYInMM}`);
-	console.log(`  - marginXInPx: ${marginXInPx}`);
-	console.log(`  - marginYInPx: ${marginYInPx}`);
-	console.log(`  - opacity: ${opacity}`);
-	console.log(`  - isBackground: ${isBackground}`);
-	console.log(`  - showOnlyInPrint: ${showOnlyInPrint}`);
-	console.log(`  - advancedOptions:`, JSON.stringify(advancedOptions, null, 2));
-
-	let docContent: string;
-
-	// Debug: Log PDF input processing
-	console.log('\n=== PDF Input Processing ===');
-	console.log(`Processing PDF with inputDataType: ${inputDataType}`);
-
-	// Handle different input data types
-	if (inputDataType === 'binaryData') {
-		// Get PDF content from binary data
-		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-		console.log(`  - binaryPropertyName: ${binaryPropertyName}`);
-		
-		const item = this.getInputData(index);
-		console.log(`  - input items count: ${item.length}`);
-		console.log(`  - first item has binary: ${!!item[0]?.binary}`);
-		console.log(`  - available binary properties: ${item[0]?.binary ? Object.keys(item[0].binary).join(', ') : 'none'}`);
-
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
-		}
-
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
-		console.log(`  - PDF binary size: ${buffer.length} bytes`);
-		console.log(`  - PDF base64 length: ${docContent.length} characters`);
-	} else if (inputDataType === 'base64') {
-		// Use base64 content directly
-		docContent = this.getNodeParameter('base64Content', index) as string;
-		console.log(`  - Original base64 length: ${docContent.length} characters`);
-
-		// Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
-		if (docContent.includes(',')) {
-			const originalLength = docContent.length;
-			docContent = docContent.split(',')[1];
-			console.log(`  - Removed data URL prefix, length changed from ${originalLength} to ${docContent.length}`);
-		}
-	} else if (inputDataType === 'url') {
-		// Download PDF from URL
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		console.log(`  - PDF URL: ${pdfUrl}`);
-		docContent = await downloadPdfFromUrl(pdfUrl);
-		console.log(`  - Downloaded PDF base64 length: ${docContent.length} characters`);
-	} else if (inputDataType === 'filePath') {
-		// Read PDF from local file path
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		console.log(`  - PDF file path: ${filePath}`);
-		docContent = await readPdfFromFile(filePath);
-		console.log(`  - Read PDF base64 length: ${docContent.length} characters`);
-	} else {
-		throw new Error(`Unsupported input data type: ${inputDataType}`);
-	}
-
-	// Validate PDF content
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
-	}
-	
-	console.log(`  - Final PDF content length: ${docContent.length} characters`);
-	console.log(`  - PDF content starts with: ${docContent.substring(0, 50)}...`);
-
-	// Handle different image input data types
-	let imageContent: string;
-
-	// Debug: Log image input processing
-	console.log('\n=== Image Input Processing ===');
-	console.log(`Processing image with imageInputDataType: ${imageInputDataType}`);
-
-	if (imageInputDataType === 'binaryData') {
-		// Get image content from binary data
-		const imageBinaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
-		console.log(`  - imageBinaryPropertyName: ${imageBinaryPropertyName}`);
-		
-		const item = this.getInputData(index);
-		console.log(`  - input items count: ${item.length}`);
-		console.log(`  - first item has binary: ${!!item[0]?.binary}`);
-		console.log(`  - available binary properties: ${item[0]?.binary ? Object.keys(item[0].binary).join(', ') : 'none'}`);
-
-		if (!item[0].binary || !item[0].binary[imageBinaryPropertyName]) {
-			throw new Error(`No binary data found in property '${imageBinaryPropertyName}'`);
-		}
-
-		const buffer = await this.helpers.getBinaryDataBuffer(index, imageBinaryPropertyName);
-		imageContent = buffer.toString('base64');
-		console.log(`  - Image binary size: ${buffer.length} bytes`);
-		console.log(`  - Image base64 length: ${imageContent.length} characters`);
-	} else if (imageInputDataType === 'base64') {
-		// Use base64 content directly
-		imageContent = this.getNodeParameter('imageContent', index) as string;
-		console.log(`  - Original image base64 length: ${imageContent.length} characters`);
-
-		// Remove data URL prefix if present (e.g., "data:image/png;base64,")
-		if (imageContent.includes(',')) {
-			const originalLength = imageContent.length;
-			imageContent = imageContent.split(',')[1];
-			console.log(`  - Removed data URL prefix, length changed from ${originalLength} to ${imageContent.length}`);
-		}
-
-		// Clean up any whitespace or newlines that might be present
-		const beforeCleanup = imageContent.length;
-		imageContent = imageContent.replace(/\s/g, '');
-		console.log(`  - Cleaned whitespace, length changed from ${beforeCleanup} to ${imageContent.length}`);
-	} else if (imageInputDataType === 'url') {
-		// Download image from URL
-		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		console.log(`  - Image URL: ${imageUrl}`);
-		imageContent = await downloadImageFromUrl(imageUrl);
-		console.log(`  - Downloaded image base64 length: ${imageContent.length} characters`);
-	} else if (imageInputDataType === 'filePath') {
-		// Read image from local file path
-		const imageFilePath = this.getNodeParameter('imageFilePath', index) as string;
-		console.log(`  - Image file path: ${imageFilePath}`);
-		imageContent = await readImageFromFile(imageFilePath);
-		console.log(`  - Read image base64 length: ${imageContent.length} characters`);
-	} else {
-		throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
-	}
-
-	// Validate image content
-	if (!imageContent || imageContent.trim() === '') {
-		throw new Error('Image content is required');
-	}
-
-	// Validate that image content is valid base64
-	try {
-		// Check if the content is valid base64 by attempting to decode it
-		const decodedBuffer = Buffer.from(imageContent, 'base64');
-		console.log(`  - Image base64 validation: SUCCESS (decoded ${decodedBuffer.length} bytes)`);
-	} catch (error) {
-		console.log(`  - Image base64 validation: FAILED - ${error.message}`);
-		throw new Error('Invalid base64 image content. Please ensure the image is properly encoded.');
-	}
-	
-	console.log(`  - Final image content length: ${imageContent.length} characters`);
-	console.log(`  - Image content starts with: ${imageContent.substring(0, 50)}...`);
-
-	// Build the request body
-	console.log('\n=== Request Body Construction ===');
-	
-	const body: IDataObject = {
-		// Horizontal alignment of image
-		alignX,
-		// Vertical alignment of image
-		alignY,
-		// The content of the input file (base64)
-		docContent,
-		// Source PDF file name with .pdf extension
-		docName,
-		// The image file name with proper extension
-		imageName,
-		// Map stamp image content from source action (base64)
-		imageFile: imageContent,
-		// Specify page indices as comma-separated values or ranges
-		pages,
-		// Image height in millimeters (mm)
-		heightInMM: String(heightInMM),
-		// Image width in millimeters (mm)
-		widthInMM: String(widthInMM),
-		// Height of the image stamp in points(px)
-		heightInPx: String(heightInPx),
-		// Width of the image stamp in points(px)
-		widthInPx: String(widthInPx),
-		// Horizontal margin in millimeters (mm)
-		marginXInMM: String(marginXInMM),
-		// Vertical margin in millimeters (mm)
-		marginYInMM: String(marginYInMM),
-		// Margin from left origin of the image stamp in millimeters
-		marginXInPx: String(marginXInPx),
-		// Margin from top origin of the image stamp in millimeters
-		marginYInPx: String(marginYInPx),
-		// Values between 0 to 100. '0' is entirely transparent—100 for full opacity
-		opacity,
-		// Default: true
-		isBackground,
-		// Default: true
-		showOnlyInPrint,
+	// Initialize debug logger
+	const debugConfig: DebugConfig = {
+		enabled: advancedOptions?.enableDebug === true,
+		logLevel: 'basic',
+		logToConsole: true,
 	};
 
-	// Debug: Log request body (without sensitive data)
-	const debugBody = { ...body };
-	debugBody.docContent = `[PDF_BASE64_${(body.docContent as string)?.length || 0}_CHARS]`;
-	debugBody.imageFile = `[IMAGE_BASE64_${(body.imageFile as string)?.length || 0}_CHARS]`;
-	console.log('Request body structure:');
-	console.log(JSON.stringify(debugBody, null, 2));
+	const logger = new DebugLogger(debugConfig);
+	logger.log('info', 'Starting Add Image Stamp to PDF operation', {
+		inputDataType,
+		imageInputDataType,
+		outputFileName,
+		alignX,
+		alignY,
+	});
 
-	// Add profiles if provided
-	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) {
-		body.profiles = profiles;
-		console.log(`  - Added profiles: ${profiles}`);
-	}
-
-	console.log('\n=== API Call ===');
-	console.log(`  - Endpoint: /api/v2/ImageStamp`);
-	console.log(`  - Request body keys: ${Object.keys(body).join(', ')}`);
-	console.log(`  - alignX value: "${alignX}" (type: ${typeof alignX})`);
-	console.log(`  - alignY value: "${alignY}" (type: ${typeof alignY})`);
-
-	sanitizeProfiles(body);
-	console.log(`  - After sanitizeProfiles, body keys: ${Object.keys(body).join(', ')}`);
-
-	let responseData: any;
 	try {
-		console.log(`  - Using sync processing mode (no async flag in API spec)`);
-		responseData = await pdf4meApiRequest.call(this, '/api/v2/ImageStamp', body);
-		console.log(`  - API call successful`);
-		console.log(`  - Response data type: ${typeof responseData}`);
-		console.log(`  - Response data length: ${responseData?.length || 'undefined'}`);
+		let docContent: string;
+
+		// Handle different input data types for PDF
+		if (inputDataType === 'binaryData') {
+			logger.log('debug', 'Processing PDF as binary data');
+			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+			const item = this.getInputData(index);
+
+			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
+				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+			}
+
+			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+			docContent = buffer.toString('base64');
+			logger.log('debug', 'PDF binary data extracted', { size: buffer.length });
+		} else if (inputDataType === 'base64') {
+			logger.log('debug', 'Processing PDF as base64');
+			docContent = this.getNodeParameter('base64Content', index) as string;
+            
+			// Remove data URL prefix if present
+			if (docContent.includes(',')) {
+				docContent = docContent.split(',')[1];
+			}
+			logger.log('debug', 'PDF base64 content processed', { length: docContent.length });
+		} else if (inputDataType === 'url') {
+			logger.log('debug', 'Processing PDF from URL');
+			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+			docContent = await downloadPdfFromUrl(pdfUrl, logger);
+			logger.log('debug', 'PDF downloaded from URL', { length: docContent.length });
+		} else if (inputDataType === 'filePath') {
+			logger.log('debug', 'Processing PDF from file path');
+			const filePath = this.getNodeParameter('filePath', index) as string;
+			docContent = await readPdfFromFile(filePath, logger);
+			logger.log('debug', 'PDF read from file', { length: docContent.length });
+		} else {
+			throw new Error(`Unsupported input data type: ${inputDataType}`);
+		}
+
+		// Validate PDF content
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+
+		// Handle different image input data types
+		let imageContent: string;
+
+		if (imageInputDataType === 'binaryData') {
+			logger.log('debug', 'Processing image as binary data');
+			const imageBinaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
+			const item = this.getInputData(index);
+
+			if (!item[0].binary || !item[0].binary[imageBinaryPropertyName]) {
+				throw new Error(`No binary data found in property '${imageBinaryPropertyName}'`);
+			}
+
+			const buffer = await this.helpers.getBinaryDataBuffer(index, imageBinaryPropertyName);
+			imageContent = buffer.toString('base64');
+			logger.log('debug', 'Image binary data extracted', { size: buffer.length });
+		} else if (imageInputDataType === 'base64') {
+			logger.log('debug', 'Processing image as base64');
+			imageContent = this.getNodeParameter('imageContent', index) as string;
+            
+			// Remove data URL prefix if present
+			if (imageContent.includes(',')) {
+				imageContent = imageContent.split(',')[1];
+			}
+            
+			// Clean up whitespace
+			imageContent = imageContent.replace(/\s/g, '');
+			logger.log('debug', 'Image base64 content processed', { length: imageContent.length });
+		} else if (imageInputDataType === 'url') {
+			logger.log('debug', 'Processing image from URL');
+			const imageUrl = this.getNodeParameter('imageUrl', index) as string;
+			imageContent = await downloadImageFromUrl(imageUrl, logger);
+			logger.log('debug', 'Image downloaded from URL', { length: imageContent.length });
+		} else if (imageInputDataType === 'filePath') {
+			logger.log('debug', 'Processing image from file path');
+			const imageFilePath = this.getNodeParameter('imageFilePath', index) as string;
+			imageContent = await readImageFromFile(imageFilePath, logger);
+			logger.log('debug', 'Image read from file', { length: imageContent.length });
+		} else {
+			throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
+		}
+
+		// Validate image content
+		if (!imageContent || imageContent.trim() === '') {
+			throw new Error('Image content is required');
+		}
+
+		// Validate that image content is valid base64
+		try {
+			Buffer.from(imageContent, 'base64');
+			logger.log('debug', 'Image base64 validation passed');
+		} catch {
+			throw new Error('Invalid base64 image content. Please ensure the image is properly encoded.');
+		}
+
+		// Build the request body according to API specification
+		const body: IDataObject = {
+			// Horizontal alignment of image
+			alignX,
+			// Vertical alignment of image
+			alignY,
+			// The content of the input file (base64)
+			docContent,
+			// Source PDF file name with .pdf extension
+			docName,
+			// The image file name with proper extension
+			imageName,
+			// Map stamp image content from source action (base64)
+			imageFile: imageContent,
+			// Specify page indices as comma-separated values or ranges
+			pages,
+			// Image height in millimeters (mm)
+			heightInMM: String(heightInMM),
+			// Image width in millimeters (mm)
+			widthInMM: String(widthInMM),
+			// Height of the image stamp in points(px)
+			heightInPx: String(heightInPx),
+			// Width of the image stamp in points(px)
+			widthInPx: String(widthInPx),
+			// Horizontal margin in millimeters (mm)
+			marginXInMM: String(marginXInMM),
+			// Vertical margin in millimeters (mm)
+			marginYInMM: String(marginYInMM),
+			// Margin from left origin of the image stamp in millimeters
+			marginXInPx: String(marginXInPx),
+			// Margin from top origin of the image stamp in millimeters
+			marginYInPx: String(marginYInPx),
+			// Values between 0 to 100. '0' is entirely transparent—100 for full opacity
+			opacity,
+			// Default: true
+			isBackground,
+			// Default: true
+			showOnlyInPrint,
+		};
+
+		logger.log('debug', 'Request body prepared', {
+			alignX,
+			alignY,
+			docContentLength: docContent.length,
+			imageContentLength: imageContent.length,
+			pages,
+		});
+
+		// Add custom profiles if provided
+		if (advancedOptions.profiles) {
+			logger.log('debug', 'Processing custom profiles');
+			try {
+				const profiles = JSON.parse(advancedOptions.profiles as string);
+				sanitizeProfiles(profiles);
+				Object.assign(body, profiles);
+				logger.log('debug', 'Custom profiles applied successfully');
+			} catch (error) {
+				logger.log('error', 'Failed to parse custom profiles', { error: error.message });
+				throw new Error(`Invalid custom profiles JSON: ${error}`);
+			}
+		}
+
+		// Make the API request
+		logger.log('debug', 'Making API request', { endpoint: '/api/v2/ImageStamp' });
+        
+		const responseData = await pdf4meApiRequest.call(this, '/api/v2/ImageStamp', body);
+        
+		logger.log('debug', 'API request completed successfully', {
+			responseType: typeof responseData,
+			responseLength: responseData?.length || 0,
+		});
+
+		// Handle the binary response (PDF data)
+		if (responseData) {
+			// Generate filename if not provided
+			let fileName = outputFileName;
+			if (!fileName || fileName.trim() === '') {
+				const baseName = docName ? docName.replace(/\.pdf$/i, '') : 'document_with_image_stamp';
+				fileName = `${baseName}_with_image_stamp.pdf`;
+			}
+
+			// Ensure .pdf extension
+			if (!fileName.toLowerCase().endsWith('.pdf')) {
+				fileName = `${fileName.replace(/\.[^.]*$/, '')}.pdf`;
+			}
+
+			// Prepare binary data
+			const binaryData = await this.helpers.prepareBinaryData(
+				responseData,
+				fileName,
+				'application/pdf',
+			);
+
+			logger.log('info', 'Add Image Stamp to PDF operation completed successfully', {
+				fileName,
+				fileSize: responseData.length,
+			});
+
+			return [
+				{
+					json: {
+						fileName,
+						mimeType: 'application/pdf',
+						fileSize: responseData.length,
+						success: true,
+						message: 'Image stamp added successfully',
+					},
+					binary: {
+						data: binaryData,
+					},
+				},
+			];
+		}
+
+		throw new Error('No response data received from PDF4ME API');
 	} catch (error) {
-		console.log(`  - API call failed: ${error.message}`);
-		console.log(`  - Error details:`, error);
+		logger.log('error', 'Add Image Stamp to PDF operation failed', {
+			error: error.message,
+			stack: error.stack,
+		});
+        
 		throw error;
 	}
-
-	// Handle the binary response (PDF data)
-	console.log('\n=== Response Handling ===');
-	
-	if (responseData) {
-		console.log(`  - Response data received: ${responseData ? 'YES' : 'NO'}`);
-		console.log(`  - Response data type: ${typeof responseData}`);
-		console.log(`  - Response data length: ${responseData?.length || 'undefined'}`);
-		
-		// Generate filename if not provided
-		let fileName = outputFileName;
-		if (!fileName || fileName.trim() === '') {
-			// Extract name from docName if available, otherwise use default
-			const baseName = docName ? docName.replace(/\.pdf$/i, '') : 'document_with_image_stamp';
-			fileName = `${baseName}_with_image_stamp.pdf`;
-			console.log(`  - Generated filename: ${fileName}`);
-		} else {
-			console.log(`  - Using provided filename: ${fileName}`);
-		}
-
-		// Ensure .pdf extension
-		if (!fileName.toLowerCase().endsWith('.pdf')) {
-			const originalFileName = fileName;
-			fileName = `${fileName.replace(/\.[^.]*$/, '')}.pdf`;
-			console.log(`  - Added .pdf extension: ${originalFileName} -> ${fileName}`);
-		}
-
-		console.log(`  - Final filename: ${fileName}`);
-		console.log(`  - Preparing binary data...`);
-
-		// responseData is already binary data (Buffer)
-		const binaryData = await this.helpers.prepareBinaryData(
-			responseData,
-			fileName,
-			'application/pdf',
-		);
-
-		console.log(`  - Binary data prepared successfully`);
-		console.log(`  - File size: ${responseData.length} bytes`);
-		console.log('=== Execution completed successfully ===\n');
-
-		return [
-			{
-				json: {
-					fileName,
-					mimeType: 'application/pdf',
-					fileSize: responseData.length,
-					success: true,
-					message: 'Image stamp added successfully',
-				},
-				binary: {
-					data: binaryData,
-				},
-			},
-		];
-	}
-
-	// Error case
-	console.log(`  - No response data received`);
-	console.log('=== Execution failed: No response data ===\n');
-	throw new Error('No response data received from PDF4ME API');
 }
 
 /**
  * Download PDF from URL and convert to base64
  */
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	console.log(`    [downloadPdfFromUrl] Starting download from: ${pdfUrl}`);
-	
+async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise<string> {
 	const https = require('https');
 	const http = require('http');
 
 	const parsedUrl = new URL(pdfUrl);
 	const isHttps = parsedUrl.protocol === 'https:';
 	const client = isHttps ? https : http;
-
-	console.log(`    [downloadPdfFromUrl] Protocol: ${parsedUrl.protocol}, Host: ${parsedUrl.hostname}, Port: ${parsedUrl.port || (isHttps ? 443 : 80)}`);
 
 	const options = {
 		hostname: parsedUrl.hostname,
@@ -837,33 +811,52 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const req = client.request(options, (res: any) => {
 			if (res.statusCode !== 200) {
-				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
+				const error = `HTTP Error ${res.statusCode}: ${res.statusMessage}`;
+				logger?.log('error', 'Download failed with HTTP error', { statusCode: res.statusCode, statusMessage: res.statusMessage });
+				reject(new Error(error));
 				return;
 			}
 
 			const chunks: any[] = [];
+			let totalSize = 0;
+
 			res.on('data', (chunk: any) => {
 				chunks.push(chunk);
+				totalSize += chunk.length;
 			});
 
 			res.on('end', () => {
+				if (totalSize === 0) {
+					logger?.log('error', 'Downloaded file is empty');
+					reject(new Error('Downloaded file is empty. Please check the URL.'));
+					return;
+				}
+
 				const buffer = Buffer.concat(chunks);
 				const base64Content = buffer.toString('base64');
+				logger?.log('debug', 'File downloaded successfully', { 
+					url: pdfUrl, 
+					fileSize: totalSize, 
+					base64Length: base64Content.length, 
+				});
 				resolve(base64Content);
 			});
 
 			res.on('error', (error: any) => {
+				logger?.log('error', 'Download stream error', { error: error.message });
 				reject(new Error(`Download error: ${error.message}`));
 			});
 		});
 
 		req.on('error', (error: any) => {
+			logger?.log('error', 'Request error', { error: error.message });
 			reject(new Error(`Request error: ${error.message}`));
 		});
 
 		req.on('timeout', () => {
+			logger?.log('error', 'Download timeout');
 			req.destroy();
-			reject(new Error('Download timeout'));
+			reject(new Error('Download timeout. The server took too long to respond.'));
 		});
 
 		req.end();
@@ -873,22 +866,27 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 /**
  * Read PDF from local file path and convert to base64
  */
-async function readPdfFromFile(filePath: string): Promise<string> {
-	console.log(`    [readPdfFromFile] Reading file: ${filePath}`);
+async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
 	const fs = require('fs');
-	
+    
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
-		console.log(`    [readPdfFromFile] File read successfully: ${fileBuffer.length} bytes -> ${base64Content.length} base64 chars`);
+		logger?.log('debug', 'File read successfully', { 
+			filePath, 
+			fileSize: fileBuffer.length, 
+			base64Length: base64Content.length, 
+		});
 		return base64Content;
 	} catch (error) {
-		console.log(`    [readPdfFromFile] Error reading file: ${error.message}`);
 		if (error.code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}`);
+			logger?.log('error', 'File not found', { filePath });
+			throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
 		} else if (error.code === 'EACCES') {
-			throw new Error(`Permission denied: ${filePath}`);
+			logger?.log('error', 'Permission denied', { filePath });
+			throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
 		} else {
+			logger?.log('error', 'File read error', { filePath, error: error.message });
 			throw new Error(`Error reading file: ${error.message}`);
 		}
 	}
@@ -897,17 +895,13 @@ async function readPdfFromFile(filePath: string): Promise<string> {
 /**
  * Download image from URL and convert to base64
  */
-async function downloadImageFromUrl(imageUrl: string): Promise<string> {
-	console.log(`    [downloadImageFromUrl] Starting download from: ${imageUrl}`);
-	
+async function downloadImageFromUrl(imageUrl: string, logger?: DebugLogger): Promise<string> {
 	const https = require('https');
 	const http = require('http');
 
 	const parsedUrl = new URL(imageUrl);
 	const isHttps = parsedUrl.protocol === 'https:';
 	const client = isHttps ? https : http;
-
-	console.log(`    [downloadImageFromUrl] Protocol: ${parsedUrl.protocol}, Host: ${parsedUrl.hostname}, Port: ${parsedUrl.port || (isHttps ? 443 : 80)}`);
 
 	const options = {
 		hostname: parsedUrl.hostname,
@@ -924,33 +918,52 @@ async function downloadImageFromUrl(imageUrl: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const req = client.request(options, (res: any) => {
 			if (res.statusCode !== 200) {
-				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
+				const error = `HTTP Error ${res.statusCode}: ${res.statusMessage}`;
+				logger?.log('error', 'Download failed with HTTP error', { statusCode: res.statusCode, statusMessage: res.statusMessage });
+				reject(new Error(error));
 				return;
 			}
 
 			const chunks: any[] = [];
+			let totalSize = 0;
+
 			res.on('data', (chunk: any) => {
 				chunks.push(chunk);
+				totalSize += chunk.length;
 			});
 
 			res.on('end', () => {
+				if (totalSize === 0) {
+					logger?.log('error', 'Downloaded file is empty');
+					reject(new Error('Downloaded file is empty. Please check the URL.'));
+					return;
+				}
+
 				const buffer = Buffer.concat(chunks);
 				const base64Content = buffer.toString('base64');
+				logger?.log('debug', 'File downloaded successfully', { 
+					url: imageUrl, 
+					fileSize: totalSize, 
+					base64Length: base64Content.length, 
+				});
 				resolve(base64Content);
 			});
 
 			res.on('error', (error: any) => {
+				logger?.log('error', 'Download stream error', { error: error.message });
 				reject(new Error(`Download error: ${error.message}`));
 			});
 		});
 
 		req.on('error', (error: any) => {
+			logger?.log('error', 'Request error', { error: error.message });
 			reject(new Error(`Request error: ${error.message}`));
 		});
 
 		req.on('timeout', () => {
+			logger?.log('error', 'Download timeout');
 			req.destroy();
-			reject(new Error('Download timeout'));
+			reject(new Error('Download timeout. The server took too long to respond.'));
 		});
 
 		req.end();
@@ -960,22 +973,27 @@ async function downloadImageFromUrl(imageUrl: string): Promise<string> {
 /**
  * Read image from local file path and convert to base64
  */
-async function readImageFromFile(filePath: string): Promise<string> {
-	console.log(`    [readImageFromFile] Reading file: ${filePath}`);
+async function readImageFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
 	const fs = require('fs');
-	
+    
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
-		console.log(`    [readImageFromFile] File read successfully: ${fileBuffer.length} bytes -> ${base64Content.length} base64 chars`);
+		logger?.log('debug', 'File read successfully', { 
+			filePath, 
+			fileSize: fileBuffer.length, 
+			base64Length: base64Content.length, 
+		});
 		return base64Content;
 	} catch (error) {
-		console.log(`    [readImageFromFile] Error reading file: ${error.message}`);
 		if (error.code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}`);
+			logger?.log('error', 'File not found', { filePath });
+			throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
 		} else if (error.code === 'EACCES') {
-			throw new Error(`Permission denied: ${filePath}`);
+			logger?.log('error', 'Permission denied', { filePath });
+			throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
 		} else {
+			logger?.log('error', 'File read error', { filePath, error: error.message });
 			throw new Error(`Error reading file: ${error.message}`);
 		}
 	}

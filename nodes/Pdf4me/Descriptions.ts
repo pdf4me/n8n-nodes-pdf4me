@@ -19,6 +19,27 @@ import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
 import * as signPdf from './actions/signPdf';
 import * as urlToPdf from './actions/urlToPdf';
+import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
+import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
+import * as compressImage from './actions/compressImage';
+import * as convertImageFormat from './actions/convertImageFormat';
+import * as createImagesFromPdf from './actions/createImagesFromPdf';
+import * as flipImage from './actions/flipImage';
+import * as getImageMetadata from './actions/getImageMetadata';
+import * as imageExtractText from './actions/imageExtractText';
+import * as removeExifTagsFromImage from './actions/removeExifTagsFromImage';
+import * as replaceTextWithImage from './actions/replaceTextWithImage';
+import * as resizeImage from './actions/resizeImage';
+import * as rotateImage from './actions/rotateImage';
+import * as rotateImageByExifData from './actions/rotateImageByExifData';
+import * as compressPdf from './actions/compressPdf';
+import * as getPdfMetadata from './actions/getPdfMetadata';
+import * as repairPdfDocument from './actions/repairPdfDocument';
+import * as get_document_from_pdf4me from './actions/get_document_from_pdf4me';
+import * as update_hyperlinks_annotation from './actions/update_hyperlinks_annotation';
+import * as protect_document from './actions/protect_document';
+import * as unlock_pdf from './actions/unlock_pdf';
+import * as disabletracking_changes_in_word from './actions/disabletracking_changes_in_word';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -153,6 +174,128 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.UrlToPdf,
 					action: ActionConstants.UrlToPdf,
 				},
+				{
+					name: 'Add Image Watermark To Image',
+					description: 'Add image watermark to image documents',
+					value: ActionConstants.AddImageWatermarkToImage,
+					action: ActionConstants.AddImageWatermarkToImage,
+				},
+				{
+					name: 'Add Text Watermark To Image',
+					description: 'Add text watermark to image documents',
+					value: ActionConstants.AddTextWatermarkToImage,
+					action: ActionConstants.AddTextWatermarkToImage,
+				},
+				{
+					name: 'Compress Image',
+					description: 'Compress image documents',
+					value: ActionConstants.CompressImage,
+					action: ActionConstants.CompressImage,
+				},
+				{
+					name: 'Convert Image Format',
+					description: 'Convert image format (BMP, GIF, JPG, PNG, TIFF)',
+					value: ActionConstants.ConvertImageFormat,
+					action: ActionConstants.ConvertImageFormat,
+				},
+				{
+					name: 'Create Images From PDF',
+					description: 'Create images from PDF pages',
+					value: ActionConstants.CreateImagesFromPdf,
+					action: ActionConstants.CreateImagesFromPdf,
+				},
+				{
+					name: 'Flip Image',
+					description: 'Flip image documents horizontally, vertically, or both',
+					value: ActionConstants.FlipImage,
+					action: ActionConstants.FlipImage,
+				},
+				{
+					name: 'Get Image Metadata',
+					description: 'Extract metadata information from images including EXIF data and properties',
+					value: ActionConstants.GetImageMetadata,
+					action: ActionConstants.GetImageMetadata,
+				},
+				{
+					name: 'Image Extract Text',
+					description: 'Extract text content from images using OCR (Optical Character Recognition)',
+					value: ActionConstants.ImageExtractText,
+					action: ActionConstants.ImageExtractText,
+				},
+				{
+					name: 'Remove EXIF Tags From Image',
+					description: 'Remove metadata/EXIF tags from images for privacy and file size reduction',
+					value: ActionConstants.RemoveExifTagsFromImage,
+					action: ActionConstants.RemoveExifTagsFromImage,
+				},
+				{
+					name: 'Replace Text With Image',
+					description: 'Replace specific text in PDF documents with images',
+					value: ActionConstants.ReplaceTextWithImage,
+					action: ActionConstants.ReplaceTextWithImage,
+				},
+				{
+					name: 'Resize Image',
+					description: 'Resize images by percentage or specific dimensions with aspect ratio control',
+					value: ActionConstants.ResizeImage,
+					action: ActionConstants.ResizeImage,
+				},
+				{
+					name: 'Rotate Image',
+					description: 'Rotate images with custom angle, background color, and proportionate resize options',
+					value: ActionConstants.RotateImage,
+					action: ActionConstants.RotateImage,
+				},
+				{
+					name: 'Rotate Image By EXIF Data',
+					description: 'Rotate image automatically based on EXIF orientation metadata',
+					value: ActionConstants.RotateImageByExifData,
+					action: ActionConstants.RotateImageByExifData,
+				},
+				{
+					name: 'Compress PDF',
+					value: ActionConstants.CompressPdf,
+					description: 'Compress and optimize PDF files',
+				},
+				{
+					name: 'Get PDF Metadata',
+					value: ActionConstants.GetPdfMetadata,
+					description: 'Extract metadata from PDF files',
+				},
+				{
+					name: 'Repair PDF Document',
+					value: ActionConstants.RepairPdfDocument,
+					description: 'Repair corrupted or damaged PDF files',
+				},
+				{
+					name: 'Get Document From Pdf4me',
+					value: ActionConstants.GetDocumentFromPdf4me,
+					description: 'Split PDF documents by barcode and output as ZIP',
+				},
+				{
+					name: 'Update Hyperlinks Annotation',
+					description: 'Update hyperlinks in PDF documents',
+					value: ActionConstants.UpdateHyperlinksAnnotation,
+					action: ActionConstants.UpdateHyperlinksAnnotation,
+				},
+				{
+					name: 'Protect Document',
+					description: 'Protect PDF documents with encryption, passwords, and permissions',
+					value: ActionConstants.ProtectDocument,
+					action: ActionConstants.ProtectDocument,
+				},
+				{
+					name: 'Unlock PDF',
+					description: 'Unlock PDF documents by removing encryption',
+					value: ActionConstants.UnlockPdf,
+					action: ActionConstants.UnlockPdf,
+				},
+				{
+					name: 'Disable Tracking Changes In Word',
+					description: 'Disable tracking changes in Word documents',
+					value: ActionConstants.DisableTrackingChangesInWord,
+					action: ActionConstants.DisableTrackingChangesInWord,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -175,6 +318,27 @@ export const descriptions: INodeTypeDescription = {
 		...rotatePage.description,
 		...signPdf.description,
 		...urlToPdf.description,
+		...addImageWatermarkToImage.description,
+		...addTextWatermarkToImage.description,
+		...compressImage.description,
+		...convertImageFormat.description,
+		...createImagesFromPdf.description,
+		...flipImage.description,
+		...getImageMetadata.description,
+		...imageExtractText.description,
+		...removeExifTagsFromImage.description,
+		...replaceTextWithImage.description,
+		...resizeImage.description,
+		...rotateImage.description,
+		...rotateImageByExifData.description,
+		...compressPdf.description,
+		...getPdfMetadata.description,
+		...repairPdfDocument.description,
+		...get_document_from_pdf4me.description,
+		...update_hyperlinks_annotation.description,
+		...protect_document.description,
+		...unlock_pdf.description,
+		...disabletracking_changes_in_word.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

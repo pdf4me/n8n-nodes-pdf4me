@@ -7,7 +7,7 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer available (it's a Node.js global)
-declare const Buffer: any;
+// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -157,7 +157,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
 			{
 				displayName: 'Display Header Footer',
@@ -249,7 +249,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertUrlToPdf', body);
 
-		// Handle the binary response (PDF data)
+	// Handle the binary response (PDF data)
 	if (responseData) {
 		// Generate filename if not provided
 		let fileName = docName;

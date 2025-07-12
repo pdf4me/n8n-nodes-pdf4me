@@ -7,8 +7,8 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-declare const Buffer: any;
-declare const URL: any;
+// declare const Buffer: any;
+// declare const URL: any;
 declare const require: any;
 
 export const description: INodeProperties[] = [
@@ -217,7 +217,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
 		],
 	},
@@ -397,7 +397,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
  */
 async function readPdfFromFile(filePath: string): Promise<string> {
 	const fs = require('fs');
-	
+    
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');

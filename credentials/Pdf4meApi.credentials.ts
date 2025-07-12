@@ -9,7 +9,7 @@ export class Pdf4meApi implements ICredentialType {
 	name = 'pdf4meApi';
 	displayName = 'PDF4ME API';
 	documentationUrl = 'https://dev.pdf4me.com/apiv2/documentation/';
-			properties: INodeProperties[] = [
+	properties: INodeProperties[] = [
 		{
 			displayName: 'PDF4ME API Key',
 			name: 'apiKey',
@@ -21,7 +21,7 @@ export class Pdf4meApi implements ICredentialType {
 			},
 			description: 'Your PDF4ME API key. Get it from your PDF4ME account settings.',
 			placeholder: 'Enter your API key here',
-		}
+		},
 	];
 
 	authenticate: IAuthenticateGeneric = {

@@ -3,7 +3,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	INodeTypeBaseDescription,
-	INodeExecutionData
+	INodeExecutionData,
 } from 'n8n-workflow';
 
 import { descriptions } from './Descriptions';
@@ -20,6 +20,8 @@ import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
 import * as extractPages from './actions/extractPages';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
+import * as addHtmlHeaderFooter from './actions/addHtmlHeaderFooter';
+import * as addImageStampToPdf from './actions/addImageStampToPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -28,7 +30,7 @@ export class Pdf4me implements INodeType {
 	constructor(baseDescription: INodeTypeBaseDescription) {
 		this.description = {
 			...baseDescription,
-			...descriptions
+			...descriptions,
 		};
 	}
 
@@ -66,6 +68,10 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await extractPages.execute.call(this, i)));
 				} else if (action === ActionConstants.AddAttachmentToPdf) {
 					operationResult.push(...(await addAttachmentToPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.AddHtmlHeaderFooter) {
+					operationResult.push(...(await addHtmlHeaderFooter.execute.call(this, i)));
+				} else if (action === ActionConstants.AddImageStampToPdf) {
+					operationResult.push(...(await addImageStampToPdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

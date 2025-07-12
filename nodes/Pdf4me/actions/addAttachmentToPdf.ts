@@ -4,56 +4,58 @@ import {
 	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
+	ActionConstants,
 } from '../GenericFunctions';
 
+/**
+ * Add Attachment to PDF - PDF4Me API Implementation
+ * 
+ * API Endpoint: POST /api/v2/AddAttachmentToPdf
+ * 
+ * Request Structure (based on C# example):
+ * {
+ *   "docName": "sample.pdf",           // Required: Source PDF file name with .pdf extension
+ *   "docContent": "base64_content",    // Required: Base64 encoded PDF content
+ *   "attachments": [                   // Required: Array of attachments
+ *     {
+ *       "docName": "sample.txt",       // Required: Attachment file name with extension
+ *       "docContent": "base64_content" // Required: Base64 encoded attachment content
+ *     }
+ *   ],
+ *   "async": true                      // Optional: Use async processing for large files
+ * }
+ * 
+ * Response Handling:
+ * - 200: Immediate success, returns PDF with attachments as binary data
+ * - 202: Async processing, requires polling Location header for completion
+ * 
+ * This implementation supports multiple input methods:
+ * - Binary data from previous nodes
+ * - Base64 encoded strings
+ * - URLs to PDF files
+ * - Local file paths
+ */
+
 // Make Node.js globals available
-declare const Buffer: any;
-declare const URL: any;
+// declare const Buffer: any;
+// declare const URL: any;
 declare const require: any;
-declare const console: any;
-declare const process: any;
+// declare const console: any;
+// declare const process: any;
 
-// Debug configuration
+// Simplified debug configuration
 interface DebugConfig {
-	enabled: boolean;
-	logLevel: 'none' | 'basic' | 'detailed' | 'verbose';
-	logToConsole: boolean;
-	logToFile: boolean;
-	logFilePath?: string;
-	performanceTracking: boolean;
-	errorTracking: boolean;
+    enabled: boolean;
+    logLevel: 'none' | 'basic' | 'detailed';
+    logToConsole?: boolean;
 }
 
-// Performance tracking
-interface PerformanceMetrics {
-	startTime: number;
-	endTime?: number;
-	duration?: number;
-	steps: {
-		name: string;
-		startTime: number;
-		endTime?: number;
-		duration?: number;
-	}[];
-	memoryUsage?: {
-		heapUsed: number;
-		heapTotal: number;
-		external: number;
-	};
-}
-
-// Debug logger class
+// Simplified debug logger class
 class DebugLogger {
 	private config: DebugConfig;
-	private metrics: PerformanceMetrics;
-	private logs: string[] = [];
 
 	constructor(config: DebugConfig) {
 		this.config = config;
-		this.metrics = {
-			startTime: Date.now(),
-			steps: [],
-		};
 	}
 
 	log(level: string, message: string, data?: any): void {
@@ -61,66 +63,13 @@ class DebugLogger {
 
 		const timestamp = new Date().toISOString();
 		const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-		
-		this.logs.push(logEntry);
-		
-		if (data) {
-			this.logs.push(`Data: ${JSON.stringify(data, null, 2)}`);
-		}
-
-		if (this.config.logToConsole) {
+        
+		if (this.config.logToConsole !== false) {
 			console.log(logEntry);
 			if (data) {
 				console.log('Data:', data);
 			}
 		}
-	}
-
-	startStep(stepName: string): void {
-		if (!this.config.performanceTracking) return;
-		
-		this.metrics.steps.push({
-			name: stepName,
-			startTime: Date.now(),
-		});
-		
-		this.log('debug', `Starting step: ${stepName}`);
-	}
-
-	endStep(stepName: string): void {
-		if (!this.config.performanceTracking) return;
-		
-		const step = this.metrics.steps.find(s => s.name === stepName);
-		if (step) {
-			step.endTime = Date.now();
-			step.duration = step.endTime - step.startTime;
-			this.log('debug', `Completed step: ${stepName} (${step.duration}ms)`);
-		}
-	}
-
-	endExecution(): PerformanceMetrics {
-		this.metrics.endTime = Date.now();
-		this.metrics.duration = this.metrics.endTime - this.metrics.startTime;
-		
-		if (this.config.performanceTracking) {
-			// Get memory usage if available
-			if (typeof process !== 'undefined' && process.memoryUsage) {
-				this.metrics.memoryUsage = process.memoryUsage();
-			}
-			
-			this.log('info', `Total execution time: ${this.metrics.duration}ms`);
-			this.log('info', 'Performance metrics:', this.metrics);
-		}
-
-		return this.metrics;
-	}
-
-	getLogs(): string[] {
-		return [...this.logs];
-	}
-
-	clearLogs(): void {
-		this.logs = [];
 	}
 }
 
@@ -134,7 +83,7 @@ export const description: INodeProperties[] = [
 		description: 'Choose how to provide the PDF file to add attachments to',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 			},
 		},
 		options: [
@@ -170,7 +119,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 				inputDataType: ['binaryData'],
 			},
 		},
@@ -188,7 +137,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 				inputDataType: ['base64'],
 			},
 		},
@@ -203,7 +152,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 				inputDataType: ['url'],
 			},
 		},
@@ -218,7 +167,7 @@ export const description: INodeProperties[] = [
 		placeholder: '/path/to/document.pdf',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 				inputDataType: ['filePath'],
 			},
 		},
@@ -232,7 +181,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'my-document-with-attachments.pdf',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 			},
 		},
 	},
@@ -245,7 +194,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'original-file.pdf',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 			},
 		},
 	},
@@ -261,7 +210,7 @@ export const description: INodeProperties[] = [
 		description: 'Files to attach to the PDF document',
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 			},
 		},
 		options: [
@@ -374,7 +323,7 @@ export const description: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 			},
 		},
 		options: [
@@ -384,14 +333,14 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
 			{
 				displayName: 'Use Async Processing',
 				name: 'useAsync',
 				type: 'boolean',
 				default: true,
-				description: 'Whether to use asynchronous processing for better handling of large files',
+				description: 'Whether to use asynchronous processing. Recommended for big files and high call volumes to reduce server load',
 			},
 		],
 	},
@@ -403,7 +352,7 @@ export const description: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				operation: ['AddAttachmentToPdf'],
+				operation: [ActionConstants.AddAttachmentToPdf],
 			},
 		},
 		options: [
@@ -428,7 +377,6 @@ export const description: INodeProperties[] = [
 				options: [
 					{ name: 'Basic', value: 'basic', description: 'Essential information only' },
 					{ name: 'Detailed', value: 'detailed', description: 'Include step-by-step details' },
-					{ name: 'Verbose', value: 'verbose', description: 'Maximum detail including data dumps' },
 				],
 			},
 			{
@@ -443,30 +391,6 @@ export const description: INodeProperties[] = [
 					},
 				},
 			},
-			{
-				displayName: 'Track Performance',
-				name: 'trackPerformance',
-				type: 'boolean',
-				default: true,
-				description: 'Track execution time and memory usage',
-				displayOptions: {
-					show: {
-						enableDebug: [true],
-					},
-				},
-			},
-			{
-				displayName: 'Include Debug Info in Output',
-				name: 'includeDebugInOutput',
-				type: 'boolean',
-				default: false,
-				description: 'Include debug information in the node output',
-				displayOptions: {
-					show: {
-						enableDebug: [true],
-					},
-				},
-			},
 		],
 	},
 ];
@@ -475,11 +399,19 @@ export const description: INodeProperties[] = [
  * Add file attachments to a PDF document using PDF4Me API
  * Process: Read PDF & Attachments → Encode to base64 → Send API request → Poll for completion → Save PDF with attachments
  * This action allows attaching files (like .txt, .doc, .jpg, etc.) to PDF documents for additional document management
+ * 
+ * Troubleshooting "File could not be opened" error:
+ * 1. Ensure the PDF file is valid and not corrupted
+ * 2. Check that the PDF file is actually a PDF (starts with %PDF)
+ * 3. Verify the base64 encoding is correct
+ * 4. Ensure the docName has a .pdf extension
+ * 5. Check that attachment files are valid and properly encoded
+ * 6. Try with a simple, small PDF file first
+ * 7. Enable debug mode for detailed logging
  */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	// const docName = this.getNodeParameter('docName', index) as string; // Not used in current implementation
 	const attachments = this.getNodeParameter('attachments', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const debugOptions = this.getNodeParameter('debugOptions', index) as IDataObject;
@@ -489,10 +421,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const debugConfig: DebugConfig = {
 		enabled: debugOptions?.enableDebug === true,
 		logLevel: (debugOptions?.debugLogLevel as any) || 'basic',
-		logToConsole: debugOptions?.logToConsole !== false,
-		logToFile: false,
-		performanceTracking: debugOptions?.trackPerformance !== false,
-		errorTracking: true,
 	};
 
 	const logger = new DebugLogger(debugConfig);
@@ -504,8 +432,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	});
 
 	try {
-
-		logger.startStep('input_processing');
 		let docContent: string;
 
 		// Handle different input data types for the main PDF
@@ -529,11 +455,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				const availableProperties = Object.keys(item[0].binary).join(', ');
 				throw new Error(
 					`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
-					'Common property names are "data" for file uploads or the filename without extension.'
+                    'Common property names are "data" for file uploads or the filename without extension.'
 				);
 			}
 
-			docContent = item[0].binary[binaryPropertyName].data;
+			// Get binary data buffer and convert to base64
+			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+			docContent = buffer.toString('base64');
 			logger.log('debug', 'Binary data extracted', {
 				contentLength: docContent.length,
 				contentPreview: docContent.substring(0, 100) + '...',
@@ -569,33 +497,38 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
-		logger.endStep('input_processing');
 
-		logger.startStep('validation');
 		// Validate PDF content
 		validatePdfContent(docContent, inputDataType, logger);
-		logger.endStep('validation');
+        
+		// Additional validation for API request
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is empty or invalid');
+		}
+        
+		// Ensure docName has .pdf extension
+		const docName = this.getNodeParameter('docName', index) as string || 'document.pdf';
+		validateFileExtension(docName, '.pdf', logger);
 
-		logger.startStep('attachment_processing');
 		// Process attachments
 		const attachmentArray: IDataObject[] = [];
-		
+        
 		logger.log('debug', 'Processing attachments', {
 			hasAttachments: !!attachments.attachment,
 			attachmentCount: attachments.attachment && Array.isArray(attachments.attachment) ? attachments.attachment.length : 0,
 		});
-		
+        
 		if (attachments.attachment && Array.isArray(attachments.attachment)) {
 			for (let i = 0; i < attachments.attachment.length; i++) {
 				const attachment = attachments.attachment[i] as IDataObject;
 				const attachmentName = attachment.attachmentName as string;
 				const attachmentContentType = attachment.attachmentContentType as string;
-				
+                
 				logger.log('debug', `Processing attachment ${i + 1}/${attachments.attachment.length}`, {
 					name: attachmentName,
 					contentType: attachmentContentType,
 				});
-				
+                
 				let attachmentContent: string;
 
 				if (attachmentContentType === 'binaryData') {
@@ -614,7 +547,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						throw new Error(`Attachment binary field '${binaryFieldName}' not found.`);
 					}
 
-					attachmentContent = item[0].binary[binaryFieldName].data;
+					// Get attachment binary data buffer and convert to base64
+					const attachmentBuffer = await this.helpers.getBinaryDataBuffer(index, binaryFieldName);
+					attachmentContent = attachmentBuffer.toString('base64');
 					logger.log('debug', 'Attachment binary data extracted', {
 						contentLength: attachmentContent.length,
 						contentPreview: attachmentContent.substring(0, 100) + '...',
@@ -651,11 +586,37 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					throw new Error(`Unsupported attachment content type: ${attachmentContentType}`);
 				}
 
+				// Validate attachment name has proper extension
+				validateFileExtension(attachmentName, '', logger); // Empty string means just check for any extension
+                
+				// Validate attachment content (similar to PDF validation)
+				if (!attachmentContent || attachmentContent.trim() === '') {
+					throw new Error(`Empty attachment content for: ${attachmentName}`);
+				}
+
+				// Basic validation for attachment base64 content
+				try {
+					const attachmentBuffer = Buffer.from(attachmentContent, 'base64');
+					if (attachmentBuffer.length === 0) {
+						throw new Error(`Attachment content is empty for: ${attachmentName}`);
+					}
+					logger.log('debug', 'Attachment content validation passed', {
+						name: attachmentName,
+						decodedSize: attachmentBuffer.length,
+					});
+				} catch (error) {
+					logger.log('error', 'Invalid attachment base64 content', { 
+						name: attachmentName, 
+						error: error.message, 
+					});
+					throw new Error(`Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`);
+				}
+                
 				attachmentArray.push({
 					docName: attachmentName,
 					docContent: attachmentContent,
 				});
-				
+                
 				logger.log('debug', `Attachment ${i + 1} processed successfully`, { name: attachmentName });
 			}
 		}
@@ -663,20 +624,56 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (attachmentArray.length === 0) {
 			throw new Error('No attachments provided. Please add at least one attachment.');
 		}
-		logger.endStep('attachment_processing');
 
-		logger.startStep('request_preparation');
-		// Build the request body
+		// Build the request body according to API specification
 		const body: IDataObject = {
-			docName: outputFileName,
+			// PDF File Name - Required: Source PDF file name with .pdf extension
+			docName: docName,
+			// PDF File content - Required: The content of the input file (base64)
 			docContent: docContent,
+			// Attachments - List of attachments to be added to the PDF
 			attachments: attachmentArray,
 		};
+        
+		// Validate request body (following C# example validation pattern)
+		if (!body.docName || !body.docContent || !body.attachments || !Array.isArray(body.attachments) || body.attachments.length === 0) {
+			const missingFields = [];
+			if (!body.docName) missingFields.push('docName');
+			if (!body.docContent) missingFields.push('docContent');
+			if (!body.attachments || !Array.isArray(body.attachments) || body.attachments.length === 0) missingFields.push('attachments');
+            
+			throw new Error(`Missing required fields in request body: ${missingFields.join(', ')}. Required: docName, docContent, and at least one attachment.`);
+		}
 
 		logger.log('debug', 'Request body prepared', {
-			docName: outputFileName,
+			docName: body.docName,
 			contentLength: docContent.length,
 			attachmentCount: attachmentArray.length,
+			async: useAsync,
+			bodyKeys: Object.keys(body),
+		});
+        
+		// Log a sample of the request body for debugging (without exposing full content)
+		logger.log('debug', 'Request body sample', {
+			docName: body.docName,
+			docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
+			docContentPreview: typeof body.docContent === 'string' ? body.docContent.substring(0, 50) + '...' : 'none',
+			attachments: attachmentArray.map((att: any) => ({
+				name: att.docName,
+				contentLength: typeof att.docContent === 'string' ? att.docContent.length : 0,
+				contentPreview: typeof att.docContent === 'string' ? att.docContent.substring(0, 50) + '...' : 'none',
+			})),
+		});
+
+		// Additional debugging: Log the exact structure being sent (similar to C# example)
+		logger.log('debug', 'Final request structure', {
+			hasDocName: !!body.docName,
+			hasDocContent: !!body.docContent,
+			docContentType: typeof body.docContent,
+			hasAttachments: !!body.attachments,
+			attachmentCount: Array.isArray(body.attachments) ? body.attachments.length : 0,
+			asyncFlag: useAsync,
+			allKeys: Object.keys(body),
 		});
 
 		// Add custom profiles if provided
@@ -692,43 +689,47 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				throw new Error(`Invalid custom profiles JSON: ${error}`);
 			}
 		}
-		logger.endStep('request_preparation');
 
-		logger.startStep('api_request');
-		// Make the API request
+		// Make the API request (following C# example pattern)
 		let result: any;
 		logger.log('debug', 'Making API request', { useAsync, endpoint: '/api/v2/AddAttachmentToPdf' });
-		
+        
+		// Use the appropriate request method based on async setting
+		// For big files and too many calls async is recommended to reduce the server load
 		if (useAsync) {
 			result = await pdf4meAsyncRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
 		} else {
 			result = await pdf4meApiRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
 		}
-		
+        
 		logger.log('debug', 'API request completed successfully', {
 			resultType: typeof result,
 			resultLength: result ? result.length : 0,
 		});
-		logger.endStep('api_request');
 
-		logger.startStep('output_preparation');
+		// Ensure output filename has .pdf extension
+		let finalOutputFileName = outputFileName;
+		if (!finalOutputFileName.toLowerCase().endsWith('.pdf')) {
+			finalOutputFileName = `${finalOutputFileName.replace(/\.[^.]*$/, '')}.pdf`;
+			logger.log('debug', 'Added .pdf extension to output filename', { 
+				original: outputFileName, 
+				final: finalOutputFileName, 
+			});
+		}
+        
 		// Return the result as binary data
 		const binaryData = await this.helpers.prepareBinaryData(
 			result,
-			outputFileName,
+			finalOutputFileName,
 			'application/pdf',
 		);
-		logger.endStep('output_preparation');
 
-		// Get final performance metrics
-		const metrics = logger.endExecution();
-		
 		// Prepare output
 		const output: any = {
 			json: {
 				success: true,
 				message: 'PDF with attachments created successfully',
-				fileName: outputFileName,
+				fileName: finalOutputFileName,
 				mimeType: 'application/pdf',
 				fileSize: result.length,
 				attachmentCount: attachmentArray.length,
@@ -738,19 +739,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			},
 		};
 
-		// Include debug information if requested
-		if (debugOptions?.includeDebugInOutput && debugConfig.enabled) {
-			output.json.debug = {
-				performance: metrics,
-				logs: logger.getLogs(),
-				config: debugConfig,
-			};
-		}
-
 		logger.log('info', 'Add Attachment to PDF operation completed successfully', {
-			fileName: outputFileName,
+			fileName: finalOutputFileName,
 			attachmentCount: attachmentArray.length,
-			totalDuration: metrics.duration,
 		});
 
 		return [output];
@@ -759,19 +750,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			error: error.message,
 			stack: error.stack,
 		});
-		
-		// Get performance metrics even on error
-		const metrics = logger.endExecution();
-		
-		// Include debug information in error if requested
-		if (debugOptions?.includeDebugInOutput && debugConfig.enabled) {
-			throw new Error(`Add Attachment to PDF failed: ${error.message}\n\nDebug Info:\n${JSON.stringify({
-				performance: metrics,
-				logs: logger.getLogs(),
-				config: debugConfig,
-			}, null, 2)}`);
-		}
-		
+        
 		throw error;
 	}
 }
@@ -831,7 +810,7 @@ async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise
 				logger?.log('debug', 'File downloaded successfully', { 
 					url: pdfUrl, 
 					fileSize: totalSize, 
-					base64Length: base64Content.length 
+					base64Length: base64Content.length, 
 				});
 				resolve(base64Content);
 			});
@@ -862,14 +841,14 @@ async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise
  */
 async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
 	const fs = require('fs');
-	
+    
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
 		logger?.log('debug', 'File read successfully', { 
 			filePath, 
 			fileSize: fileBuffer.length, 
-			base64Length: base64Content.length 
+			base64Length: base64Content.length, 
 		});
 		return base64Content;
 	} catch (error) {
@@ -887,7 +866,21 @@ async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<
 }
 
 /**
- * Validate PDF content
+ * Validate file extension (helper function based on C# example)
+ */
+function validateFileExtension(fileName: string, expectedExtension: string, logger?: DebugLogger): void {
+	if (expectedExtension === '') {
+		// Just check for any extension
+		if (!fileName.includes('.')) {
+			logger?.log('warn', 'File name missing extension', { fileName });
+		}
+	} else if (!fileName.toLowerCase().endsWith(expectedExtension.toLowerCase())) {
+		logger?.log('warn', `File name missing ${expectedExtension} extension`, { fileName, expectedExtension });
+	}
+}
+
+/**
+ * Validate PDF content (enhanced validation based on C# example)
  */
 function validatePdfContent(docContent: string, inputDataType: string, logger?: DebugLogger): void {
 	if (!docContent || docContent.trim() === '') {
@@ -898,18 +891,43 @@ function validatePdfContent(docContent: string, inputDataType: string, logger?: 
 	logger?.log('debug', 'Validating PDF content', { 
 		inputDataType, 
 		contentLength: docContent.length,
-		contentPreview: docContent.substring(0, 100) + '...'
+		contentPreview: docContent.substring(0, 100) + '...',
 	});
 
-	// Basic validation for base64 content
-	if (inputDataType === 'base64') {
-		try {
-			Buffer.from(docContent, 'base64');
-			logger?.log('debug', 'Base64 validation passed');
-		} catch (error) {
-			logger?.log('error', 'Invalid base64 content', { error: error.message });
-			throw new Error('Invalid base64 encoded PDF content');
+	// Enhanced validation for base64 content (similar to C# example)
+	try {
+		const buffer = Buffer.from(docContent, 'base64');
+        
+		// Check if the decoded content is reasonable size (at least 100 bytes for a minimal PDF)
+		if (buffer.length < 100) {
+			logger?.log('error', 'Decoded content too small for a valid PDF', { 
+				decodedSize: buffer.length,
+				inputDataType, 
+			});
+			throw new Error(`Decoded content too small (${buffer.length} bytes) for a valid PDF file`);
 		}
+
+		// Check if it starts with PDF signature (%PDF)
+		const pdfSignature = buffer.toString('ascii', 0, 4);
+		if (pdfSignature !== '%PDF') {
+			logger?.log('warn', 'Content does not start with PDF signature', { 
+				signature: pdfSignature,
+				inputDataType, 
+			});
+			// Don't throw error here as some PDFs might have different headers
+		}
+
+		logger?.log('debug', 'PDF content validation passed', {
+			decodedSize: buffer.length,
+			pdfSignature: pdfSignature,
+			inputDataType,
+		});
+	} catch (error) {
+		if (error.message.includes('Decoded content too small') || error.message.includes('PDF signature')) {
+			throw error;
+		}
+		logger?.log('error', 'Invalid base64 content', { error: error.message });
+		throw new Error(`Invalid base64 encoded PDF content: ${error.message}`);
 	}
 
 	logger?.log('debug', 'PDF content validation completed successfully');
