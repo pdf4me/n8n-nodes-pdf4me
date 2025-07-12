@@ -45,7 +45,10 @@
     ]
   },
   "devDependencies": {
+    "@types/node": "20.19.7",
+    "@typescript-eslint/eslint-plugin": "~5.45",
     "@typescript-eslint/parser": "~5.45",
+    "axios": "1.10.0",
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
     "gulp": "^4.0.2",
     "merge-stream": "^2.0.0",
