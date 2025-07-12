@@ -7,7 +7,7 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer available (it's a Node.js global)
-declare const Buffer: any;
+// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -125,10 +125,10 @@ export const description: INodeProperties[] = [
 			{ name: 'A6', value: 'A6' },
 			{ name: 'A7', value: 'A7' },
 			{ name: 'A8', value: 'A8' },
-			{ name: 'Tabloid', value: 'Tabloid' },
+			{ name: 'Executive', value: 'Executive' },
 			{ name: 'Legal', value: 'Legal' },
 			{ name: 'Statement', value: 'Statement' },
-			{ name: 'Executive', value: 'Executive' },
+			{ name: 'Tabloid', value: 'Tabloid' },
 		],
 	},
 	{
@@ -143,6 +143,52 @@ export const description: INodeProperties[] = [
 			},
 		},
 		options: [
+			{
+				displayName: 'Bottom Margin',
+				name: 'bottomMargin',
+				type: 'string',
+				default: '20px',
+				description: 'Bottom margin of PDF (e.g., 20px, 1cm, 0.5in)',
+				placeholder: '20px',
+			},
+			{
+				displayName: 'Custom Profiles',
+				name: 'profiles',
+				type: 'string',
+				default: '',
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
+			},
+			{
+				displayName: 'Display Header Footer',
+				name: 'displayHeaderFooter',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to show header and footer in PDF',
+			},
+			{
+				displayName: 'Left Margin',
+				name: 'leftMargin',
+				type: 'string',
+				default: '20px',
+				description: 'Left margin of PDF (e.g., 20px, 1cm, 0.5in)',
+				placeholder: '20px',
+			},
+			{
+				displayName: 'Print Background',
+				name: 'printBackground',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to include background colors and images',
+			},
+			{
+				displayName: 'Right Margin',
+				name: 'rightMargin',
+				type: 'string',
+				default: '20px',
+				description: 'Right margin of PDF (e.g., 20px, 1cm, 0.5in)',
+				placeholder: '20px',
+			},
 			{
 				displayName: 'Scale',
 				name: 'scale',
@@ -162,52 +208,6 @@ export const description: INodeProperties[] = [
 				default: '20px',
 				description: 'Top margin of PDF (e.g., 20px, 1cm, 0.5in)',
 				placeholder: '20px',
-			},
-			{
-				displayName: 'Left Margin',
-				name: 'leftMargin',
-				type: 'string',
-				default: '20px',
-				description: 'Left margin of PDF (e.g., 20px, 1cm, 0.5in)',
-				placeholder: '20px',
-			},
-			{
-				displayName: 'Right Margin',
-				name: 'rightMargin',
-				type: 'string',
-				default: '20px',
-				description: 'Right margin of PDF (e.g., 20px, 1cm, 0.5in)',
-				placeholder: '20px',
-			},
-			{
-				displayName: 'Bottom Margin',
-				name: 'bottomMargin',
-				type: 'string',
-				default: '20px',
-				description: 'Bottom margin of PDF (e.g., 20px, 1cm, 0.5in)',
-				placeholder: '20px',
-			},
-			{
-				displayName: 'Print Background',
-				name: 'printBackground',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to include background colors and images',
-			},
-			{
-				displayName: 'Display Header Footer',
-				name: 'displayHeaderFooter',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to show header and footer in PDF',
-			},
-			{
-				displayName: 'Custom Profiles',
-				name: 'profiles',
-				type: 'string',
-				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
 			},
 		],
 	},
@@ -249,7 +249,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertUrlToPdf', body);
 
-		// Handle the binary response (PDF data)
+	// Handle the binary response (PDF data)
 	if (responseData) {
 		// Generate filename if not provided
 		let fileName = docName;

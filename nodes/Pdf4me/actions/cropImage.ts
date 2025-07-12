@@ -7,8 +7,8 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer and setTimeout available (Node.js globals)
-declare const Buffer: any;
-declare const setTimeout: any;
+// declare const Buffer: any;
+// declare const setTimeout: any;
 declare const require: any;
 
 export const description: INodeProperties[] = [
@@ -278,7 +278,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
-				placeholder: `{ 'outputDataFormat': 'base64' }`,
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
 		],
 	},
@@ -293,13 +293,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Only get the relevant options based on crop type
 	let borderOptions: IDataObject = {};
 	let rectangleOptions: IDataObject = {};
-	
+    
 	if (cropType === 'Border') {
 		borderOptions = this.getNodeParameter('borderOptions', index) as IDataObject;
 	} else if (cropType === 'Rectangle') {
 		rectangleOptions = this.getNodeParameter('rectangleOptions', index) as IDataObject;
 	}
-	
+    
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;

@@ -4,8 +4,8 @@ import { sanitizeProfiles, ActionConstants } from '../GenericFunctions';
 import { pdf4meAsyncRequest } from '../GenericFunctions';
 
 // Make Node.js globals available
-declare const Buffer: any;
-declare const URL: any;
+// declare const Buffer: any;
+// declare const URL: any;
 declare const require: any;
 
 export const description: INodeProperties[] = [
@@ -154,7 +154,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls and may be specific to certain APIs.',
-				placeholder: `{ 'outputDataFormat': 'json' }`,
+				placeholder: '{ \'outputDataFormat\': \'json\' }',
 			},
 		],
 	},
@@ -179,7 +179,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const availableProperties = Object.keys(item[0].binary).join(', ');
 			throw new Error(
 				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
-				'Common property names are "data" for file uploads or the filename without extension.'
+                'Common property names are "data" for file uploads or the filename without extension.'
 			);
 		}
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
