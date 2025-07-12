@@ -53,7 +53,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
 ```json
 {
   "name": "n8n-custom",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -61,7 +61,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^0.8.0"
+    "n8n-nodes-pdf4me": "^0.9.0"
   }
 }
 ```
@@ -70,130 +70,90 @@ For Docker-based deployments, add the package to your package.json and rebuild t
 
 This node provides comprehensive document processing capabilities through PDF4ME's API. Here are the available features:
 
-### 1. Barcode Generation
-**Generate Barcode**: Create various types of barcodes with customizable options
+### 1. PDF Processing & Conversion
+- **Add Attachment to PDF**: Attach files to PDF documents
+- **Add HTML Header Footer**: Add custom HTML headers and footers to PDFs
+- **Add Image Stamp to PDF**: Add image stamps with positioning and opacity controls
+- **Add Margin to PDF**: Add margins to PDF documents
+- **Add Page Number to PDF**: Add page numbers to PDF documents
+- **Add Text Stamp to PDF**: Add text stamps with customizable formatting
+- **Compress PDF**: Optimize PDF files for web, print, or screen viewing
+- **Convert from PDF**: Convert PDFs to Word or Excel with OCR support
+- **Create Images from PDF**: Extract images from PDF documents
+- **Delete Blank Pages from PDF**: Remove blank pages from PDF documents
+- **Delete Unwanted Pages from PDF**: Remove specific pages from PDF documents
+- **Extract Pages**: Extract specific pages from PDF documents
+- **Merge Multiple PDFs**: Combine multiple PDF files into one
+- **Overlay PDFs**: Overlay one PDF on top of another
+- **Protect Document**: Add password protection and encryption to PDFs
+- **Repair PDF Document**: Fix corrupted or damaged PDF files
+- **Rotate Document**: Rotate entire PDF documents
+- **Rotate Page**: Rotate specific pages within a PDF
+- **Sign PDF**: Add digital signatures to PDF documents
+- **Unlock PDF**: Remove password protection from PDFs
+- **Update Hyperlinks Annotation**: Modify hyperlinks and annotations in PDFs
 
-#### Supported Barcode Types
-- **QR Code** (default)
-- **Code 128, Code 39, Code 93**
-- **EAN-8, EAN-13, EAN-14**
-- **UPC-A, UPC-E**
-- **PDF417, Micro PDF417**
-- **Data Matrix**
-- **Aztec**
-- **MaxiCode**
-- And many more (100+ barcode types supported)
+### 2. Image Processing
+- **Add Image Watermark to Image**: Add watermarks to images
+- **Add Text Watermark to Image**: Add text watermarks to images
+- **Compress Image**: Reduce image file sizes while maintaining quality
+- **Convert Image Format**: Convert images between different formats (JPEG, PNG, etc.)
+- **Crop Image**: Crop images with border or rectangle options
+- **Flip Image**: Flip images horizontally, vertically, or both
+- **Get Image Metadata**: Extract metadata from image files
+- **Image Extract Text**: Extract text from images using OCR
+- **Read Barcode from Image**: Read barcodes from images
+- **Remove EXIF Tags from Image**: Remove metadata from images
+- **Replace Text with Image**: Replace text in documents with images
+- **Resize Image**: Resize images to specific dimensions
+- **Rotate Image**: Rotate images by specific angles
+- **Rotate Image by EXIF Data**: Auto-rotate images based on EXIF orientation
 
-#### Parameters
-- **File Name**: Name for the generated barcode file
-- **File Content**: Base64 encoded content of input file (optional)
-- **Text**: The text/data to encode in the barcode
-- **Barcode Type**: Select from 100+ supported barcode formats
-- **Hide Text**: Whether to hide or display the text alongside the barcode
-- **Additional Options**: Various formatting and styling options
+### 3. Document Conversion
+- **Convert to PDF**: Convert various document formats to PDF
+- **Document to PDF**: Convert documents to PDF format
+- **HTML to PDF**: Convert HTML content to PDF
+- **JSON to Excel**: Convert JSON data to Excel spreadsheets
+- **Markdown to PDF**: Convert Markdown files to PDF
+- **PNG to PDF**: Convert PNG images to PDF
+- **PPTX to PDF**: Convert PowerPoint presentations to PDF
+- **URL to PDF**: Convert web pages to PDF
+- **Visio to PDF**: Convert Visio diagrams to PDF
+- **Word to PDF Form**: Convert Word documents to PDF forms
+- **XLSX to PDF**: Convert Excel spreadsheets to PDF
 
-### 2. URL/HTML to PDF Conversion
-**URL to PDF**: Convert web pages to PDF while preserving layout, styling, and content
+### 4. Barcode Operations
+- **Barcode Generator**: Generate various types of barcodes (QR, Code 128, EAN, UPC, etc.)
+- **Read Barcode from Image**: Extract barcode data from images
 
-#### Parameters
-- **Web URL**: The URL of the web page to convert (required)
-- **File Name**: Name for the generated PDF file
-- **Authentication Type**: NoAuth or Basic authentication for protected sites
-- **Username/Password**: Credentials if Basic authentication is required
-- **Page Layout**: Portrait or Landscape orientation
-- **Page Format**: A0-A8, Tabloid, Legal, Statement, Executive formats
-- **Advanced Options**: 
-  - **Scale**: Zoom factor for the web page (0.1 to 2.0)
-  - **Margins**: Top, Left, Right, Bottom margins (e.g., 20px, 1cm, 0.5in)
-  - **Print Background**: Include background colors and images
-  - **Display Header Footer**: Show header and footer in PDF
-  - **Custom Profiles**: Additional API configuration options
+### 5. Document Analysis & Extraction
+- **Classify Document**: Automatically classify document types
+- **Extract**: Extract various elements from documents
+- **Extract Attachment from PDF**: Extract attached files from PDFs
+- **Extract Form Data from PDF**: Extract form field data from PDFs
+- **Extract Pages from PDF**: Extract specific pages from PDFs
+- **Extract Resources**: Extract resources from documents
+- **Extract Table from PDF**: Extract tables from PDF documents
+- **Extract Text by Expression**: Extract text using custom expressions
+- **Extract Text from Word**: Extract text from Word documents
+- **Find Search**: Search for specific content in documents
+- **Get Document from PDF4ME**: Retrieve documents from PDF4ME storage
+- **Get PDF Metadata**: Extract metadata from PDF files
 
-### 3. PDF to Other Formats
-**PDF to Word**: Convert PDF documents to editable Word format with OCR support
+### 6. Document Management
+- **Create PDF/A**: Create PDF/A compliant documents
+- **Disable Tracking Changes in Word**: Remove tracking changes from Word documents
+- **Edit**: Edit document properties and content
+- **Flatten PDF**: Flatten PDF forms and annotations
+- **Form**: Process PDF forms
+- **Generate**: Generate documents from templates
+- **Linearize PDF**: Optimize PDFs for web streaming
+- **Organize**: Organize document structure
+- **Upload File**: Upload files to PDF4ME storage
 
-#### Parameters
-- **Input Data Type**: Choose between Binary Data (from previous node), Base64 String, URL, or File Path
-- **Input Binary Field**: Name of the binary property containing the PDF (when using Binary Data)
-- **Base64 PDF Content**: Direct base64 encoded PDF content (when using Base64 String)
-- **PDF URL**: URL to the PDF file to convert (when using URL)
-- **Local File Path**: Path to PDF file on local filesystem (when using File Path)
-- **Output File Name**: Name for the generated Word document
-- **Document Name**: Name of the source PDF file for reference
-- **Quality Type**: 
-  - **Draft**: Faster conversion, good for simple PDFs with clear text
-  - **Quality**: Slower but more accurate, better for complex layouts
-- **OCR Language**: Language for text recognition (English, Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese, Korean, Arabic, Dutch, Swedish, Norwegian, Danish, Finnish)
-- **Advanced Options**:
-  - **Merge All Sheets**: Combine multiple pages into single document flow
-  - **Preserve Output Format**: Maintain original formatting when possible
-  - **Use OCR When Needed**: Enable OCR for scanned PDFs
-  - **Use Async Processing**: Enhanced timeout handling for complex PDFs (up to 25 minutes)
-  - **Max Retries**: Maximum polling attempts for async processing (increased for complex PDFs)
-  - **Retry Delay**: Base seconds between polling attempts (actual delay increases exponentially)
-  - **Custom Profiles**: Additional API configuration options
-
-### 4. Data Conversion
-**JSON to Excel**: Convert JSON data to Excel spreadsheet with customizable formatting
-
-#### Parameters
-- **Input Data Type**: Choose between JSON String (direct input), Binary Data (from previous node), or Base64 String
-- **JSON Content**: Direct JSON data input with syntax highlighting (when using JSON String)
-- **Input Binary Field**: Name of the binary property containing the JSON file (when using Binary Data)
-- **Base64 JSON Content**: Direct base64 encoded JSON content (when using Base64 String)
-- **Output File Name**: Name for the generated Excel file
-- **Document Name**: Name of the output document for reference
-- **Worksheet Name**: Name of the Excel worksheet (default: Sheet1)
-- **Advanced Options**:
-  - **Title Bold**: Make the title row bold (default: true)
-  - **Title Wrap Text**: Wrap text in title cells (default: true)
-  - **Convert Numbers and Dates**: Automatically convert numbers and dates (default: false)
-  - **Ignore Null Values**: Ignore null values in the JSON (default: false)
-  - **Number Format**: Excel number format codes (0-22) for General, Number, Currency, Percentage, Scientific, Fraction, Date/Time formats
-  - **Date Format**: Date format pattern for Excel cells (e.g., MM/dd/yyyy)
-  - **First Row**: Starting row number (1-based, default: 1)
-  - **First Column**: Starting column number (1-based, default: 1)
-  - **Custom Profiles**: Additional API configuration options
-
-### 5. Image Processing
-**Crop Image**: Crop images with border or rectangle cropping options
-
-#### Parameters
-- **Input Data Type**: Choose between Binary Data (from previous node), Base64 String, or File Path
-- **Input Binary Field**: Name of the binary property containing the image file (when using Binary Data)
-- **Base64 Image Content**: Direct base64 encoded image content (when using Base64 String)
-- **Local File Path**: Path to image file on local filesystem (when using File Path)
-- **Output File Name**: Name for the output cropped image file
-- **Document Name**: Name of the source image file for reference
-- **Crop Type**: 
-  - **Border**: Crop by removing borders from all sides
-  - **Rectangle**: Crop to a specific rectangular area
-- **Border Cropping Options** (when Crop Type = Border):
-  - **Left Border**: Number of pixels to crop from the left border
-  - **Right Border**: Number of pixels to crop from the right border
-  - **Top Border**: Number of pixels to crop from the top border
-  - **Bottom Border**: Number of pixels to crop from the bottom border
-- **Rectangle Cropping Options** (when Crop Type = Rectangle):
-  - **Upper Left X**: X coordinate of the upper left corner of the crop rectangle
-  - **Upper Left Y**: Y coordinate of the upper left corner of the crop rectangle
-  - **Width**: Width of the crop rectangle in pixels
-  - **Height**: Height of the crop rectangle in pixels
-- **Advanced Options**:
-  - **Custom Profiles**: Additional API configuration options
-
-### 6. PDF Page Management
-**Extract Pages**: Extract specific pages from PDF documents to create shorter versions or digital booklets
-
-#### Parameters
-- **Input Data Type**: Choose between Binary Data (from previous node), Base64 String, URL, or File Path
-- **Input Binary Field**: Name of the binary property containing the PDF file (when using Binary Data)
-- **Base64 PDF Content**: Direct base64 encoded PDF content (when using Base64 String)
-- **PDF URL**: URL to the PDF file to extract pages from (when using URL)
-- **Local File Path**: Path to PDF file on local filesystem (when using File Path)
-- **Document Name**: Name of the output PDF document
-- **Page Numbers**: Page numbers to extract (e.g. "1" or "1,3,5" or "2-4" or "1, 2, 3-7"). Page indices start from 1.
-- **Advanced Options**:
-  - **Custom Profiles**: Additional API configuration options
+### 7. Advanced Features
+- **Router**: Route documents based on conditions
+- **Split PDF**: Split PDF documents into multiple files
 
 ## Credentials
 
@@ -213,12 +173,15 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Extract text from PDF documents for data processing
 - Convert various document formats to PDF
 - Extract specific pages from PDF documents for creating shorter versions or digital booklets
+- Add watermarks, stamps, and annotations to documents
+- Compress and optimize PDF files for different use cases
 
 ### Barcode Operations
 - Generate QR codes for product tracking
 - Create product barcodes (EAN-13, UPC-A) for inventory management
 - Generate barcodes for document identification
 - Embed barcodes in documents and reports
+- Read barcodes from images for automated processing
 
 ### Web Content Processing
 - Convert web pages to PDF for archiving
@@ -237,12 +200,15 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Remove borders from scanned documents
 - Process product images for e-commerce
 - Create thumbnails and optimized images
+- Add watermarks to images for branding
+- Extract text from images using OCR
 
 ### Automated Workflows
 - Chain multiple PDF4ME operations together
 - Integrate with email nodes for automated document distribution
 - Connect with storage services for file management
 - Build complete document processing pipelines
+- Automate document classification and routing
 
 For detailed examples and workflow templates, visit our documentation.
 
@@ -257,8 +223,24 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 0.9.0
+- **Current Version**: Comprehensive document processing capabilities with 50+ actions
+- Full integration with PDF4ME API services
+- Complete PDF processing suite including conversion, manipulation, and analysis
+- Advanced image processing capabilities with watermarking, cropping, and format conversion
+- Comprehensive barcode generation and reading functionality
+- Document conversion between multiple formats (PDF, Word, Excel, HTML, etc.)
+- Enhanced timeout handling for complex operations (up to 25 minutes)
+- Improved async processing with exponential backoff and better error handling
+- Support for multiple input types (Binary Data, Base64, URL, File Path)
+- Advanced OCR capabilities with multi-language support
+- Document protection, signing, and security features
+- Metadata extraction and document analysis tools
+- All critical lint errors resolved for production readiness
+- Optimized package structure and build validation
+
 ### 0.8.0
-- **Current Version**: Comprehensive document processing capabilities
+- Comprehensive document processing capabilities
 - Full integration with PDF4ME API services
 - Support for barcode generation, URL to PDF conversion, PDF to Word conversion, JSON to Excel conversion, image cropping, and PDF page extraction
 - Enhanced timeout handling for complex PDF to Word conversions (up to 25 minutes)
