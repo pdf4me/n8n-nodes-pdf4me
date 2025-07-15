@@ -8,28 +8,28 @@ import {
 
 /**
  * Add HTML Header Footer to PDF - PDF4Me API Implementation
- * 
+ *
  * API Endpoint: POST /api/v2/AddHtmlHeaderFooter
- * 
+ *
  * Request Structure (based on Python example):
  * {
- *   "docContent": "base64_content",    // Required: Base64 encoded PDF content
- *   "docName": "output.pdf",           // Required: Output PDF file name
+ *   "docContent": "base64_content",	// Required: Base64 encoded PDF content
+ *   "docName": "output.pdf",		   // Required: Output PDF file name
  *   "htmlContent": "<div>header</div>", // Required: HTML content (plain HTML, not base64)
- *   "pages": "1",                      // Required: Page options: "", "1", "1,3,5", "2-5", "1,3,7-10", "2-"
- *   "location": "Header",              // Required: Location options: "Header", "Footer", "Both"
- *   "skipFirstPage": false,            // Required: Skip first page (true/false)
- *   "marginLeft": 2.01,                // Required: Left margin in pixels (double)
- *   "marginRight": 2.01,               // Required: Right margin in pixels (double)
- *   "marginTop": 3.01,                 // Required: Top margin in pixels (double)
- *   "marginBottom": 5.01,              // Required: Bottom margin in pixels (double)
- *   "async": true                      // Optional: Use async processing for large files
+ *   "pages": "1",					  // Required: Page options: "", "1", "1,3,5", "2-5", "1,3,7-10", "2-"
+ *   "location": "Header",			  // Required: Location options: "Header", "Footer", "Both"
+ *   "skipFirstPage": false,			// Required: Skip first page (true/false)
+ *   "marginLeft": 2.01,				// Required: Left margin in pixels (double)
+ *   "marginRight": 2.01,			   // Required: Right margin in pixels (double)
+ *   "marginTop": 3.01,				 // Required: Top margin in pixels (double)
+ *   "marginBottom": 5.01,			  // Required: Bottom margin in pixels (double)
+ *   "async": true					  // Optional: Use async processing for large files
  * }
- * 
+ *
  * Response Handling:
  * - 200: Immediate success, returns PDF with HTML header/footer as binary data
  * - 202: Async processing, requires polling Location header for completion
- * 
+ *
  * This implementation supports multiple input methods:
  * - Binary data from previous nodes
  * - Base64 encoded strings
@@ -46,9 +46,9 @@ declare const require: any;
 
 // Simplified debug configuration
 interface DebugConfig {
-    enabled: boolean;
-    logLevel: 'none' | 'basic' | 'detailed';
-    logToConsole?: boolean;
+	enabled: boolean;
+	logLevel: 'none' | 'basic' | 'detailed';
+	logToConsole?: boolean;
 }
 
 // Simplified debug logger class
@@ -62,13 +62,11 @@ class DebugLogger {
 	log(level: string, message: string, data?: any): void {
 		if (!this.config.enabled) return;
 
-		const timestamp = new Date().toISOString();
-		const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-        
+
+
 		if (this.config.logToConsole !== false) {
-			console.log(logEntry);
 			if (data) {
-				console.log('Data:', data);
+				// Log data if needed
 			}
 		}
 	}
@@ -248,7 +246,7 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Margin Left (px)',
+		displayName: 'Margin Left (Px)',
 		name: 'marginLeft',
 		type: 'number',
 		required: true,
@@ -265,7 +263,7 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Margin Right (px)',
+		displayName: 'Margin Right (Px)',
 		name: 'marginRight',
 		type: 'number',
 		required: true,
@@ -282,7 +280,7 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Margin Top (px)',
+		displayName: 'Margin Top (Px)',
 		name: 'marginTop',
 		type: 'number',
 		required: true,
@@ -299,7 +297,7 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Margin Bottom (px)',
+		displayName: 'Margin Bottom (Px)',
 		name: 'marginBottom',
 		type: 'number',
 		required: true,
@@ -547,13 +545,13 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string, logge
 			url: pdfUrl,
 			encoding: null,
 		});
-        
+
 		if (response.statusCode !== 200) {
 			throw new Error(`Failed to download PDF from URL: ${response.statusCode}`);
 		}
 
 		const buffer = Buffer.from(response.body);
-        
+
 		// Validate that it's actually a PDF
 		const pdfHeader = buffer.toString('ascii', 0, 4);
 		if (pdfHeader !== '%PDF') {
@@ -562,7 +560,7 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string, logge
 
 		const base64Content = buffer.toString('base64');
 		logger?.log('info', `Successfully downloaded PDF: ${buffer.length} bytes`);
-        
+
 		return base64Content;
 
 	} catch (error) {
@@ -601,7 +599,7 @@ async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<
 
 		// Read the file
 		const buffer = fs.readFileSync(filePath);
-        
+
 		// Validate that it's actually a PDF
 		const pdfHeader = buffer.toString('ascii', 0, 4);
 		if (pdfHeader !== '%PDF') {
@@ -610,7 +608,7 @@ async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<
 
 		const base64Content = buffer.toString('base64');
 		logger?.log('info', `Successfully read PDF file: ${buffer.length} bytes`);
-        
+
 		return base64Content;
 
 	} catch (error) {

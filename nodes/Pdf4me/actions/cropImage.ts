@@ -293,13 +293,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Only get the relevant options based on crop type
 	let borderOptions: IDataObject = {};
 	let rectangleOptions: IDataObject = {};
-    
+
 	if (cropType === 'Border') {
 		borderOptions = this.getNodeParameter('borderOptions', index) as IDataObject;
 	} else if (cropType === 'Rectangle') {
 		rectangleOptions = this.getNodeParameter('rectangleOptions', index) as IDataObject;
 	}
-    
+
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -404,7 +404,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		this,
 		`/api/v2/CropImage?schemaVal=${cropType}`,
 		body,
-		'POST'
+		'POST',
 	);
 
 	// Handle the binary response (cropped image data)

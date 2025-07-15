@@ -10,16 +10,16 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'Choose how to provide the PDF file to protect',
+		description: 'Choose how to provide the Word document to process',
 		options: [
-			{ name: 'Binary Data', value: 'binaryData', description: 'Use PDF file from previous node' },
-			{ name: 'Base64 String', value: 'base64', description: 'Provide PDF content as base64 encoded string' },
-			{ name: 'URL', value: 'url', description: 'Provide URL to PDF file' },
-			{ name: 'File Path', value: 'filePath', description: 'Provide local file path to PDF file' },
+			{ name: 'Binary Data', value: 'binaryData', description: 'Use Word document from previous node' },
+			{ name: 'Base64 String', value: 'base64', description: 'Provide Word document content as base64 encoded string' },
+			{ name: 'URL', value: 'url', description: 'Provide URL to Word document' },
+			{ name: 'File Path', value: 'filePath', description: 'Provide local file path to Word document' },
 		],
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 			},
 		},
 	},
@@ -29,42 +29,42 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: 'data',
-		description: 'Name of the binary property that contains the PDF file (usually "data" for file uploads)',
+		description: 'Name of the binary property that contains the Word document (usually "data" for file uploads)',
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 				inputDataType: ['binaryData'],
 			},
 		},
 	},
 	{
-		displayName: 'Base64 PDF Content',
+		displayName: 'Base64 Word Content',
 		name: 'base64Content',
 		type: 'string',
 		typeOptions: { alwaysOpenEditWindow: true },
 		required: true,
 		default: '',
-		description: 'Base64 encoded PDF document content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
+		description: 'Base64 encoded Word document content',
+		placeholder: 'UEsDBBQABgAIAAAAIQ...',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 				inputDataType: ['base64'],
 			},
 		},
 	},
 	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
+		displayName: 'Word Document URL',
+		name: 'docUrl',
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'URL to the PDF file to protect',
-		placeholder: 'https://example.com/document.pdf',
+		description: 'URL to the Word document to process',
+		placeholder: 'https://example.com/document.docx',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 				inputDataType: ['url'],
 			},
 		},
@@ -75,11 +75,11 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Local file path to the PDF file to protect',
-		placeholder: '/path/to/document.pdf',
+		description: 'Local file path to the Word document to process',
+		placeholder: '/path/to/document.docx',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 				inputDataType: ['filePath'],
 			},
 		},
@@ -88,45 +88,11 @@ export const description: INodeProperties[] = [
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
-		default: 'protected_output.pdf',
-		description: 'Name for the output protected PDF file',
+		default: 'tracking_enabled_output.docx',
+		description: 'Name for the output processed Word document',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
-			},
-		},
-	},
-	{
-		displayName: 'Password',
-		name: 'password',
-		type: 'string',
-		typeOptions: { password: true },
-		default: '1234',
-		description: 'Password to protect the PDF',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ProtectDocument],
-			},
-		},
-	},
-	{
-		displayName: 'PDF Permission',
-		name: 'pdfPermission',
-		type: 'options',
-		options: [
-			{ name: 'All', value: 'All' },
-			{ name: 'Print', value: 'Print' },
-			{ name: 'Copy', value: 'Copy' },
-			{ name: 'Edit', value: 'Edit' },
-			{ name: 'Fill Forms', value: 'FillForms' },
-			{ name: 'Comment', value: 'Comment' },
-			{ name: 'Assemble', value: 'Assemble' },
-		],
-		default: 'All',
-		description: 'Permissions to allow on the protected PDF',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 			},
 		},
 	},
@@ -138,7 +104,7 @@ export const description: INodeProperties[] = [
 		description: 'Process asynchronously',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ProtectDocument],
+				operation: [ActionConstants.EnableTrackingChangesInWord],
 			},
 		},
 	},
@@ -147,11 +113,9 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const password = this.getNodeParameter('password', index) as string;
-	const pdfPermission = this.getNodeParameter('pdfPermission', index) as string;
 	const useAsync = this.getNodeParameter('async', index) as boolean;
 
-	// Main PDF content
+	// Main document content
 	let docContent: string;
 	let docName: string = outputFileName;
 	if (inputDataType === 'binaryData') {
@@ -170,11 +134,11 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docContent = fileBuffer.toString('base64');
 		docName = filePath.split('/').pop() || outputFileName;
 	} else if (inputDataType === 'url') {
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
+		const docUrl = this.getNodeParameter('docUrl', index) as string;
+		const response = await axios.get(docUrl, { responseType: 'arraybuffer' });
 		const buffer = Buffer.from(response.data, 'binary');
 		docContent = buffer.toString('base64');
-		docName = pdfUrl.split('/').pop() || outputFileName;
+		docName = docUrl.split('/').pop() || outputFileName;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -183,19 +147,17 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const body: IDataObject = {
 		docName,
 		docContent,
-		password,
-		pdfPermission,
 		async: useAsync,
 	};
 
 	// Make the API request
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Protect', body);
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/EnableTrackingChangesInWord', body);
 
 	// Return the result as binary data
 	return [
 		{
 			binary: {
-				data: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/pdf'),
+				data: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
 			},
 			json: {},
 		},

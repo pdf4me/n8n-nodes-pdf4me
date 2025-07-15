@@ -12,7 +12,6 @@ import { NodeApiError } from 'n8n-workflow';
 // Declare Node.js globals
 declare const setTimeout: any;
 declare const Buffer: any;
-declare const console: any;
 
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
@@ -45,10 +44,6 @@ export async function pdf4meApiRequest(
 
 	try {
 		// Debug: Log authentication info (without exposing the full key)
-		const apiKey = credentials.apiKey as string;
-		const apiKeyLength = apiKey ? apiKey.length : 0;
-		const apiKeyPrefix = apiKey ? apiKey.substring(0, 4) : 'none';
-		console.log(`API Authentication Debug: Key length: ${apiKeyLength}, Prefix: ${apiKeyPrefix}...`);
 
 		const response = await this.helpers.request(options);
 
@@ -67,7 +62,6 @@ export async function pdf4meApiRequest(
 				try {
 					result = Buffer.from(response.body, 'base64');
 				} catch (error) {
-					console.error('Base64 conversion failed:', error);
 					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 				}
 			} else {
@@ -109,6 +103,9 @@ export async function pdf4meAsyncRequest(
 	// Add async flag to body
 	const asyncBody = { ...body, async: true };
 
+	// Determine if this is a JSON response operation (like CreateImages)
+	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf');
+
 	let options: IRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
 		url: url,
@@ -119,7 +116,7 @@ export async function pdf4meAsyncRequest(
 		method,
 		qs,
 		body: asyncBody,
-		json: true,
+		json: isJsonResponse, // Parse as JSON for CreateImages operations
 		resolveWithFullResponse: true, // Need full response to get headers
 		simple: false, // Don't throw on non-2xx status codes
 		encoding: null, // For potential binary response
@@ -129,41 +126,43 @@ export async function pdf4meAsyncRequest(
 
 	try {
 		// Debug: Log authentication info (without exposing the full key)
-		const apiKey = credentials.apiKey as string;
-		const apiKeyLength = apiKey ? apiKey.length : 0;
-		const apiKeyPrefix = apiKey ? apiKey.substring(0, 4) : 'none';
-		console.log(`API Authentication Debug: Key length: ${apiKeyLength}, Prefix: ${apiKeyPrefix}...`);
 
 		// Make initial request
 		const response = await this.helpers.request(options);
 
 		if (response.statusCode === 200) {
-			// Immediate success - return binary content
-			// Convert to Buffer if it's not already
-			let result;
-			if (Buffer.isBuffer(response.body)) {
-				result = response.body;
-			} else if (typeof response.body === 'string') {
-				// If it's a string, it might be an error message
-				if (response.body.length < 100) {
-					throw new Error(`API returned error message: ${response.body}`);
-				}
-				// Try to convert from base64 if it's a long string
-				try {
-					result = Buffer.from(response.body, 'base64');
-				} catch {
-					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
-				}
+			// Immediate success
+			if (isJsonResponse) {
+				// For JSON responses (like CreateImages), return the parsed JSON
+				return response.body;
 			} else {
-				result = Buffer.from(response.body, 'binary');
-			}
+				// For binary responses, return binary content
+				// Convert to Buffer if it's not already
+				let result;
+				if (Buffer.isBuffer(response.body)) {
+					result = response.body;
+				} else if (typeof response.body === 'string') {
+					// If it's a string, it might be an error message
+					if (response.body.length < 100) {
+						throw new Error(`API returned error message: ${response.body}`);
+					}
+					// Try to convert from base64 if it's a long string
+					try {
+						result = Buffer.from(response.body, 'base64');
+					} catch {
+						throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+					}
+				} else {
+					result = Buffer.from(response.body, 'binary');
+				}
 
-			// Validate the result
-			if (!Buffer.isBuffer(result)) {
-				throw new Error('Failed to convert response to Buffer');
-			}
+				// Validate the result
+				if (!Buffer.isBuffer(result)) {
+					throw new Error('Failed to convert response to Buffer');
+				}
 
-			return result;
+				return result;
+			}
 		} else if (response.statusCode === 202) {
 			// Async processing - poll for result
 			const locationUrl = response.headers.location;
@@ -171,8 +170,6 @@ export async function pdf4meAsyncRequest(
 				throw new Error('No polling URL found in response');
 			}
 
-			console.log('Starting async processing, polling for completion...');
-			console.log('Note: Document processing can take several minutes for complex documents');
 
 			// Enhanced polling with longer timeout and better error handling
 			const maxRetries = 30; // Increased from 15 to 30 attempts
@@ -193,8 +190,6 @@ export async function pdf4meAsyncRequest(
 				const delay = Math.round(baseDelay * jitter);
 
 				if (attempt > 0) {
-					const elapsedMinutes = Math.round((Date.now() - startTime) / 60000);
-					console.log(`Polling attempt ${attempt + 1}/${maxRetries} (waiting ${Math.round(delay/1000)}s, elapsed: ${elapsedMinutes}m)...`);
 					// Wait before polling
 					await new Promise(resolve => setTimeout(resolve, delay));
 				}
@@ -209,7 +204,7 @@ export async function pdf4meAsyncRequest(
 					resolveWithFullResponse: true,
 					simple: false,
 					encoding: null, // For binary response
-					json: false, // Don't parse as JSON for binary response
+					json: isJsonResponse, // Parse as JSON for CreateImages operations
 					timeout: 30000, // 30 second timeout for polling requests (increased from 15s)
 				};
 
@@ -217,51 +212,52 @@ export async function pdf4meAsyncRequest(
 					const pollResponse = await this.helpers.request(pollOptions);
 
 					if (pollResponse.statusCode === 200) {
-						// Success - return binary content
-						console.log('Processing completed successfully!');
+						// Success
 
-						// Ensure we return a Buffer
-						let result;
-						if (Buffer.isBuffer(pollResponse.body)) {
-							result = pollResponse.body;
-						} else if (typeof pollResponse.body === 'string') {
-							// If it's a string, it might be an error message
-							if (pollResponse.body.length < 100) {
-								throw new Error(`API returned error message: ${pollResponse.body}`);
-							}
-							// Try to convert from base64 if it's a long string
-							try {
-								result = Buffer.from(pollResponse.body, 'base64');
-							} catch (error) {
-								console.error('Base64 conversion failed:', error);
-								throw new Error(`API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
-							}
+						if (isJsonResponse) {
+							// For JSON responses (like CreateImages), return the parsed JSON
+							return pollResponse.body;
 						} else {
-							result = Buffer.from(pollResponse.body, 'binary');
-						}
+							// For binary responses, return binary content
+							// Ensure we return a Buffer
+							let result;
+							if (Buffer.isBuffer(pollResponse.body)) {
+								result = pollResponse.body;
+							} else if (typeof pollResponse.body === 'string') {
+								// If it's a string, it might be an error message
+								if (pollResponse.body.length < 100) {
+									throw new Error(`API returned error message: ${pollResponse.body}`);
+								}
+								// Try to convert from base64 if it's a long string
+								try {
+									result = Buffer.from(pollResponse.body, 'base64');
+								} catch (error) {
+									throw new Error(`API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
+								}
+							} else {
+								result = Buffer.from(pollResponse.body, 'binary');
+							}
 
-						// Validate the result
-						if (!Buffer.isBuffer(result)) {
-							throw new Error('Failed to convert response to Buffer');
-						}
+							// Validate the result
+							if (!Buffer.isBuffer(result)) {
+								throw new Error('Failed to convert response to Buffer');
+							}
 
-						// Validate file size (should be reasonable for a document)
-						if (result.length < 100) {
-							throw new Error(`Response too small (${result.length} bytes). This might indicate an error response.`);
-						}
+							// Validate file size (should be reasonable for a document)
+							if (result.length < 100) {
+								throw new Error(`Response too small (${result.length} bytes). This might indicate an error response.`);
+							}
 
-						return result;
+							return result;
+						}
 					} else if (pollResponse.statusCode === 202) {
 						// Still processing, continue polling
-						console.log('Document still being processed...');
 						continue;
 					} else if (pollResponse.statusCode === 404) {
 						// Resource not found - might be temporary
-						console.log('Resource temporarily unavailable, retrying...');
 						continue;
 					} else if (pollResponse.statusCode >= 500) {
 						// Server error - retry with backoff
-						console.log(`Server error ${pollResponse.statusCode}, retrying...`);
 						continue;
 					} else {
 						// Other error during processing
@@ -280,7 +276,6 @@ export async function pdf4meAsyncRequest(
 					}
 				} catch (pollError) {
 					// Network or timeout error during polling
-					console.log(`Polling request failed: ${pollError.message}`);
 
 					// If this is the last attempt, throw the error
 					if (attempt === maxRetries - 1) {
@@ -343,8 +338,14 @@ export function sanitizeProfiles(data: IDataObject): void {
 	}
 }
 
+/**
+ * ActionConstants provides a mapping of all supported PDF4ME node operations to their string values.
+ * Includes CreatePdfA for PDF/A conversion.
+ */
 export const ActionConstants = {
 	AddAttachmentToPdf: 'Add Attachment To PDF',
+	AddFormFieldsToPdf: 'Add Form Fields To PDF',
+	FillPdfForm: 'Fill PDF Form',
 	AddHtmlHeaderFooter: 'Add HTML Header Footer',
 	AddImageStampToPdf: 'Add Image Stamp To PDF',
 	AddImageWatermarkToImage: 'Add Image Watermark To Image',
@@ -353,15 +354,25 @@ export const ActionConstants = {
 	AddTextStampToPdf: 'Add Text Stamp To PDF',
 	AddTextWatermarkToImage: 'Add Text Watermark To Image',
 	BarcodeGenerator: 'Barcode Generator',
+	ClassifyDocument: 'Classify Document',
 	CompressImage: 'Compress Image',
 	CompressPdf: 'Compress PDF',
 	ConvertFromPDF: 'Convert From PDF',
+	ConvertToPdf: 'Convert To PDF',
 	ConvertImageFormat: 'Convert Image Format',
 	CreateImagesFromPdf: 'Create Images From PDF',
 	CropImage: 'Crop Image',
 	DeleteBlankPagesFromPdf: 'Delete Blank Pages From PDF',
 	DeleteUnwantedPagesFromPdf: 'Delete Unwanted Pages From PDF',
 	ExtractPages: 'Extract Pages',
+	ExtractPagesFromPdf: 'Extract Pages From PDF',
+	ExtractAttachmentFromPdf: 'Extract Attachment From PDF',
+	ExtractTextByExpression: 'Extract Text By Expression',
+	ExtractTableFromPdf: 'Extract Table From PDF',
+	ExtractResources: 'Extract Resources',
+	ExtractTextFromWord: 'Extract Text From Word',
+	FindAndReplaceText: 'Find And Replace Text',
+	ConvertPdfToEditableOcr: 'Convert PDF To Editable PDF Using OCR',
 	FlipImage: 'Flip Image',
 	GetImageMetadata: 'Get Image Metadata',
 	GetPdfMetadata: 'Get PDF Metadata',
@@ -372,6 +383,7 @@ export const ActionConstants = {
 	OverlayPDFs: 'Overlay PDFs',
 	RemoveExifTagsFromImage: 'Remove Exif Tags From Image',
 	ReplaceTextWithImage: 'Replace Text With Image',
+	ReplaceTextWithImageInWord: 'Replace Text With Image In Word',
 	ResizeImage: 'Resize Image',
 	RepairPdfDocument: 'Repair PDF Document',
 	RotateDocument: 'Rotate Document',
@@ -384,4 +396,26 @@ export const ActionConstants = {
 	ProtectDocument: 'Protect Document',
 	UnlockPdf: 'Unlock PDF',
 	DisableTrackingChangesInWord: 'Disable Tracking Changes in Word',
+	EnableTrackingChangesInWord: 'Enable Tracking Changes in Word',
+	ExtractFormDataFromPdf: 'Extract Form Data From PDF',
+	GenerateDocumentSingle: 'Generate Document Single',
+	GenerateDocumentsMultiple: 'Generate Documents Multiple',
+	GetTrackingChangesInWord: 'Get Tracking Changes in Word',
+	ReadBarcodeFromImage: 'Read Barcode From Image',
+	CreateSwissQrBill: 'Create Swiss QR Bill',
+	SplitPdfRegular: 'Split PDF',
+	SplitPdfByBarcode: 'Split PDF By Barcode',
+	SplitPdfBySwissQR: 'Split PDF By SwissQR',
+	SplitPdfByText: 'Split PDF By Text',
+	ReadBarcodeFromPdf: 'Read Barcode From PDF',
+	ReadSwissQrCode: 'Read SwissQR Code',
+	CreatePdfA: 'Create PDF/A',
+	ConvertHtmlToPdf: 'Convert HTML To PDF',
+	ConvertWordToPdfForm: 'Convert Word To PDF Form',
+	ConvertPdfToWord: 'Convert PDF To Word',
+	ConvertPdfToPowerpoint: 'Convert PDF To PowerPoint',
+	ConvertMarkdownToPdf: 'Convert Markdown To PDF',
+	PdfToExcel: 'PDF To Excel',
+	ConvertPdfToExcel: 'Convert PDF To Excel',
+	ConvertVisio: 'Convert VISIO',
 };

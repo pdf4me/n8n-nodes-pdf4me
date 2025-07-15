@@ -322,13 +322,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const availableProperties = Object.keys(item[0].binary).join(', ');
 			throw new Error(
 				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
-                'Common property names are "data" for file uploads or the filename without extension.'
+				'Common property names are "data" for file uploads or the filename without extension.',
 			);
 		}
 
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
-		console.log('PDF file successfully encoded to base64');
+
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -337,7 +337,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
-		console.log('Using provided base64 PDF content');
+
 	} else if (inputDataType === 'url') {
 		// Use PDF URL directly - download the file first
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
@@ -349,9 +349,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
 
-		console.log(`Downloading PDF from URL: ${pdfUrl}`);
+
 		docContent = await downloadPdfFromUrl(pdfUrl);
-		console.log('PDF file successfully downloaded and encoded to base64');
+
 	} else if (inputDataType === 'filePath') {
 		// Use local file path - read the file and convert to base64
 		const filePath = this.getNodeParameter('filePath', index) as string;
@@ -361,9 +361,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid file path. Please provide a complete path to the PDF file.');
 		}
 
-		console.log(`Reading PDF file from path: ${filePath}`);
+
 		docContent = await readPdfFromFile(filePath);
-		console.log('PDF file successfully read and encoded to base64');
+
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -380,18 +380,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let endpoint: string;
 	let fileExtension: string;
 	let mimeType: string;
-	let operationDescription: string;
+
 
 	if (convertType === 'toWord') {
 		endpoint = '/api/v2/ConvertPdfToWord';
 		fileExtension = '.docx';
 		mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-		operationDescription = 'PDF to Word conversion';
+
 	} else if (convertType === 'toExcel') {
 		endpoint = '/api/v2/ConvertPdfToExcel';
 		fileExtension = '.xlsx';
 		mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-		operationDescription = 'PDF to Excel conversion';
+
 	} else {
 		throw new Error(`Unsupported convert type: ${convertType}`);
 	}
@@ -409,7 +409,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		fileName = `${fileName.replace(/\.[^.]*$/, '')}${fileExtension}`;
 	}
 
-	console.log(`Converting: ${docName || 'PDF'} → ${fileName}`);
+
 
 	// Build the request body
 	const body: IDataObject = {
@@ -442,23 +442,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// - language: Improves OCR accuracy for non-English text recognition
 	// - outputFormat: Tries to maintain original formatting when possible
 
-	console.log(`Sending ${operationDescription} request to PDF4Me API...`);
-	if (convertType === 'toWord') {
-		console.log('Transforming PDF content into editable Word document format...');
-	} else {
-		console.log('Extracting tables, text, and data from PDF into spreadsheet format...');
-	}
+
+
 
 	try {
 		let responseData: any;
 
 		if (useAsync) {
 			// Use async processing with improved polling from GenericFunctions
-			console.log('Using asynchronous processing mode with enhanced timeout handling');
+
 			responseData = await pdf4meAsyncRequest.call(this, endpoint, body);
 		} else {
 			// Use synchronous processing
-			console.log('Using synchronous processing mode');
+
 			responseData = await pdf4meApiRequest.call(this, endpoint, body);
 		}
 
@@ -470,8 +466,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Check if the response looks like a valid document (should start with PK for ZIP format)
 		const firstBytes = responseData.toString('ascii', 0, 4);
 		if (!firstBytes.startsWith('PK')) {
-			console.warn(`Response does not appear to be a valid ${convertType === 'toWord' ? 'Word document' : 'Excel file'} (should start with PK for ZIP format)`);
-			console.warn('First 20 bytes:', responseData.toString('ascii', 0, 20));
+			// Log warning for non-ZIP format response
 		}
 
 		// Create binary data for output
@@ -481,15 +476,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			mimeType,
 		);
 
-		console.log(`${operationDescription} completed successfully!`);
-		console.log(`${convertType === 'toWord' ? 'Word document' : 'Excel file'} prepared: ${fileName}`);
+
 
 		if (convertType === 'toWord') {
-			console.log('PDF content has been transformed into editable Word document format');
-			console.log('You can now open the file in Microsoft Word, LibreOffice Writer, or Google Docs');
+			// Handle Word conversion specific logic if needed
 		} else {
-			console.log('PDF data has been extracted and converted to Excel spreadsheet format');
-			console.log('You can now open the file in Excel, LibreOffice Calc, or Google Sheets');
+			// Handle other conversion types if needed
 		}
 
 		return [
@@ -517,12 +509,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (error.message && error.message.includes('File is Empty')) {
 			throw new Error(
 				'PDF4ME API Error: File is Empty. This usually means:\n' +
-                '1. The PDF file is corrupted or invalid\n' +
-                '2. The file content wasn\'t properly encoded\n' +
-                '3. The input data type doesn\'t match the actual data\n\n' +
-                `Input Type: ${inputDataType}\n` +
-                `Content Length: ${body.docContent && typeof body.docContent === 'string' ? body.docContent.length : 0}\n` +
-                `Has Content: ${!!body.docContent}`
+				'1. The PDF file is corrupted or invalid\n' +
+				'2. The file content wasn\'t properly encoded\n' +
+				'3. The input data type doesn\'t match the actual data\n\n' +
+				`Input Type: ${inputDataType}\n` +
+				`Content Length: ${body.docContent && typeof body.docContent === 'string' ? body.docContent.length : 0}\n` +
+				`Has Content: ${!!body.docContent}`,
 			);
 		}
 		throw error;
@@ -561,7 +553,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 				if (location) {
 					reject(new Error(
 						`URL redirects to: ${location}\n` +
-                        'Please use the final URL directly instead of the redirecting URL.'
+						'Please use the final URL directly instead of the redirecting URL.',
 					));
 					return;
 				}
@@ -571,12 +563,12 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 			if (res.statusCode !== 200) {
 				reject(new Error(
 					`HTTP Error ${res.statusCode}: ${res.statusMessage}\n` +
-                    'The server returned an error instead of the PDF file. ' +
-                    'This might indicate:\n' +
-                    '- The file doesn\'t exist\n' +
-                    '- Authentication is required\n' +
-                    '- The URL is incorrect\n' +
-                    '- Server is experiencing issues'
+					'The server returned an error instead of the PDF file. ' +
+					'This might indicate:\n' +
+					'- The file doesn\'t exist\n' +
+					'- Authentication is required\n' +
+					'- The URL is incorrect\n' +
+					'- Server is experiencing issues',
 				));
 				return;
 			}
@@ -593,8 +585,8 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 					req.destroy();
 					reject(new Error(
 						`Downloaded content is too large (${totalSize} bytes). ` +
-                        'This might be an HTML error page instead of a PDF file. ' +
-                        'Please check the URL and ensure it points directly to a PDF file.'
+						'This might be an HTML error page instead of a PDF file. ' +
+						'Please check the URL and ensure it points directly to a PDF file.',
 					));
 				}
 			});
@@ -613,7 +605,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 				if (base64Content.length < 100) {
 					reject(new Error(
 						`Downloaded file is too small (${base64Content.length} base64 chars). ` +
-                        'Please ensure the URL points to a valid PDF file.'
+						'Please ensure the URL points to a valid PDF file.',
 					));
 					return;
 				}
@@ -627,23 +619,23 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
                                   first100Chars.toLowerCase().includes('<!doctype');
 
 					let errorMessage = 'The downloaded file does not appear to be a valid PDF file. ' +
-                        'PDF files should start with "%PDF".\n\n' +
-                        `Downloaded content starts with: "${decodedContent}"\n\n`;
+						'PDF files should start with "%PDF".\n\n' +
+						`Downloaded content starts with: "${decodedContent}"\n\n`;
 
 					if (isHtml) {
 						errorMessage += 'The downloaded content appears to be HTML (likely an error page). ' +
-                            'This usually means:\n' +
-                            '1. The URL requires authentication\n' +
-                            '2. The file doesn\'t exist\n' +
-                            '3. The server is returning an error page\n' +
-                            '4. The URL is incorrect\n\n' +
-                            'Please check the URL and ensure it points directly to a PDF file.';
+							'This usually means:\n' +
+							'1. The URL requires authentication\n' +
+							'2. The file doesn\'t exist\n' +
+							'3. The server is returning an error page\n' +
+							'4. The URL is incorrect\n\n' +
+							'Please check the URL and ensure it points directly to a PDF file.';
 					} else {
 						errorMessage += 'This might indicate:\n' +
-                            '1. The file is corrupted\n' +
-                            '2. The URL points to a different file type\n' +
-                            '3. The server is not serving the file correctly\n\n' +
-                            'Please verify the URL and try again.';
+							'1. The file is corrupted\n' +
+							'2. The URL points to a different file type\n' +
+							'3. The server is not serving the file correctly\n\n' +
+							'Please verify the URL and try again.';
 					}
 
 					reject(new Error(errorMessage));

@@ -182,7 +182,7 @@ export const description: INodeProperties[] = [
 	{
 		displayName: 'Text Color',
 		name: 'textColour',
-		type: 'string',
+		type: 'color',
 		default: '#b4351a',
 		description: 'Text color in hex format',
 		displayOptions: {

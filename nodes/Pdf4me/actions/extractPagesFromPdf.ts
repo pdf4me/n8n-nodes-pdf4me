@@ -4,8 +4,7 @@ import { sanitizeProfiles, ActionConstants } from '../GenericFunctions';
 import { pdf4meAsyncRequest } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
-// declare const URL: any;
+declare const Buffer: any;
 declare const require: any;
 
 export const description: INodeProperties[] = [
@@ -15,10 +14,10 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'Choose how to provide the PDF file to rotate pages from',
+		description: 'Choose how to provide the PDF file to extract pages from',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 			},
 		},
 		options: [
@@ -54,7 +53,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 				inputDataType: ['binaryData'],
 			},
 		},
@@ -72,7 +71,7 @@ export const description: INodeProperties[] = [
 		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 				inputDataType: ['base64'],
 			},
 		},
@@ -83,11 +82,11 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'URL to the PDF file to rotate pages from',
+		description: 'URL to the PDF file to extract pages from',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 				inputDataType: ['url'],
 			},
 		},
@@ -98,11 +97,11 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Local file path to the PDF file to rotate pages from',
+		description: 'Local file path to the PDF file to extract pages from',
 		placeholder: '/path/to/document.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 				inputDataType: ['filePath'],
 			},
 		},
@@ -115,55 +114,20 @@ export const description: INodeProperties[] = [
 		description: 'Name of the output PDF document',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 			},
 		},
-	},
-	{
-		displayName: 'Rotation Type',
-		name: 'rotationType',
-		type: 'options',
-		required: true,
-		default: 'Clockwise',
-		description: 'Type of rotation to apply to the specified pages',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.RotatePage],
-			},
-		},
-		options: [
-			{
-				name: 'No Rotation',
-				value: 'NoRotation',
-				description: 'Keep the pages as is',
-			},
-			{
-				name: 'Clockwise',
-				value: 'Clockwise',
-				description: 'Rotate 90 degrees clockwise',
-			},
-			{
-				name: 'Counter Clockwise',
-				value: 'CounterClockwise',
-				description: 'Rotate 90 degrees counter-clockwise',
-			},
-			{
-				name: 'Upside Down',
-				value: 'UpsideDown',
-				description: 'Rotate 180 degrees (upside down)',
-			},
-		],
 	},
 	{
 		displayName: 'Page Numbers',
-		name: 'page',
+		name: 'pageNumbers',
 		type: 'string',
 		required: true,
-		default: '1',
-		description: 'Page numbers to rotate (e.g. "1" or "1,3,5" or "2-4")',
+		default: '',
+		description: 'Page numbers to extract (e.g. "1" or "1,3,5" or "2-4")',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 			},
 		},
 	},
@@ -175,7 +139,7 @@ export const description: INodeProperties[] = [
 		default: {},
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.RotatePage],
+				operation: [ActionConstants.ExtractPagesFromPdf],
 			},
 		},
 		options: [
@@ -184,7 +148,7 @@ export const description: INodeProperties[] = [
 				name: 'profiles',
 				type: 'string',
 				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls and may be specific to certain APIs.',
+				description: 'Use \'JSON\' to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls and may be specific to certain APIs.',
 				placeholder: '{ \'outputDataFormat\': \'json\' }',
 			},
 		],
@@ -194,8 +158,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const rotationType = this.getNodeParameter('rotationType', index) as string;
-	const page = this.getNodeParameter('page', index) as string;
+	const pageNumbers = this.getNodeParameter('pageNumbers', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -211,7 +174,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const availableProperties = Object.keys(item[0].binary).join(', ');
 			throw new Error(
 				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
-				'Common property names are "data" for file uploads or the filename without extension.',
+				'Common property names are \'data\' for file uploads or the filename without extension.'
 			);
 		}
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
@@ -232,8 +195,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName,
-		rotationType,
-		page,
+		pageNumbers,
 		async: true, // Enable asynchronous processing
 	};
 
@@ -245,7 +207,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	// Replace direct API call with helper
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/RotatePage', body);
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Extract', body);
 
 	// Handle the response
 	if (responseData) {
@@ -262,10 +224,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					mimeType: 'application/pdf',
 					fileSize: responseData.length,
 					success: true,
-					message: 'Pages rotated successfully',
+					message: 'Pages extracted successfully',
 					docName,
-					rotationType,
-					page,
 				},
 				binary: {
 					data: binaryData,
