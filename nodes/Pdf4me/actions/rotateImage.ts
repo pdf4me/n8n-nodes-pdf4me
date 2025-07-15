@@ -122,7 +122,7 @@ export const description: INodeProperties[] = [
 	{
 		displayName: 'Background Color',
 		name: 'backgroundColor',
-		type: 'string',
+		type: 'color',
 		default: '#FFFFFF',
 		description: 'Background color for rotation (hex string)',
 		displayOptions: {

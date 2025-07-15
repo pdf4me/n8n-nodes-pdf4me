@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "n8n community node for PDF4ME API integration",
   "keywords": [
     "n8n-community-node-package"
@@ -45,6 +45,7 @@
     ]
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
     "@types/node": "20.19.7",
     "@typescript-eslint/eslint-plugin": "~5.45",
     "@typescript-eslint/parser": "~5.45",
@@ -60,6 +61,7 @@
     "n8n-workflow": "*"
   },
   "dependencies": {
-    "file-type": "^21.0.0"
+    "file-type": "^21.0.0",
+    "jszip": "^3.10.1"
   }
 }

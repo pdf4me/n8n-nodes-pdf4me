@@ -201,7 +201,7 @@ export const description: INodeProperties[] = [
 				name: 'profiles',
 				type: 'string',
 				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf.co/api/profiles/index.html to set extra options for API calls and may be specific to certain APIs.',
+				description: 'Use "JSON" to adjust custom properties. See https://dev.pdf4me.com/documentation/ for details on available profile options.',
 				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
 		],
@@ -230,19 +230,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/CreateBarcode', body);
-    
+
 	// Handle the binary response (PNG data) directly like Python code
 	if (responseData) {
 		// Generate filename based on text and barcode type
 		const fileName = `${text.replace(/[^a-zA-Z0-9]/g, '_')}_${barcodeType}.png`;
-        
+
 		// responseData is already binary data (Buffer)
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
 			fileName,
 			'image/png',
 		);
-        
+
 		return [
 			{
 				json: {
@@ -257,7 +257,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			},
 		];
 	}
-    
+
 	// Error case
 	throw new Error('No response data received from PDF4ME API');
 }

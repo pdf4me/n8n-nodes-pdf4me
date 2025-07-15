@@ -14,9 +14,9 @@ declare const require: any;
 
 // Simplified debug configuration
 interface DebugConfig {
-    enabled: boolean;
-    logLevel: 'none' | 'basic' | 'detailed';
-    logToConsole?: boolean;
+	enabled: boolean;
+	logLevel: 'none' | 'basic' | 'detailed';
+	logToConsole?: boolean;
 }
 
 // Simplified debug logger class
@@ -30,13 +30,11 @@ class DebugLogger {
 	log(level: string, message: string, data?: any): void {
 		if (!this.config.enabled) return;
 
-		const timestamp = new Date().toISOString();
-		const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-        
+
+
 		if (this.config.logToConsole !== false) {
-			console.log(logEntry);
 			if (data) {
-				console.log('Data:', data);
+				// Log data if needed
 			}
 		}
 	}
@@ -581,7 +579,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else if (inputDataType === 'base64') {
 			logger.log('debug', 'Processing PDF as base64');
 			docContent = this.getNodeParameter('base64Content', index) as string;
-            
+
 			// Remove data URL prefix if present
 			if (docContent.includes(',')) {
 				docContent = docContent.split(',')[1];
@@ -624,12 +622,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else if (imageInputDataType === 'base64') {
 			logger.log('debug', 'Processing image as base64');
 			imageContent = this.getNodeParameter('imageContent', index) as string;
-            
+
 			// Remove data URL prefix if present
 			if (imageContent.includes(',')) {
 				imageContent = imageContent.split(',')[1];
 			}
-            
+
 			// Clean up whitespace
 			imageContent = imageContent.replace(/\s/g, '');
 			logger.log('debug', 'Image base64 content processed', { length: imageContent.length });
@@ -724,9 +722,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Make the API request
 		logger.log('debug', 'Making API request', { endpoint: '/api/v2/ImageStamp' });
-        
+
 		const responseData = await pdf4meApiRequest.call(this, '/api/v2/ImageStamp', body);
-        
+
 		logger.log('debug', 'API request completed successfully', {
 			responseType: typeof responseData,
 			responseLength: responseData?.length || 0,
@@ -780,7 +778,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			error: error.message,
 			stack: error.stack,
 		});
-        
+
 		throw error;
 	}
 }
@@ -834,10 +832,10 @@ async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise
 
 				const buffer = Buffer.concat(chunks);
 				const base64Content = buffer.toString('base64');
-				logger?.log('debug', 'File downloaded successfully', { 
-					url: pdfUrl, 
-					fileSize: totalSize, 
-					base64Length: base64Content.length, 
+				logger?.log('debug', 'File downloaded successfully', {
+					url: pdfUrl,
+					fileSize: totalSize,
+					base64Length: base64Content.length,
 				});
 				resolve(base64Content);
 			});
@@ -868,14 +866,14 @@ async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise
  */
 async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
 	const fs = require('fs');
-    
+
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
-		logger?.log('debug', 'File read successfully', { 
-			filePath, 
-			fileSize: fileBuffer.length, 
-			base64Length: base64Content.length, 
+		logger?.log('debug', 'File read successfully', {
+			filePath,
+			fileSize: fileBuffer.length,
+			base64Length: base64Content.length,
 		});
 		return base64Content;
 	} catch (error) {
@@ -941,10 +939,10 @@ async function downloadImageFromUrl(imageUrl: string, logger?: DebugLogger): Pro
 
 				const buffer = Buffer.concat(chunks);
 				const base64Content = buffer.toString('base64');
-				logger?.log('debug', 'File downloaded successfully', { 
-					url: imageUrl, 
-					fileSize: totalSize, 
-					base64Length: base64Content.length, 
+				logger?.log('debug', 'File downloaded successfully', {
+					url: imageUrl,
+					fileSize: totalSize,
+					base64Length: base64Content.length,
 				});
 				resolve(base64Content);
 			});
@@ -975,14 +973,14 @@ async function downloadImageFromUrl(imageUrl: string, logger?: DebugLogger): Pro
  */
 async function readImageFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
 	const fs = require('fs');
-    
+
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
-		logger?.log('debug', 'File read successfully', { 
-			filePath, 
-			fileSize: fileBuffer.length, 
-			base64Length: base64Content.length, 
+		logger?.log('debug', 'File read successfully', {
+			filePath,
+			fileSize: fileBuffer.length,
+			base64Length: base64Content.length,
 		});
 		return base64Content;
 	} catch (error) {
@@ -997,4 +995,4 @@ async function readImageFromFile(filePath: string, logger?: DebugLogger): Promis
 			throw new Error(`Error reading file: ${error.message}`);
 		}
 	}
-} 
+}

@@ -1,6 +1,8 @@
 /* eslint-disable n8n-nodes-base/node-filename-against-convention, n8n-nodes-base/node-param-default-missing */
 import { INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
+import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
+import * as fillPdfForm from './actions/fillPdfForm';
 import * as addHtmlHeaderFooter from './actions/addHtmlHeaderFooter';
 import * as addImageStampToPdf from './actions/addImageStampToPdf';
 import * as addMarginToPdf from './actions/addMarginToPdf';
@@ -14,7 +16,8 @@ import * as extractPages from './actions/extractPages';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
 import * as overlayPDFs from './actions/OverlayPDFs';
-import * as pdfToWord from './actions/convertFromPdf';
+import * as convertPdfToWord from './actions/convertPdfToWord';
+import * as convertToPdf from './actions/convertToPdf';
 import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
 import * as signPdf from './actions/signPdf';
@@ -35,11 +38,41 @@ import * as rotateImageByExifData from './actions/rotateImageByExifData';
 import * as compressPdf from './actions/compressPdf';
 import * as getPdfMetadata from './actions/getPdfMetadata';
 import * as repairPdfDocument from './actions/repairPdfDocument';
-import * as get_document_from_pdf4me from './actions/get_document_from_pdf4me';
+import * as get_document_from_pdf4me from './actions/GetDocumentFromPdf4me';
 import * as update_hyperlinks_annotation from './actions/update_hyperlinks_annotation';
 import * as protect_document from './actions/protect_document';
 import * as unlock_pdf from './actions/unlock_pdf';
 import * as disabletracking_changes_in_word from './actions/disabletracking_changes_in_word';
+import * as enableTrackingChangesInWord from './actions/enableTrackingChangesInWord';
+import * as readBarcodeFromImage from './actions/readBarcodeFromImage';
+import * as classifyDocument from './actions/classifyDocument';
+import * as extractFormDataFromPdf from './actions/extractFormDataFromPdf';
+import * as extractPagesFromPdf from './actions/extractPagesFromPdf';
+import * as extractAttachmentFromPdf from './actions/extractAttachmentFromPdf';
+import * as extractTextByExpression from './actions/extractTextByExpression';
+import * as extractTableFromPdf from './actions/extractTableFromPdf';
+import * as extractResources from './actions/extractResources';
+import * as extractTextFromWord from './actions/extractTextFromWord';
+import * as findAndReplaceText from './actions/findAndReplaceText';
+import * as convertPdfToEditableOcr from './actions/convertPdfToEditableOcr';
+import * as createSwissQrBill from './actions/createSwissQrBill';
+import * as replaceTextWithImageInWord from './actions/replaceTextWithImageInWord';
+import * as generateDocumentSingle from './actions/GenerateDocumentSingle';
+import * as generateDocumentsMultiple from './actions/GenerateDocumentsMultiple';
+import * as getTrackingChangesInWord from './actions/GetTrackingChangesInWord';
+import * as SplitPdfByBarcode from './actions/SplitPdfByBarcode';
+import * as SplitPdfBySwissQR from './actions/SplitPdfBySwissQR';
+import * as SplitPdfByText from './actions/SplitPdfByText';
+import * as SplitPdfRegular from './actions/SplitPdfRegular';
+import * as readBarcodeFromPdf from './actions/readBarcodeFromPdf';
+import * as readSwissQrCode from './actions/readSwissQrCode';
+import * as createPdfA from './actions/createPdfA';
+import * as convertHtmlToPdf from './actions/convertHtmlToPdf';
+import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
+import * as convertMarkdownToPdf from './actions/convertMarkdownToPdf';
+import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
+import * as convertPdfToExcel from './actions/convertPdfToExcel';
+import * as convertVisio from './actions/convertVisio';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -71,6 +104,18 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Add file attachments to PDF documents',
 					value: ActionConstants.AddAttachmentToPdf,
 					action: ActionConstants.AddAttachmentToPdf,
+				},
+				{
+					name: 'Add Form Fields To PDF',
+					description: 'Add interactive form fields to PDF documents',
+					value: ActionConstants.AddFormFieldsToPdf,
+					action: ActionConstants.AddFormFieldsToPdf,
+				},
+				{
+					name: 'Fill PDF Form',
+					description: 'Fill PDF forms with data or generate multiple documents from templates',
+					value: ActionConstants.FillPdfForm,
+					action: ActionConstants.FillPdfForm,
 				},
 				{
 					name: 'Add HTML Header Footer',
@@ -109,10 +154,52 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.BarcodeGenerator,
 				},
 				{
+					name: 'Classify Document',
+					description: 'Classify documents using AI to determine document type and extract relevant information',
+					value: ActionConstants.ClassifyDocument,
+					action: ActionConstants.ClassifyDocument,
+				},
+				{
 					name: 'Convert From PDF',
 					description: 'Convert PDF documents to Word, Excel, or other formats with OCR support',
 					value: ActionConstants.ConvertFromPDF,
 					action: ActionConstants.ConvertFromPDF,
+				},
+				{
+					name: 'Convert To PDF',
+					description: 'Convert various document formats to PDF',
+					value: ActionConstants.ConvertToPdf,
+					action: ActionConstants.ConvertToPdf,
+				},
+				{
+					name: 'Json To Excel',
+					description: 'Convert JSON data to Excel format',
+					value: ActionConstants.JsonToExcel,
+					action: ActionConstants.JsonToExcel,
+				},
+				{
+					name: 'Convert PDF To Excel',
+					description: 'Convert PDF documents to Excel spreadsheets',
+					value: ActionConstants.ConvertPdfToExcel,
+					action: ActionConstants.ConvertPdfToExcel,
+				},
+				{
+					name: 'Convert PDF To Word',
+					description: 'Convert PDF documents to Word format with OCR support',
+					value: ActionConstants.ConvertPdfToWord,
+					action: ActionConstants.ConvertPdfToWord,
+				},
+				{
+					name: 'Convert PDF To PowerPoint',
+					description: 'Convert PDF documents to PowerPoint format with OCR support',
+					value: ActionConstants.ConvertPdfToPowerpoint,
+					action: ActionConstants.ConvertPdfToPowerpoint,
+				},
+				{
+					name: 'Convert VISIO',
+					description: 'Convert VISIO files (.vsdx, .vsd) to PDF format with advanced conversion options',
+					value: ActionConstants.ConvertVisio,
+					action: ActionConstants.ConvertVisio,
 				},
 				{
 					name: 'Crop Image',
@@ -235,6 +322,12 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.ReplaceTextWithImage,
 				},
 				{
+					name: 'Replace Text With Image In Word',
+					description: 'Replace specific text in Word documents with images',
+					value: ActionConstants.ReplaceTextWithImageInWord,
+					action: ActionConstants.ReplaceTextWithImageInWord,
+				},
+				{
 					name: 'Resize Image',
 					description: 'Resize images by percentage or specific dimensions with aspect ratio control',
 					value: ActionConstants.ResizeImage,
@@ -256,21 +349,25 @@ export const descriptions: INodeTypeDescription = {
 					name: 'Compress PDF',
 					value: ActionConstants.CompressPdf,
 					description: 'Compress and optimize PDF files',
+					action: ActionConstants.CompressPdf,
 				},
 				{
 					name: 'Get PDF Metadata',
 					value: ActionConstants.GetPdfMetadata,
 					description: 'Extract metadata from PDF files',
+					action: ActionConstants.GetPdfMetadata,
 				},
 				{
 					name: 'Repair PDF Document',
 					value: ActionConstants.RepairPdfDocument,
 					description: 'Repair corrupted or damaged PDF files',
+					action: ActionConstants.RepairPdfDocument,
 				},
 				{
 					name: 'Get Document From Pdf4me',
 					value: ActionConstants.GetDocumentFromPdf4me,
 					description: 'Split PDF documents by barcode and output as ZIP',
+					action: ActionConstants.GetDocumentFromPdf4me,
 				},
 				{
 					name: 'Update Hyperlinks Annotation',
@@ -296,10 +393,162 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.DisableTrackingChangesInWord,
 					action: ActionConstants.DisableTrackingChangesInWord,
 				},
+				{
+					name: 'Enable Tracking Changes In Word',
+					description: 'Enable tracking changes in Word documents',
+					value: ActionConstants.EnableTrackingChangesInWord,
+					action: ActionConstants.EnableTrackingChangesInWord,
+				},
+				{
+					name: 'Generate Document Single',
+					description: 'Generate a single document from template with data',
+					value: ActionConstants.GenerateDocumentSingle,
+					action: ActionConstants.GenerateDocumentSingle,
+				},
+				{
+					name: 'Generate Documents Multiple',
+					description: 'Generate multiple documents from template with different data sets',
+					value: ActionConstants.GenerateDocumentsMultiple,
+					action: ActionConstants.GenerateDocumentsMultiple,
+				},
+				{
+					name: 'Get Tracking Changes In Word',
+					description: 'Get tracking changes information from Word documents',
+					value: ActionConstants.GetTrackingChangesInWord,
+					action: ActionConstants.GetTrackingChangesInWord,
+				},
+				{
+					name: 'Read Barcode From Image',
+					description: 'Read barcodes from images using OCR',
+					value: ActionConstants.ReadBarcodeFromImage,
+					action: ActionConstants.ReadBarcodeFromImage,
+				},
+				{
+					name: 'Read Barcode From PDF',
+					description: 'Read single or multiple Barcodes or QR Codes from your PDF file',
+					value: ActionConstants.ReadBarcodeFromPdf,
+					action: ActionConstants.ReadBarcodeFromPdf,
+				},
+				{
+					name: 'Read SwissQR Code',
+					description: 'Read Swiss QR code data from PDF documents',
+					value: ActionConstants.ReadSwissQrCode,
+					action: ActionConstants.ReadSwissQrCode,
+				},
+				{
+					name: 'Extract Form Data From PDF',
+					description: 'Extract form field data from PDF documents',
+					value: ActionConstants.ExtractFormDataFromPdf,
+					action: ActionConstants.ExtractFormDataFromPdf,
+				},
+				{
+					name: 'Extract Pages From PDF',
+					description: 'Extract specific pages from PDF documents',
+					value: ActionConstants.ExtractPagesFromPdf,
+					action: ActionConstants.ExtractPagesFromPdf,
+				},
+				{
+					name: 'Extract Attachment From PDF',
+					description: 'Extract file attachments from PDF documents',
+					value: ActionConstants.ExtractAttachmentFromPdf,
+					action: ActionConstants.ExtractAttachmentFromPdf,
+				},
+				{
+					name: 'Extract Text By Expression',
+					description: 'Extract text from PDF using regular expressions',
+					value: ActionConstants.ExtractTextByExpression,
+					action: ActionConstants.ExtractTextByExpression,
+				},
+				{
+					name: 'Extract Table From PDF',
+					description: 'Extract tables from PDF documents',
+					value: ActionConstants.ExtractTableFromPdf,
+					action: ActionConstants.ExtractTableFromPdf,
+				},
+				{
+					name: 'Extract Resources',
+					description: 'Extract text and images from PDF documents',
+					value: ActionConstants.ExtractResources,
+					action: ActionConstants.ExtractResources,
+				},
+				{
+					name: 'Extract Text From Word',
+					description: 'Extract text content from Word documents',
+					value: ActionConstants.ExtractTextFromWord,
+					action: ActionConstants.ExtractTextFromWord,
+				},
+				{
+					name: 'Find And Replace Text',
+					description: 'Find and replace text in PDF documents',
+					value: ActionConstants.FindAndReplaceText,
+					action: ActionConstants.FindAndReplaceText,
+				},
+				{
+					name: 'Convert PDF To Editable PDF Using OCR',
+					description: 'Convert PDF to editable PDF using OCR for scanned documents',
+					value: ActionConstants.ConvertPdfToEditableOcr,
+					action: ActionConstants.ConvertPdfToEditableOcr,
+				},
+				{
+					name: 'Create Swiss QR Bill',
+					description: 'Create Swiss QR Bills using all compliance standards for digital payment transactions',
+					value: ActionConstants.CreateSwissQrBill,
+					action: ActionConstants.CreateSwissQrBill,
+				},
+				{
+					name: 'Split PDF By Barcode',
+					description: 'Split PDF documents by barcode and output as ZIP',
+					value: ActionConstants.SplitPdfByBarcode,
+					action: ActionConstants.SplitPdfByBarcode,
+				},
+				{
+					name: 'Split PDF By Swiss QR',
+					description: 'Split PDF documents by Swiss QR code and output as ZIP',
+					value: ActionConstants.SplitPdfBySwissQR,
+					action: ActionConstants.SplitPdfBySwissQR,
+				},
+				{
+					name: 'Split PDF By Text',
+					description: 'Split PDF documents by text and output as ZIP',
+					value: ActionConstants.SplitPdfByText,
+					action: ActionConstants.SplitPdfByText,
+				},
+				{
+					name: 'Split PDF Regular',
+					description: 'Split PDF documents by regular expression and output as ZIP',
+					value: ActionConstants.SplitPdfRegular,
+					action: ActionConstants.SplitPdfRegular,
+				},
+				{
+					name: 'Create PDF/A',
+					description: 'Convert PDF to PDF/A for long-term archiving and compliance',
+					value: ActionConstants.CreatePdfA,
+					action: ActionConstants.CreatePdfA,
+				},
+				{
+					name: 'Convert HTML To PDF',
+					description: 'Convert HTML files to PDF documents',
+					value: ActionConstants.ConvertHtmlToPdf,
+					action: ActionConstants.ConvertHtmlToPdf,
+				},
+				{
+					name: 'Convert Word To PDF',
+					description: 'Convert Word documents to PDF with OCR support',
+					value: ActionConstants.ConvertWordToPdfForm,
+					action: ActionConstants.ConvertWordToPdfForm,
+				},
+				{
+					name: 'Convert Markdown To PDF',
+					description: 'Convert Markdown files to PDF documents',
+					value: ActionConstants.ConvertMarkdownToPdf,
+					action: ActionConstants.ConvertMarkdownToPdf,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
 		...addAttachmentToPdf.description,
+		...addFormFieldsToPdf.description,
+		...fillPdfForm.description,
 		...addHtmlHeaderFooter.description,
 		...addImageStampToPdf.description,
 		...addMarginToPdf.description,
@@ -313,7 +562,8 @@ export const descriptions: INodeTypeDescription = {
 		...jsonToExcel.description,
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,
-		...pdfToWord.description,
+		...convertPdfToWord.description,
+		...convertToPdf.description,
 		...rotateDocument.description,
 		...rotatePage.description,
 		...signPdf.description,
@@ -339,6 +589,36 @@ export const descriptions: INodeTypeDescription = {
 		...protect_document.description,
 		...unlock_pdf.description,
 		...disabletracking_changes_in_word.description,
+		...enableTrackingChangesInWord.description,
+		...readBarcodeFromImage.description,
+		...readBarcodeFromPdf.description,
+		...readSwissQrCode.description,
+		...classifyDocument.description,
+		...extractFormDataFromPdf.description,
+		...extractPagesFromPdf.description,
+		...extractAttachmentFromPdf.description,
+		...extractTextByExpression.description,
+		...extractTableFromPdf.description,
+		...extractResources.description,
+		...extractTextFromWord.description,
+		...findAndReplaceText.description,
+		...convertPdfToEditableOcr.description,
+		...createSwissQrBill.description,
+		...replaceTextWithImageInWord.description,
+		...generateDocumentSingle.description,
+		...generateDocumentsMultiple.description,
+		...getTrackingChangesInWord.description,
+		...SplitPdfByBarcode.description,
+		...SplitPdfBySwissQR.description,
+		...SplitPdfByText.description,
+		...SplitPdfRegular.description,
+		...createPdfA.description,
+		...convertHtmlToPdf.description,
+		...convertWordToPdfForm.description,
+		...convertMarkdownToPdf.description,
+		...convertPdfToPowerpoint.description,
+		...convertPdfToExcel.description,
+		...convertVisio.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

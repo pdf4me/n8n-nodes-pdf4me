@@ -100,6 +100,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Password',
 		name: 'password',
 		type: 'string',
+		typeOptions: { password: true },
 		default: '1234',
 		description: 'Password for the protected PDF',
 		displayOptions: {

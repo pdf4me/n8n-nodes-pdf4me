@@ -20,6 +20,11 @@ module.exports = {
 
 	ignorePatterns: ['.eslintrc.js', '**/*.js', '**/node_modules/**', '**/dist/**', 'package.json'],
 
+	plugins: [
+		'@typescript-eslint',
+		'eslint-plugin-n8n-nodes-base',
+	],
+
 	extends: [
 		'eslint:recommended',
 		'plugin:@typescript-eslint/recommended',

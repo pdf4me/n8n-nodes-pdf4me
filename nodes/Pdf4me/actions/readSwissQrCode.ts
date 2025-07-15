@@ -5,7 +5,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-// declare const Buffer: any;
 declare const require: any;
 
 export const description: INodeProperties[] = [
@@ -15,32 +14,32 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'Choose how to provide the image file to read barcodes from',
+		description: 'Choose how to provide the PDF file to read SwissQR code from',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 			},
 		},
 		options: [
 			{
 				name: 'Binary Data',
 				value: 'binaryData',
-				description: 'Use image file from previous node',
+				description: 'Use PDF file from previous node',
 			},
 			{
 				name: 'Base64 String',
 				value: 'base64',
-				description: 'Provide image content as base64 encoded string',
+				description: 'Provide PDF content as base64 encoded string',
 			},
 			{
 				name: 'File Path',
 				value: 'filePath',
-				description: 'Provide local file path to image file',
+				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
 				value: 'url',
-				description: 'Provide URL to image file',
+				description: 'Provide URL to PDF file',
 			},
 		],
 	},
@@ -50,16 +49,16 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: 'data',
-		description: 'Name of the binary property that contains the image file',
+		description: 'Name of the binary property that contains the PDF file',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 				inputDataType: ['binaryData'],
 			},
 		},
 	},
 	{
-		displayName: 'Base64 Image Content',
+		displayName: 'Base64 PDF Content',
 		name: 'base64Content',
 		type: 'string',
 		typeOptions: {
@@ -67,26 +66,26 @@ export const description: INodeProperties[] = [
 		},
 		required: true,
 		default: '',
-		description: 'Base64 encoded image content',
-		placeholder: '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYI...',
+		description: 'Base64 encoded PDF content',
+		placeholder: 'JVBERi0xLjQKJcfs...',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 				inputDataType: ['base64'],
 			},
 		},
 	},
 	{
-		displayName: 'Image URL',
-		name: 'imageUrl',
+		displayName: 'PDF URL',
+		name: 'pdfUrl',
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'URL to the image file to read barcodes from',
-		placeholder: 'https://example.com/image.jpg',
+		description: 'URL to the PDF file to read SwissQR code from',
+		placeholder: 'https://example.com/file.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 				inputDataType: ['url'],
 			},
 		},
@@ -97,11 +96,11 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Local file path to the image file to read barcodes from',
-		placeholder: '/path/to/image.jpg',
+		description: 'Local file path to the PDF file to read SwissQR code from',
+		placeholder: '/path/to/file.pdf',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 				inputDataType: ['filePath'],
 			},
 		},
@@ -110,29 +109,12 @@ export const description: INodeProperties[] = [
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
-		default: 'read_barcode_from_image.json',
-		description: 'Name for the output barcode data file (JSON)',
-		placeholder: 'my-barcode-data.json',
+		default: 'swissqr_code_data.json',
+		description: 'Name for the output SwissQR code data file (JSON)',
+		placeholder: 'swissqr_code_data.json',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
-			},
-		},
-	},
-	{
-		displayName: 'Image Type',
-		name: 'imageType',
-		type: 'options',
-		required: true,
-		default: 'JPG',
-		description: 'Type of the image',
-		options: [
-			{ name: 'JPG', value: 'JPG' },
-			{ name: 'PNG', value: 'PNG' },
-		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 			},
 		},
 	},
@@ -144,7 +126,7 @@ export const description: INodeProperties[] = [
 		description: 'Enable asynchronous processing',
 		displayOptions: {
 			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
+				operation: [ActionConstants.ReadSwissQrCode],
 			},
 		},
 	},
@@ -153,12 +135,11 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const imageType = this.getNodeParameter('imageType', index) as string;
 	const useAsync = this.getNodeParameter('async', index) as boolean;
 
-	// Main image content
+	// Main PDF content
 	let docContent: string;
-	let docName: string = outputFileName;
+	let docName: string = outputFileName.endsWith('.pdf') ? outputFileName : 'input.pdf';
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
@@ -166,7 +147,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
+		docName = item[0].binary[binaryPropertyName].fileName || docName;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'filePath') {
@@ -174,28 +155,27 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const fs = require('fs');
 		const fileBuffer = fs.readFileSync(filePath);
 		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
+		docName = filePath.split('/').pop() || docName;
 	} else if (inputDataType === 'url') {
-		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		const axios = require('axios');
-		const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
 		const buffer = Buffer.from(response.data, 'binary');
 		docContent = buffer.toString('base64');
-		docName = imageUrl.split('/').pop() || outputFileName;
+		docName = pdfUrl.split('/').pop() || docName;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
 	// Build the request body
 	const body: IDataObject = {
-		docName,
 		docContent,
-		imageType,
+		docName,
 		async: useAsync,
 	};
 
 	// Make the API request
-	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ReadBarcodesfromImage', body);
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ReadSwissQrBill', body);
 
 	// Return the result as binary data (JSON)
 	const mimeType = 'application/json';
@@ -208,12 +188,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	return [
 		{
 			json: {
-				success: true,
-				message: 'Barcode data extracted successfully',
 				fileName: outputFileName,
 				mimeType,
-				fileSize: result.length,
-				imageType,
+				fileSize: Buffer.isBuffer(result) ? result.length : Buffer.byteLength(JSON.stringify(result)),
+				success: true,
+				message: 'SwissQR code reading completed successfully',
+				docName,
 			},
 			binary: {
 				data: binaryData,

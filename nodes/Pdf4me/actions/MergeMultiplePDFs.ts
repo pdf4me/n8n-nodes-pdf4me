@@ -349,7 +349,7 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 		// Get PDF contents from multiple binary files
 		const pdfFiles = this.getNodeParameter('pdfFiles', index) as IDataObject;
 		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-        
+
 		if (!pdfFileArray || pdfFileArray.length === 0) {
 			throw new Error('At least one PDF file is required');
 		}
@@ -359,7 +359,7 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 
 		for (const pdfFile of pdfFileArray) {
 			const binaryPropertyName = pdfFile.binaryPropertyName as string;
-            
+
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 				const fileName = pdfFile.fileName as string || binaryPropertyName;
 				throw new Error(`No binary data found in property '${binaryPropertyName}' for file '${fileName}'`);
@@ -373,7 +373,7 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 		// Get PDF contents from multiple base64 files
 		const pdfFiles = this.getNodeParameter('pdfFilesBase64', index) as IDataObject;
 		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-        
+
 		if (!pdfFileArray || pdfFileArray.length === 0) {
 			throw new Error('At least one PDF file is required');
 		}
@@ -391,7 +391,7 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 		// Get PDF contents from multiple URLs
 		const pdfFiles = this.getNodeParameter('pdfFilesUrl', index) as IDataObject;
 		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-        
+
 		if (!pdfFileArray || pdfFileArray.length === 0) {
 			throw new Error('At least one PDF file is required');
 		}
@@ -410,7 +410,7 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 		// Get PDF contents from multiple file paths
 		const pdfFiles = this.getNodeParameter('pdfFilesPath', index) as IDataObject;
 		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-        
+
 		if (!pdfFileArray || pdfFileArray.length === 0) {
 			throw new Error('At least one PDF file is required');
 		}
@@ -464,7 +464,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 				if (location) {
 					reject(new Error(
 						`URL redirects to: ${location}\n` +
-                        'Please use the final URL directly instead of the redirecting URL.'
+						'Please use the final URL directly instead of the redirecting URL.',
 					));
 					return;
 				}
@@ -474,12 +474,12 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 			if (res.statusCode !== 200) {
 				reject(new Error(
 					`HTTP Error ${res.statusCode}: ${res.statusMessage}\n` +
-                    'The server returned an error instead of the PDF file. ' +
-                    'This might indicate:\n' +
-                    '- The file doesn\'t exist\n' +
-                    '- Authentication is required\n' +
-                    '- The URL is incorrect\n' +
-                    '- Server is experiencing issues'
+					'The server returned an error instead of the PDF file. ' +
+					'This might indicate:\n' +
+					'- The file doesn\'t exist\n' +
+					'- Authentication is required\n' +
+					'- The URL is incorrect\n' +
+					'- Server is experiencing issues',
 				));
 				return;
 			}
@@ -490,14 +490,14 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 			res.on('data', (chunk: any) => {
 				chunks.push(chunk);
 				totalSize += chunk.length;
-                
+
 				// Check if we're getting too much data (likely HTML error page)
 				if (totalSize > 1024 * 1024) { // 1MB limit
 					req.destroy();
 					reject(new Error(
 						`Downloaded content is too large (${totalSize} bytes). ` +
-                        'This might be an HTML error page instead of a PDF file. ' +
-                        'Please check the URL and ensure it points directly to a PDF file.'
+						'This might be an HTML error page instead of a PDF file. ' +
+						'Please check the URL and ensure it points directly to a PDF file.',
 					));
 				}
 			});
@@ -516,7 +516,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 				if (base64Content.length < 100) {
 					reject(new Error(
 						`Downloaded file is too small (${base64Content.length} base64 chars). ` +
-                        'Please ensure the URL points to a valid PDF file.'
+						'Please ensure the URL points to a valid PDF file.',
 					));
 					return;
 				}
@@ -526,27 +526,27 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 				if (!decodedContent.startsWith('%PDF')) {
 					// Try to get more info about what we actually downloaded
 					const first100Chars = Buffer.from(base64Content, 'base64').toString('ascii', 0, 100);
-					const isHtml = first100Chars.toLowerCase().includes('<html') || 
+					const isHtml = first100Chars.toLowerCase().includes('<html') ||
                                   first100Chars.toLowerCase().includes('<!doctype');
-                    
+
 					let errorMessage = 'The downloaded file does not appear to be a valid PDF file. ' +
-                        'PDF files should start with "%PDF".\n\n' +
-                        `Downloaded content starts with: "${decodedContent}"\n\n`;
+						'PDF files should start with "%PDF".\n\n' +
+						`Downloaded content starts with: "${decodedContent}"\n\n`;
 
 					if (isHtml) {
 						errorMessage += 'The downloaded content appears to be HTML (likely an error page). ' +
-                            'This usually means:\n' +
-                            '1. The URL requires authentication\n' +
-                            '2. The file doesn\'t exist\n' +
-                            '3. The server is returning an error page\n' +
-                            '4. The URL is incorrect\n\n' +
-                            'Please check the URL and ensure it points directly to a PDF file.';
+							'This usually means:\n' +
+							'1. The URL requires authentication\n' +
+							'2. The file doesn\'t exist\n' +
+							'3. The server is returning an error page\n' +
+							'4. The URL is incorrect\n\n' +
+							'Please check the URL and ensure it points directly to a PDF file.';
 					} else {
 						errorMessage += 'This might indicate:\n' +
-                            '1. The file is corrupted\n' +
-                            '2. The URL points to a different file type\n' +
-                            '3. The server is not serving the file correctly\n\n' +
-                            'Please verify the URL and try again.';
+							'1. The file is corrupted\n' +
+							'2. The URL points to a different file type\n' +
+							'3. The server is not serving the file correctly\n\n' +
+							'Please verify the URL and try again.';
 					}
 
 					reject(new Error(errorMessage));
@@ -579,22 +579,22 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
  */
 async function readPdfFromFile(filePath: string): Promise<string> {
 	const fs = require('fs');
-    
+
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
-        
+
 		// Validate the PDF content
 		if (base64Content.length < 100) {
 			throw new Error('PDF file appears to be too small. Please ensure the file is a valid PDF.');
 		}
-        
+
 		// Check if it starts with PDF header
 		const decodedContent = Buffer.from(base64Content, 'base64').toString('ascii', 0, 10);
 		if (!decodedContent.startsWith('%PDF')) {
 			throw new Error('The file does not appear to be a valid PDF file. PDF files should start with "%PDF".');
 		}
-        
+
 		return base64Content;
 	} catch (error) {
 		if (error.code === 'ENOENT') {
@@ -605,4 +605,4 @@ async function readPdfFromFile(filePath: string): Promise<string> {
 			throw new Error(`Error reading file: ${error.message}`);
 		}
 	}
-} 
+}

@@ -179,7 +179,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const availableProperties = Object.keys(item[0].binary).join(', ');
 			throw new Error(
 				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
-                'Common property names are "data" for file uploads or the filename without extension.'
+				'Common property names are "data" for file uploads or the filename without extension.',
 			);
 		}
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
@@ -265,4 +265,4 @@ async function readPdfFromFile(filePath: string): Promise<string> {
 	} catch (error) {
 		throw new Error(`Failed to read PDF file from path: ${error.message}`);
 	}
-} 
+}

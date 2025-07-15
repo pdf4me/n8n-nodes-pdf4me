@@ -524,7 +524,7 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
  */
 async function readPdfFromFile(filePath: string): Promise<string> {
 	const fs = require('fs');
-    
+
 	try {
 		const fileBuffer = fs.readFileSync(filePath);
 		const base64Content = fileBuffer.toString('base64');
@@ -538,4 +538,4 @@ async function readPdfFromFile(filePath: string): Promise<string> {
 			throw new Error(`Error reading file: ${error.message}`);
 		}
 	}
-} 
+}

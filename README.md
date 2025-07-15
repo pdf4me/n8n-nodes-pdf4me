@@ -61,7 +61,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^0.9.0"
+    "n8n-nodes-pdf4me": "^1.0.0"
   }
 }
 ```
@@ -70,8 +70,9 @@ For Docker-based deployments, add the package to your package.json and rebuild t
 
 This node provides comprehensive document processing capabilities through PDF4ME's API. Here are the available features:
 
-### 1. PDF Processing & Conversion
+### 1. PDF Processing & Manipulation
 - **Add Attachment to PDF**: Attach files to PDF documents
+- **Add Form Fields to PDF**: Add interactive form fields to PDF documents
 - **Add HTML Header Footer**: Add custom HTML headers and footers to PDFs
 - **Add Image Stamp to PDF**: Add image stamps with positioning and opacity controls
 - **Add Margin to PDF**: Add margins to PDF documents
@@ -79,10 +80,17 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Add Text Stamp to PDF**: Add text stamps with customizable formatting
 - **Compress PDF**: Optimize PDF files for web, print, or screen viewing
 - **Convert from PDF**: Convert PDFs to Word or Excel with OCR support
+- **Convert PDF to Editable OCR**: Convert PDFs to editable text using OCR
+- **Convert PDF to Excel**: Convert PDF tables to Excel spreadsheets
+- **Convert PDF to PowerPoint**: Convert PDF content to PowerPoint presentations
+- **Convert PDF to Word**: Convert PDFs to editable Word documents
 - **Create Images from PDF**: Extract images from PDF documents
 - **Delete Blank Pages from PDF**: Remove blank pages from PDF documents
 - **Delete Unwanted Pages from PDF**: Remove specific pages from PDF documents
 - **Extract Pages**: Extract specific pages from PDF documents
+- **Extract Pages from PDF**: Extract pages with advanced options
+- **Fill PDF Form**: Fill interactive PDF forms with data
+- **Find and Replace Text**: Find and replace text in PDF documents
 - **Merge Multiple PDFs**: Combine multiple PDF files into one
 - **Overlay PDFs**: Overlay one PDF on top of another
 - **Protect Document**: Add password protection and encryption to PDFs
@@ -90,6 +98,10 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Rotate Document**: Rotate entire PDF documents
 - **Rotate Page**: Rotate specific pages within a PDF
 - **Sign PDF**: Add digital signatures to PDF documents
+- **Split PDF by Barcode**: Split PDFs based on barcode detection
+- **Split PDF by Swiss QR**: Split PDFs based on Swiss QR code detection
+- **Split PDF by Text**: Split PDFs based on text content
+- **Split PDF Regular**: Split PDFs into equal parts or by page ranges
 - **Unlock PDF**: Remove password protection from PDFs
 - **Update Hyperlinks Annotation**: Modify hyperlinks and annotations in PDFs
 
@@ -105,30 +117,29 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Read Barcode from Image**: Read barcodes from images
 - **Remove EXIF Tags from Image**: Remove metadata from images
 - **Replace Text with Image**: Replace text in documents with images
+- **Replace Text with Image in Word**: Replace text in Word documents with images
 - **Resize Image**: Resize images to specific dimensions
 - **Rotate Image**: Rotate images by specific angles
 - **Rotate Image by EXIF Data**: Auto-rotate images based on EXIF orientation
 
 ### 3. Document Conversion
 - **Convert to PDF**: Convert various document formats to PDF
-- **Document to PDF**: Convert documents to PDF format
-- **HTML to PDF**: Convert HTML content to PDF
+- **Convert HTML to PDF**: Convert HTML content to PDF
+- **Convert Image Format**: Convert images between different formats
+- **Convert Markdown to PDF**: Convert Markdown files to PDF
+- **Convert Visio**: Convert Visio diagrams to PDF
+- **Convert Word to PDF Form**: Convert Word documents to PDF forms
 - **JSON to Excel**: Convert JSON data to Excel spreadsheets
-- **Markdown to PDF**: Convert Markdown files to PDF
-- **PNG to PDF**: Convert PNG images to PDF
-- **PPTX to PDF**: Convert PowerPoint presentations to PDF
 - **URL to PDF**: Convert web pages to PDF
-- **Visio to PDF**: Convert Visio diagrams to PDF
-- **Word to PDF Form**: Convert Word documents to PDF forms
-- **XLSX to PDF**: Convert Excel spreadsheets to PDF
 
 ### 4. Barcode Operations
 - **Barcode Generator**: Generate various types of barcodes (QR, Code 128, EAN, UPC, etc.)
 - **Read Barcode from Image**: Extract barcode data from images
+- **Read Barcode from PDF**: Extract barcode data from PDF documents
+- **Read Swiss QR Code**: Read Swiss QR codes from documents
 
 ### 5. Document Analysis & Extraction
 - **Classify Document**: Automatically classify document types
-- **Extract**: Extract various elements from documents
 - **Extract Attachment from PDF**: Extract attached files from PDFs
 - **Extract Form Data from PDF**: Extract form field data from PDFs
 - **Extract Pages from PDF**: Extract specific pages from PDFs
@@ -136,24 +147,21 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Extract Table from PDF**: Extract tables from PDF documents
 - **Extract Text by Expression**: Extract text using custom expressions
 - **Extract Text from Word**: Extract text from Word documents
-- **Find Search**: Search for specific content in documents
 - **Get Document from PDF4ME**: Retrieve documents from PDF4ME storage
 - **Get PDF Metadata**: Extract metadata from PDF files
 
-### 6. Document Management
+### 6. Document Management & Generation
 - **Create PDF/A**: Create PDF/A compliant documents
+- **Create Swiss QR Bill**: Create Swiss QR Bills using all compliance standards for digital payment transactions
 - **Disable Tracking Changes in Word**: Remove tracking changes from Word documents
-- **Edit**: Edit document properties and content
-- **Flatten PDF**: Flatten PDF forms and annotations
-- **Form**: Process PDF forms
-- **Generate**: Generate documents from templates
-- **Linearize PDF**: Optimize PDFs for web streaming
-- **Organize**: Organize document structure
-- **Upload File**: Upload files to PDF4ME storage
+- **Enable Tracking Changes in Word**: Enable tracking changes in Word documents
+- **Generate Document Single**: Generate single documents from templates
+- **Generate Documents Multiple**: Generate multiple documents from templates
+- **Get Tracking Changes in Word**: Get tracking changes status from Word documents
 
 ### 7. Advanced Features
-- **Router**: Route documents based on conditions
-- **Split PDF**: Split PDF documents into multiple files
+- **Create Images from PDF**: Extract and process images from PDF documents
+- **Document Processing**: Advanced document manipulation and processing
 
 ## Credentials
 
@@ -175,13 +183,16 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Extract specific pages from PDF documents for creating shorter versions or digital booklets
 - Add watermarks, stamps, and annotations to documents
 - Compress and optimize PDF files for different use cases
+- Fill interactive PDF forms with data from your workflows
+- Split PDFs based on content, barcodes, or page ranges
 
 ### Barcode Operations
 - Generate QR codes for product tracking
 - Create product barcodes (EAN-13, UPC-A) for inventory management
 - Generate barcodes for document identification
 - Embed barcodes in documents and reports
-- Read barcodes from images for automated processing
+- Read barcodes from images and PDFs for automated processing
+- Process Swiss QR codes for payment transactions
 
 ### Web Content Processing
 - Convert web pages to PDF for archiving
@@ -194,6 +205,7 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Transform API responses to formatted reports
 - Export analytics data to Excel for stakeholder reports
 - Create automated data processing pipelines
+- Generate documents from templates with dynamic data
 
 ### Image Processing
 - Crop images for specific dimensions
@@ -202,6 +214,23 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Create thumbnails and optimized images
 - Add watermarks to images for branding
 - Extract text from images using OCR
+- Convert images between different formats
+
+### Swiss QR Bill Generation
+- Create compliant Swiss QR Bills for digital payment transactions
+- Generate QR codes with all required payment information
+- Support for multiple languages (English, German, French, Italian)
+- Include creditor and debtor information with structured addresses
+- Add billing information and unstructured messages
+- Generate bills with different separator line styles
+- Support for various reference types (QR Reference, Creditor Reference, No Reference)
+
+### Document Generation & Management
+- Generate documents from templates with dynamic data
+- Create PDF/A compliant documents for long-term archiving
+- Manage Word document tracking changes
+- Process multiple documents in batch operations
+- Extract and manage document metadata
 
 ### Automated Workflows
 - Chain multiple PDF4ME operations together
@@ -209,6 +238,7 @@ This node allows you to automate document processing tasks in your n8n workflows
 - Connect with storage services for file management
 - Build complete document processing pipelines
 - Automate document classification and routing
+- Create end-to-end document workflows
 
 For detailed examples and workflow templates, visit our documentation.
 
@@ -223,8 +253,28 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 1.0.0
+- **Current Version**: Production-ready release with comprehensive document processing capabilities
+- 60+ document processing operations covering all major use cases
+- Full integration with PDF4ME API services
+- Complete PDF processing suite including conversion, manipulation, and analysis
+- Advanced image processing capabilities with watermarking, cropping, and format conversion
+- Comprehensive barcode generation and reading functionality
+- Document conversion between multiple formats (PDF, Word, Excel, PowerPoint, HTML, etc.)
+- Enhanced timeout handling for complex operations (up to 25 minutes)
+- Improved async processing with exponential backoff and better error handling
+- Support for multiple input types (Binary Data, Base64, URL, File Path)
+- Advanced OCR capabilities with multi-language support
+- Document protection, signing, and security features
+- Metadata extraction and document analysis tools
+- Swiss QR Bill generation with full compliance standards
+- Document template generation and batch processing
+- All critical lint errors resolved for production readiness
+- Optimized package structure and build validation
+- Enhanced error handling and debugging capabilities
+
 ### 0.9.0
-- **Current Version**: Comprehensive document processing capabilities with 50+ actions
+- Comprehensive document processing capabilities with 50+ actions
 - Full integration with PDF4ME API services
 - Complete PDF processing suite including conversion, manipulation, and analysis
 - Advanced image processing capabilities with watermarking, cropping, and format conversion
