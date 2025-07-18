@@ -253,8 +253,16 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 1.1.0
+- **Latest Version**: Security and compliance updates
+- Updated to address n8n community package security scan results
+- Added guidance for ESLint compliance and restricted imports
+- Updated dependencies in package.json
+- Improved documentation and publishing guides
+- Minor bug fixes and codebase cleanup
+
 ### 1.0.0
-- **Current Version**: Production-ready release with comprehensive document processing capabilities
+- Production-ready release with comprehensive document processing capabilities
 - 60+ document processing operations covering all major use cases
 - Full integration with PDF4ME API services
 - Complete PDF processing suite including conversion, manipulation, and analysis
