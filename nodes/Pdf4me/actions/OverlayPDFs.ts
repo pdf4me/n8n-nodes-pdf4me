@@ -10,7 +10,6 @@ import {
 // declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
-declare const require: any;
 // declare const setTimeout: any;
 
 export const description: INodeProperties[] = [

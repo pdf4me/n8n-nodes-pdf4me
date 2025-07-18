@@ -327,7 +327,6 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				idx++;
 			} else {
 				// Log problematic document for debugging
-				console.warn('Problematic document in split response:', JSON.stringify(doc, null, 2));
 			}
 		}
 		totalFiles = filesSummary.length;
@@ -351,7 +350,6 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				idx++;
 			} else {
 				// Log problematic document for debugging
-				console.warn('Problematic document in split response:', JSON.stringify(doc, null, 2));
 			}
 		}
 		totalFiles = filesSummary.length;
@@ -372,7 +370,6 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		responseType = 'Single PDF (legacy)';
 	} else {
 		// Unexpected response: log for debugging
-		console.warn('Unexpected response format from PDF4me SplitPdf API:', JSON.stringify(parsedResponse, null, 2));
 		throw new Error('Unexpected response format from PDF4me SplitPdf API. Check console for details.');
 	}
 

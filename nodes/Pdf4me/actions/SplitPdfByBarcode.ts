@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -388,18 +387,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// If response is a ZIP (Buffer or base64 string)
 	const isZip = (buf: Buffer) => buf.slice(0, 4).toString('hex') === '504b0304';
 
-	const extractZipAndPrepareBinary = async (zipBuffer: Buffer) => {
+	const extractZipAndPrepareBinary = async () => {
 		throw new Error('ZIP file processing is not supported in this version. Please use an alternative API response format.');
 	};
 
 	if (Buffer.isBuffer(response) && isZip(response)) {
-		await extractZipAndPrepareBinary.call(this, response);
+		await extractZipAndPrepareBinary.call(this);
 	} else if (typeof response === 'string') {
 		// Check if base64 ZIP
 		try {
 			const buffer = Buffer.from(response, 'base64');
 			if (isZip(buffer)) {
-				await extractZipAndPrepareBinary.call(this, buffer);
+				await extractZipAndPrepareBinary.call(this);
 			}
 		} catch {
 			// Ignore base64 conversion errors

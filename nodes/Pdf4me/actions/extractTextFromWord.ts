@@ -8,7 +8,6 @@ import {
 
 // Make Node.js globals available
 declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -241,8 +240,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const wordUrl = this.getNodeParameter('wordUrl', index) as string;
 		docContent = await downloadWordFromUrl.call(this, wordUrl);
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readWordFromFile(filePath);
+		throw new Error('File path input is not supported in this environment');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -336,12 +334,3 @@ async function downloadWordFromUrl(this: IExecuteFunctions, wordUrl: string): Pr
 	}
 }
 
-async function readWordFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read Word file from path: ${error.message}`);
-	}
-}

@@ -8,7 +8,6 @@ import {
 
 // Make Node.js globals available
 declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{

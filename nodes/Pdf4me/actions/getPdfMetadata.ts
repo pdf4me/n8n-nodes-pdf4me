@@ -6,7 +6,6 @@ import {
 } from '../GenericFunctions';
 
 // declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{

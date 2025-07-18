@@ -6,7 +6,6 @@ import {
 } from '../GenericFunctions';
 
 // declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -191,16 +190,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
 	} else if (pdfInputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('pdfFilePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || 'input.pdf';
+		throw new Error('File path input is not supported in this environment');
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response as Buffer);
 		docContent = buffer.toString('base64');
 		docName = pdfUrl.split('/').pop() || 'input.pdf';
 	} else {

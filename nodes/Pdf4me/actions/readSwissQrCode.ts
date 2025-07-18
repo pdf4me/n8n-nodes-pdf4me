@@ -5,7 +5,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -30,11 +29,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
@@ -91,21 +85,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to read SwissQR code from',
-		placeholder: '/path/to/file.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReadSwissQrCode],
-				inputDataType: ['filePath'],
-			},
-		},
-	},
-	{
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
@@ -151,16 +130,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || docName;
+		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		if (!pdfUrl || pdfUrl.trim() === '') {
+			throw new Error('PDF URL is required');
+		}
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl.trim(),
+			encoding: null,
+		});
+		const buffer = Buffer.from(response);
 		docContent = buffer.toString('base64');
 		docName = pdfUrl.split('/').pop() || docName;
 	} else {

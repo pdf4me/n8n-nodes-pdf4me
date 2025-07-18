@@ -39,7 +39,6 @@ import {
 // Make Node.js globals available
 // declare const Buffer: any;
 // declare const URL: any;
-declare const require: any;
 // declare const console: any;
 // declare const process: any;
 
@@ -454,21 +453,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Download PDF from URL
 			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 			logger.log('debug', 'Downloading PDF from URL', { url: pdfUrl });
-			docContent = await downloadPdfFromUrl(pdfUrl, logger);
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: pdfUrl,
+				encoding: null,
+			});
+			const buffer = Buffer.from(response as Buffer);
+			docContent = buffer.toString('base64');
 			logger.log('debug', 'PDF downloaded successfully', {
 				contentLength: docContent.length,
 				contentPreview: docContent.substring(0, 100) + '...',
 			});
 		} else if (inputDataType === 'filePath') {
-			logger.log('debug', 'Processing file path input');
-			// Read PDF from local file path
-			const filePath = this.getNodeParameter('filePath', index) as string;
-			logger.log('debug', 'Reading PDF from file path', { filePath });
-			docContent = await readPdfFromFile(filePath, logger);
-			logger.log('debug', 'PDF read successfully', {
-				contentLength: docContent.length,
-				contentPreview: docContent.substring(0, 100) + '...',
-			});
+			throw new Error('File path input is not supported in this environment');
 		} else {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
@@ -542,21 +539,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					// Download attachment from URL
 					const attachmentUrl = attachment.attachmentUrl as string;
 					logger.log('debug', 'Downloading attachment from URL', { url: attachmentUrl });
-					attachmentContent = await downloadPdfFromUrl(attachmentUrl, logger);
+					const response = await this.helpers.request({
+						method: 'GET',
+						url: attachmentUrl,
+						encoding: null,
+					});
+					const buffer = Buffer.from(response as Buffer);
+					attachmentContent = buffer.toString('base64');
 					logger.log('debug', 'Attachment downloaded successfully', {
 						contentLength: attachmentContent.length,
 						contentPreview: attachmentContent.substring(0, 100) + '...',
 					});
 				} else if (attachmentContentType === 'filePath') {
-					logger.log('debug', 'Processing attachment as file path');
-					// Read attachment from local file path
-					const attachmentFilePath = attachment.attachmentFilePath as string;
-					logger.log('debug', 'Reading attachment from file path', { filePath: attachmentFilePath });
-					attachmentContent = await readPdfFromFile(attachmentFilePath, logger);
-					logger.log('debug', 'Attachment read successfully', {
-						contentLength: attachmentContent.length,
-						contentPreview: attachmentContent.substring(0, 100) + '...',
-					});
+					throw new Error('File path input is not supported in this environment');
 				} else {
 					throw new Error(`Unsupported attachment content type: ${attachmentContentType}`);
 				}
@@ -733,112 +728,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 /**
  * Download PDF content from a URL
  */
-async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise<string> {
-	const https = require('https');
-	const http = require('http');
-
-	const parsedUrl = new URL(pdfUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	// Set up request options with timeout and user agent
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000, // 30 seconds timeout
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'application/pdf,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			// Check for error status codes
-			if (res.statusCode !== 200) {
-				const error = `HTTP Error ${res.statusCode}: ${res.statusMessage}`;
-				logger?.log('error', 'Download failed with HTTP error', { statusCode: res.statusCode, statusMessage: res.statusMessage });
-				reject(new Error(error));
-				return;
-			}
-
-			const chunks: any[] = [];
-			let totalSize = 0;
-
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-				totalSize += chunk.length;
-			});
-
-			res.on('end', () => {
-				if (totalSize === 0) {
-					logger?.log('error', 'Downloaded file is empty');
-					reject(new Error('Downloaded file is empty. Please check the URL.'));
-					return;
-				}
-
-				// Combine chunks and convert to base64
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				logger?.log('debug', 'File downloaded successfully', {
-					url: pdfUrl,
-					fileSize: totalSize,
-					base64Length: base64Content.length,
-				});
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				logger?.log('error', 'Download stream error', { error: error.message });
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			logger?.log('error', 'Request error', { error: error.message });
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			logger?.log('error', 'Download timeout');
-			req.destroy();
-			reject(new Error('Download timeout. The server took too long to respond.'));
-		});
-
-		req.end();
-	});
-}
 
 /**
  * Read PDF content from a local file path
  */
-async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
-	const fs = require('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-		logger?.log('debug', 'File read successfully', {
-			filePath,
-			fileSize: fileBuffer.length,
-			base64Length: base64Content.length,
-		});
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			logger?.log('error', 'File not found', { filePath });
-			throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-		} else if (error.code === 'EACCES') {
-			logger?.log('error', 'Permission denied', { filePath });
-			throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-		} else {
-			logger?.log('error', 'File read error', { filePath, error: error.message });
-			throw new Error(`Error reading file: ${error.message}`);
-		}
-	}
-}
 
 /**
  * Validate file extension (helper function based on C# example)

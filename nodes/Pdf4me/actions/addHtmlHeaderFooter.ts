@@ -40,7 +40,6 @@ import {
 // Make Node.js globals available
 // declare const Buffer: any;
 // declare const URL: any;
-declare const require: any;
 // declare const console: any;
 // declare const process: any;
 
@@ -379,7 +378,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		let docContent: string;
 		let actualDocName: string;
 		let pdfUrl: string | undefined;
-		let filePath: string | undefined;
 
 		switch (inputDataType) {
 		case 'binaryData': {

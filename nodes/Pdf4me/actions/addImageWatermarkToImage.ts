@@ -8,7 +8,6 @@ import {
 
 // Make Node.js globals available
 // declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -336,62 +335,8 @@ export const description: INodeProperties[] = [
 ];
 
 // Add a helper function to download image from URL and convert to base64
-async function downloadImageFromUrl(imageUrl: string): Promise<{base64: string, fileName: string}> {
-	const https = require('https');
-	const http = require('http');
-	const { URL } = require('url');
-	const parsedUrl = new URL(imageUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000,
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'image/*,application/octet-stream,*/*',
-		},
-	};
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			if (res.statusCode !== 200) {
-				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
-				return;
-			}
-			const chunks: any[] = [];
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-			});
-			res.on('end', () => {
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				// Try to extract filename from Content-Disposition or fallback to URL
-				let fileName = parsedUrl.pathname.split('/').pop() || 'image.jpg';
-				const contentDisposition = res.headers['content-disposition'];
-				if (contentDisposition) {
-					const match = /filename="?([^";]+)"?/i.exec(contentDisposition);
-					if (match) {
-						fileName = match[1];
-					}
-				}
-				resolve({ base64: base64Content, fileName });
-			});
-			res.on('error', (error: any) => {
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-		req.on('error', (error: any) => {
-			reject(new Error(`Request error: ${error.message}`));
-		});
-		req.on('timeout', () => {
-			req.destroy();
-			reject(new Error('Download timeout'));
-		});
-		req.end();
-	});
-}
+
+
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
@@ -420,16 +365,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
+		throw new Error('File path input is not supported in this environment');
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const { base64, fileName } = await downloadImageFromUrl(imageUrl);
-		docContent = base64;
-		docName = fileName || outputFileName;
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: imageUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response as Buffer);
+		docContent = buffer.toString('base64');
+		docName = imageUrl.split('/').pop() || outputFileName;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -448,16 +394,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (watermarkDataType === 'base64') {
 		watermarkContent = this.getNodeParameter('watermarkBase64Content', index) as string;
 	} else if (watermarkDataType === 'filePath') {
-		const filePath = this.getNodeParameter('watermarkFilePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		watermarkContent = fileBuffer.toString('base64');
-		watermarkFileName = filePath.split('/').pop() || 'watermark.png';
+		throw new Error('File path input is not supported in this environment');
 	} else if (watermarkDataType === 'url') {
 		const watermarkImageUrl = this.getNodeParameter('watermarkImageUrl', index) as string;
-		const { base64, fileName } = await downloadImageFromUrl(watermarkImageUrl);
-		watermarkContent = base64;
-		watermarkFileName = fileName || 'watermark.png';
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: watermarkImageUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response as Buffer);
+		watermarkContent = buffer.toString('base64');
+		watermarkFileName = watermarkImageUrl.split('/').pop() || 'watermark.png';
 	} else {
 		throw new Error(`Unsupported watermark data type: ${watermarkDataType}`);
 	}
