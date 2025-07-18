@@ -307,8 +307,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			encoding: null,
 		});
 		docContent = Buffer.from(response).toString('base64');
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

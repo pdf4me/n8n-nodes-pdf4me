@@ -35,11 +35,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -87,21 +82,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertPdfToExcel],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to convert to Excel',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertPdfToExcel],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -273,47 +253,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 
-		docContent = await downloadPdfFromUrl(pdfUrl);
+		docContent = await downloadPdfFromUrl.call(this, this.helpers, pdfUrl);
 
-	} else if (inputDataType === 'filePath') {
-		// Use local file path - read the file and convert to base64
-		const filePath = this.getNodeParameter('filePath', index) as string;
-
-		// Validate file path (basic check)
-		if (!filePath.includes('/') && !filePath.includes('\\')) {
-			throw new Error('Invalid file path. Please provide a complete path to the PDF file.');
-		}
-
-		try {
-			const fs = await import('fs');
-
-			// Check if file exists
-			if (!fs.existsSync(filePath)) {
-				throw new Error(`Input PDF file not found at ${filePath}`);
-			}
-
-			const fileBuffer = fs.readFileSync(filePath);
-			docContent = fileBuffer.toString('base64');
-
-			// Validate the PDF content
-			if (docContent.length < 100) {
-				throw new Error('PDF file appears to be too small. Please ensure the file is a valid PDF.');
-			}
-
-			// Extract filename from path
-			const pathParts = filePath.replace(/\\/g, '/').split('/');
-			originalFileName = pathParts[pathParts.length - 1];
-
-
-		} catch (error) {
-			if (error.code === 'ENOENT') {
-				throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-			} else if (error.code === 'EACCES') {
-				throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-			} else {
-				throw new Error(`Error reading file: ${error.message}`);
-			}
-		}
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -406,15 +347,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 /**
  * Download PDF from URL and convert to base64
  */
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
+const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl: string): Promise<string> => {
 	try {
-		const response = await fetch(pdfUrl);
+		const response = await helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			json: false, // Ensure binary data is returned
+		});
 
-		if (!response.ok) {
-			throw new Error(`Failed to download PDF from URL: ${response.status} ${response.statusText}`);
+		if (response.statusCode >= 400) {
+			throw new Error(`Failed to download PDF from URL: ${response.statusCode} ${response.statusMessage}`);
 		}
 
-		const arrayBuffer = await response.arrayBuffer();
+		const arrayBuffer = response.data;
 		const buffer = Buffer.from(arrayBuffer);
 		const base64Content = buffer.toString('base64');
 
@@ -434,4 +379,4 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 			throw new Error(`Error downloading PDF from URL: ${error.message}`);
 		}
 	}
-}
+};

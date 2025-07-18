@@ -68,11 +68,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -119,21 +114,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.AddImageStampToPdf],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to add image stamp to',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddImageStampToPdf],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -190,11 +170,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to image file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
 			},
 		],
 	},
@@ -595,8 +570,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const buffer = Buffer.from(response as Buffer);
 			docContent = buffer.toString('base64');
 			logger.log('debug', 'PDF downloaded from URL', { length: docContent.length });
-		} else if (inputDataType === 'filePath') {
-			throw new Error('File path input is not supported in this environment');
 		} else {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
@@ -644,8 +617,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const buffer = Buffer.from(response as Buffer);
 			imageContent = buffer.toString('base64');
 			logger.log('debug', 'Image downloaded from URL', { length: imageContent.length });
-		} else if (imageInputDataType === 'filePath') {
-			throw new Error('File path input is not supported in this environment');
 		} else {
 			throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
 		}

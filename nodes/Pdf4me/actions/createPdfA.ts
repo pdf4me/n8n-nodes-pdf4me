@@ -36,11 +36,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -88,21 +83,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.CreatePdfA],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to convert to PDF/A',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CreatePdfA],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -248,30 +228,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} catch (error) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
-		docContent = await downloadPdfFromUrl(pdfUrl);
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		if (!filePath.includes('/') && !filePath.includes('\\')) {
-			throw new Error('Invalid file path. Please provide a complete path to the PDF file.');
-		}
-		try {
-			const fs = await import('fs');
-			const fileBuffer = fs.readFileSync(filePath);
-			docContent = fileBuffer.toString('base64');
-			if (docContent.length < 100) {
-				throw new Error('PDF file appears to be too small. Please ensure the file is a valid PDF.');
-			}
-			const pathParts = filePath.replace(/\\/g, '/').split('/');
-			originalFileName = pathParts[pathParts.length - 1];
-		} catch (error) {
-			if (error.code === 'ENOENT') {
-				throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-			} else if (error.code === 'EACCES') {
-				throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-			} else {
-				throw new Error(`Error reading file: ${error.message}`);
-			}
-		}
+		docContent = await downloadPdfFromUrl.call(this, this.helpers, pdfUrl);
 	} else {
 		throw new Error('Unsupported input data type: ' + inputDataType);
 	}
@@ -341,13 +298,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	throw new Error('No response data received from PDF4ME API');
 }
 
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
+const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl: string): Promise<string> => {
 	try {
-		const response = await fetch(pdfUrl);
-		if (!response.ok) {
-			throw new Error(`Failed to download PDF from URL: ${response.status} ${response.statusText}`);
-		}
-		const arrayBuffer = await response.arrayBuffer();
+		const response = await helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			json: false,
+		});
+		const arrayBuffer = response.data;
 		const buffer = Buffer.from(arrayBuffer);
 		const base64Content = buffer.toString('base64');
 		if (base64Content.length < 100) {
@@ -363,4 +321,4 @@ async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
 			throw new Error(`Error downloading PDF from URL: ${error.message}`);
 		}
 	}
-}
+};

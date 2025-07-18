@@ -38,11 +38,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -90,21 +85,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertPdfToWord],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to convert',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertPdfToWord],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -318,23 +298,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = Buffer.from(response).toString('base64');
 		} catch (error) {
 			throw new Error(`Failed to download file from URL: ${pdfUrl}. Error: ${error}`);
-		}
-	} else if (inputDataType === 'filePath') {
-		// Local file path input
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		originalFileName = this.getNodeParameter('docName', index) as string;
-
-		if (!originalFileName) {
-			throw new Error('Document name is required for file path input type.');
-		}
-
-		// Read the local file and convert to base64
-		try {
-			const fs = await import('fs');
-			const fileBuffer = fs.readFileSync(filePath);
-			docContent = fileBuffer.toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to read local file: ${filePath}. Error: ${error}`);
 		}
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);

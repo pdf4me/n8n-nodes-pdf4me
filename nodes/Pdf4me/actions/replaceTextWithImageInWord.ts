@@ -1,6 +1,5 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
-import { readFileSync } from 'fs';
 
 export const description: INodeProperties[] = [
 	{
@@ -25,11 +24,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the Word document',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide a local file path to the Word document',
 			},
 		],
 		displayOptions: {
@@ -91,7 +85,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ReplaceTextWithImageInWord],
-				wordInputDataType: ['base64', 'filePath', 'url'],
+				wordInputDataType: ['base64', 'url'],
 			},
 		},
 	},
@@ -107,21 +101,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ReplaceTextWithImageInWord],
 				wordInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local Word Document Path',
-		name: 'wordDocumentFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the Word document',
-		placeholder: '/path/to/document.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceTextWithImageInWord],
-				wordInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -147,11 +126,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the image file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide a local file path to the image file',
 			},
 		],
 		displayOptions: {
@@ -213,7 +187,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ReplaceTextWithImageInWord],
-				imageInputDataType: ['base64', 'filePath', 'url'],
+				imageInputDataType: ['base64', 'url'],
 			},
 		},
 	},
@@ -229,21 +203,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ReplaceTextWithImageInWord],
 				imageInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local Image Path',
-		name: 'imageFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the image file',
-		placeholder: '/path/to/image.png',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceTextWithImageInWord],
-				imageInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -317,11 +276,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = this.getNodeParameter('wordDocumentNameRequired', index) as string;
 		const response = await this.helpers.request({ method: 'GET', url: documentUrl, encoding: null });
 		docContent = Buffer.from(response).toString('base64');
-	} else if (wordInputDataType === 'filePath') {
-		const documentFilePath = this.getNodeParameter('wordDocumentFilePath', index) as string;
-		docName = this.getNodeParameter('wordDocumentNameRequired', index) as string;
-		const fileBuffer = readFileSync(documentFilePath);
-		docContent = fileBuffer.toString('base64');
 	} else {
 		throw new Error(`Unsupported Word document input type: ${wordInputDataType}`);
 	}
@@ -348,11 +302,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		imageFileName = this.getNodeParameter('imageFileNameRequired', index) as string;
 		const response = await this.helpers.request({ method: 'GET', url: imageUrl, encoding: null });
 		imageContent = Buffer.from(response).toString('base64');
-	} else if (imageInputDataType === 'filePath') {
-		const imageFilePath = this.getNodeParameter('imageFilePath', index) as string;
-		imageFileName = this.getNodeParameter('imageFileNameRequired', index) as string;
-		const fileBuffer = readFileSync(imageFilePath);
-		imageContent = fileBuffer.toString('base64');
 	} else {
 		throw new Error(`Unsupported image input type: ${imageInputDataType}`);
 	}

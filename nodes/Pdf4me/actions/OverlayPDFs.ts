@@ -305,8 +305,6 @@ async function getPdfContents(this: IExecuteFunctions, index: number, baseInputT
 			encoding: null,
 		});
 		basePdfBase64 = Buffer.from(response).toString('base64');
-	} else if (baseInputType === 'filePath') {
-		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else {
 		throw new Error(`Unsupported base PDF input type: ${baseInputType}`);
 	}
@@ -337,8 +335,6 @@ async function getPdfContents(this: IExecuteFunctions, index: number, baseInputT
 			encoding: null,
 		});
 		layerPdfBase64 = Buffer.from(response).toString('base64');
-	} else if (layerInputType === 'filePath') {
-		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else {
 		throw new Error(`Unsupported layer PDF input type: ${layerInputType}`);
 	}

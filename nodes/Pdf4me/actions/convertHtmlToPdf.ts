@@ -38,11 +38,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to HTML file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to HTML file',
-			},
 		],
 	},
 	{
@@ -89,21 +84,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertHtmlToPdf],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the HTML file to convert',
-		placeholder: '/path/to/document.html',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertHtmlToPdf],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -374,44 +354,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the HTML file.');
 		}
 
-		docContent = await downloadHtmlFromUrl(htmlUrl);
+		docContent = await downloadHtmlFromUrl(this.helpers, htmlUrl);
 		indexFilePath = htmlUrl;
-	} else if (inputDataType === 'filePath') {
-		// Use local file path - read the file and convert to base64
-		const filePath = operation === ActionConstants.ConvertToPdf
-			? this.getNodeParameter('htmlFilePath', index) as string
-			: this.getNodeParameter('filePath', index) as string;
-
-		// Validate file path (basic check)
-		if (!filePath.includes('/') && !filePath.includes('\\')) {
-			throw new Error('Invalid file path. Please provide a complete path to the HTML file.');
-		}
-
-		try {
-			// Read the file and convert to base64
-			const fs = await import('fs');
-			const fileBuffer = fs.readFileSync(filePath);
-			docContent = fileBuffer.toString('base64');
-
-			// Validate the HTML content
-			if (docContent.length < 50) {
-				throw new Error('HTML file appears to be too small. Please ensure the file is a valid HTML file.');
-			}
-
-			// Extract filename from path for original filename
-			const pathParts = filePath.replace(/\\/g, '/').split('/');
-			originalFileName = pathParts[pathParts.length - 1];
-			indexFilePath = filePath;
-
-		} catch (error) {
-			if (error.code === 'ENOENT') {
-				throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-			} else if (error.code === 'EACCES') {
-				throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-			} else {
-				throw new Error(`Error reading file: ${error.message}`);
-			}
-		}
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -514,7 +458,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	throw new Error('No response data received from PDF4ME API');
 }
 
-async function downloadHtmlFromUrl(htmlUrl: string): Promise<string> {
+const downloadHtmlFromUrl = async (helpers: IExecuteFunctions['helpers'], htmlUrl: string): Promise<string> => {
 	/**
 	 * Download HTML from URL and convert to base64
 	 * Process: Download file → Convert to base64 → Validate content
@@ -530,14 +474,18 @@ async function downloadHtmlFromUrl(htmlUrl: string): Promise<string> {
 	 */
 	try {
 		// Download the HTML file
-		const response = await fetch(htmlUrl);
+		const response = await helpers.request({
+			method: 'GET',
+			url: htmlUrl,
+			json: false, // Ensure binary data is returned
+		});
 
-		if (!response.ok) {
+		if (response.status >= 400) {
 			throw new Error(`Failed to download HTML from URL: ${response.status} ${response.statusText}`);
 		}
 
 		// Get the file as array buffer
-		const arrayBuffer = await response.arrayBuffer();
+		const arrayBuffer = await response.body;
 		const buffer = Buffer.from(arrayBuffer);
 
 		// Convert to base64
@@ -559,4 +507,4 @@ async function downloadHtmlFromUrl(htmlUrl: string): Promise<string> {
 			throw new Error(`Error downloading HTML from URL: ${error.message}`);
 		}
 	}
-}
+};

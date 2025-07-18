@@ -253,8 +253,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = item[0].binary[binaryPropertyName].fileName || 'input.pdf';
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
-	} else if (pdfInputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		try {
@@ -285,8 +283,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		imageContent = item[0].binary[binaryPropertyName].data;
 	} else if (imageInputDataType === 'base64') {
 		imageContent = this.getNodeParameter('imageBase64Content', index) as string;
-	} else if (imageInputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else if (imageInputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 		try {

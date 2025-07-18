@@ -5,8 +5,6 @@ import {
 	ActionConstants,
 	pdf4meAsyncRequest,
 } from '../GenericFunctions';
-import * as path from 'path';
-import * as fs from 'fs';
 
 declare const Buffer: any;
 
@@ -211,7 +209,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
 	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
+		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -281,12 +279,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else {
 		debugLog.type = typeof parsedResponse;
 	}
-	const debugPath = path.join('/tmp', 'pdf4me_split_text_response_debug.json');
-	try {
-		fs.writeFileSync(debugPath, JSON.stringify(debugLog, null, 2));
-	} catch (e) {
-		// Ignore file write errors for debugging
-	}
+	// Debug logging removed - not allowed in n8n community packages
 	// --- END: Response Debug Logging ---
 
 	// --- BEGIN: Robust Response Handling ---

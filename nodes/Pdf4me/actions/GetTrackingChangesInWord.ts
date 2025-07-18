@@ -1,6 +1,5 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
-import { readFileSync } from 'fs';
 
 export const description: INodeProperties[] = [
 	{
@@ -25,11 +24,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the Word document',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide a local file path to the Word document',
 			},
 		],
 		displayOptions: {
@@ -91,7 +85,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GetTrackingChangesInWord],
-				inputDataType: ['base64', 'filePath', 'url'],
+				inputDataType: ['base64', 'url'],
 			},
 		},
 	},
@@ -107,21 +101,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.GetTrackingChangesInWord],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local Document Path',
-		name: 'documentFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the Word document',
-		placeholder: '/path/to/document.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GetTrackingChangesInWord],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -169,10 +148,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const response = await this.helpers.request({ method: 'GET', url: documentUrl, encoding: null });
 		docContent = Buffer.from(response).toString('base64');
 	} else if (inputDataType === 'filePath') {
-		const documentFilePath = this.getNodeParameter('documentFilePath', index) as string;
-		docName = this.getNodeParameter('documentNameRequired', index) as string;
-		const fileBuffer = readFileSync(documentFilePath);
-		docContent = fileBuffer.toString('base64');
+		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input type: ${inputDataType}`);
 	}

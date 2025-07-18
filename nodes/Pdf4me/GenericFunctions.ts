@@ -191,8 +191,7 @@ export async function pdf4meAsyncRequest(
 				if (attempt > 0) {
 					// Wait before polling
 					await new Promise(resolve => {
-						const timer = setInterval(() => {
-							clearInterval(timer);
+						setTimeout(() => {
 							resolve(undefined);
 						}, delay);
 					});
