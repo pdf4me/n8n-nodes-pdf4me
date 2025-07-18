@@ -188,13 +188,12 @@ export async function pdf4meAsyncRequest(
 				const jitter = Math.random() * 0.3 + 0.85; // 85-115% of base delay
 				const delay = Math.round(baseDelay * jitter);
 
+				// Local sleep function to avoid restricted global usage
+				const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 				if (attempt > 0) {
 					// Wait before polling
-					await new Promise(resolve => {
-						setTimeout(() => {
-							resolve(undefined);
-						}, delay);
-					});
+					await sleep(delay);
 				}
 
 				// Poll the status
