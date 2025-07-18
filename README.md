@@ -44,7 +44,7 @@ You can also install this node manually in a specific n8n project:
 1. Navigate to your n8n installation directory
 2. Run the following command:
    ```bash
-   npm install n8n-nodes-pdf4me@1.1.1
+   npm install n8n-nodes-pdf4me
    ```
 3. Restart your n8n server
 
@@ -258,6 +258,7 @@ For detailed examples and workflow templates, visit our documentation.
 - Updated dependencies for improved compatibility and security
 - Minor bug fixes and codebase improvements
 - Improved build and validation scripts for publishing
+- **Note:** This version failed the n8n community package security scan due to an ESLint violation: use of restricted global 'setTimeout' is not allowed (see scan results for details).
 
 ### 1.1.0
 - **Latest Version**: Security and compliance updates
