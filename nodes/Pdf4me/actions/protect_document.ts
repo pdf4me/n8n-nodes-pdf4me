@@ -1,6 +1,4 @@
 import { IExecuteFunctions, INodeExecutionData, INodeProperties, IDataObject } from 'n8n-workflow';
-import fs from 'node:fs';
-import axios from 'axios';
 import { pdf4meAsyncRequest, ActionConstants } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
@@ -15,7 +13,6 @@ export const description: INodeProperties[] = [
 			{ name: 'Binary Data', value: 'binaryData', description: 'Use PDF file from previous node' },
 			{ name: 'Base64 String', value: 'base64', description: 'Provide PDF content as base64 encoded string' },
 			{ name: 'URL', value: 'url', description: 'Provide URL to PDF file' },
-			{ name: 'File Path', value: 'filePath', description: 'Provide local file path to PDF file' },
 		],
 		displayOptions: {
 			show: {
@@ -66,21 +63,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ProtectDocument],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to protect',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ProtectDocument],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -164,15 +146,14 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response, 'binary');
 		docContent = buffer.toString('base64');
 		docName = pdfUrl.split('/').pop() || outputFileName;
 	} else {

@@ -40,11 +40,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -91,21 +86,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.SignPdf],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to sign',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SignPdf],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -163,11 +143,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to signature image file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to signature image file',
-			},
 		],
 	},
 	{
@@ -214,21 +189,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.SignPdf],
 				signatureImageInputType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Signature Image File Path',
-		name: 'signatureImageFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the signature image file',
-		placeholder: '/path/to/signature.png',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SignPdf],
-				signatureImageInputType: ['filePath'],
 			},
 		},
 	},
@@ -530,11 +490,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		// Download PDF from URL
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl(pdfUrl);
-	} else if (inputDataType === 'filePath') {
-		// Read PDF from local file path
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readPdfFromFile(filePath);
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response, 'binary');
+		docContent = buffer.toString('base64');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -569,11 +531,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (signatureImageInputType === 'url') {
 		// Download signature image from URL
 		const signatureImageUrl = this.getNodeParameter('signatureImageUrl', index) as string;
-		imageFile = await downloadImageFromUrl(signatureImageUrl);
-	} else if (signatureImageInputType === 'filePath') {
-		// Read signature image from local file path
-		const signatureImageFilePath = this.getNodeParameter('signatureImageFilePath', index) as string;
-		imageFile = await readImageFromFile(signatureImageFilePath);
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: signatureImageUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response, 'binary');
+		imageFile = buffer.toString('base64');
 	} else {
 		throw new Error(`Unsupported signature image input type: ${signatureImageInputType}`);
 	}
@@ -655,162 +619,3 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	throw new Error('No response data received from PDF4ME API');
 }
 
-/**
- * Download image from URL and convert to base64
- */
-async function downloadImageFromUrl(imageUrl: string): Promise<string> {
-	const https = require('https');
-	const http = require('http');
-
-	const parsedUrl = new URL(imageUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000,
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'image/*,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			if (res.statusCode !== 200) {
-				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
-				return;
-			}
-
-			const chunks: any[] = [];
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-			});
-
-			res.on('end', () => {
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			req.destroy();
-			reject(new Error('Download timeout'));
-		});
-
-		req.end();
-	});
-}
-
-/**
- * Read image from local file path and convert to base64
- */
-async function readImageFromFile(filePath: string): Promise<string> {
-	const fs = require('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}`);
-		} else if (error.code === 'EACCES') {
-			throw new Error(`Permission denied: ${filePath}`);
-		} else {
-			throw new Error(`Error reading file: ${error.message}`);
-		}
-	}
-}
-
-/**
- * Download PDF from URL and convert to base64
- */
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	const https = require('https');
-	const http = require('http');
-
-	const parsedUrl = new URL(pdfUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000,
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'application/pdf,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			if (res.statusCode !== 200) {
-				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
-				return;
-			}
-
-			const chunks: any[] = [];
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-			});
-
-			res.on('end', () => {
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			req.destroy();
-			reject(new Error('Download timeout'));
-		});
-
-		req.end();
-	});
-}
-
-/**
- * Read PDF from local file path and convert to base64
- */
-async function readPdfFromFile(filePath: string): Promise<string> {
-	const fs = require('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}`);
-		} else if (error.code === 'EACCES') {
-			throw new Error(`Permission denied: ${filePath}`);
-		} else {
-			throw new Error(`Error reading file: ${error.message}`);
-		}
-	}
-}

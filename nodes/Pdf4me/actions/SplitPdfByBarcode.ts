@@ -5,7 +5,6 @@ import {
 	ActionConstants,
 	pdf4meAsyncRequest,
 } from '../GenericFunctions';
-import JSZip from 'jszip';
 
 declare const Buffer: any;
 declare const require: any;
@@ -33,11 +32,6 @@ export const description: INodeProperties[] = [
 				name: 'Binary Data',
 				value: 'binaryData',
 				description: 'Use PDF file from previous nodes',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
@@ -90,21 +84,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.SplitPdfByBarcode],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SplitPdfByBarcode],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -320,6 +299,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} catch (error) {
 			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
+	} else if (inputDataType === 'filePath') {
+		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -408,27 +389,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const isZip = (buf: Buffer) => buf.slice(0, 4).toString('hex') === '504b0304';
 
 	const extractZipAndPrepareBinary = async (zipBuffer: Buffer) => {
-		const zip = await JSZip.loadAsync(zipBuffer);
-		let idx = 1;
-		for (const fileName of Object.keys(zip.files)) {
-			const file = zip.files[fileName];
-			if (!file.dir && fileName.toLowerCase().endsWith('.pdf')) {
-				const buffer = await file.async('nodebuffer');
-				const binaryKey = `file_${idx}`;
-				binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, fileName, 'application/pdf');
-				filesSummary.push({
-					fileName,
-					pageIndex: idx,
-					binaryProperty: binaryKey,
-					mimeType: 'application/pdf',
-					fileType: 'PDF file',
-					fileSize: buffer.length,
-				});
-				idx++;
-			}
-		}
-		totalFiles = filesSummary.length;
-		responseType = 'ZIP of PDFs';
+		throw new Error('ZIP file processing is not supported in this version. Please use an alternative API response format.');
 	};
 
 	if (Buffer.isBuffer(response) && isZip(response)) {

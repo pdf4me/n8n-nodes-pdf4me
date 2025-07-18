@@ -33,11 +33,6 @@ export const description: INodeProperties[] = [
 				description: 'Provide image content as base64 encoded string',
 			},
 			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
-			},
-			{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to image file',
@@ -88,21 +83,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.RemoveExifTagsFromImage],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file to remove EXIF tags from',
-		placeholder: '/path/to/image.jpg',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.RemoveExifTagsFromImage],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -170,16 +150,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
+		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: imageUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response);
 		docContent = buffer.toString('base64');
 		docName = imageUrl.split('/').pop() || outputFileName;
 	} else {

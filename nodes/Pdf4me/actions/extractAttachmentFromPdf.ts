@@ -5,7 +5,6 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 } from '../GenericFunctions';
-import fileType from 'file-type';
 
 // Make Node.js globals available
 declare const Buffer: any;
@@ -179,9 +178,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readPdfFromFile(filePath);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -235,20 +231,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				// 2. Decode base64 to Buffer
 				const fileContent = Buffer.from(streamFile, 'base64');
 
-				// 3. If fileName or extension is missing, use file-type to guess
+				// 3. If fileName or extension is missing, use fallback
 				let mimeType = undefined;
 				if (!fileName || !fileName.includes('.')) {
-					const type = await fileType.fileTypeFromBuffer(fileContent);
-					if (type) {
-						// If fileName is missing, use generic name
-						if (!fileName) fileName = `attachment_${Date.now()}.${type.ext}`;
-						// If extension is missing, add it
-						else if (!fileName.includes('.')) fileName = `${fileName}.${type.ext}`;
-						mimeType = type.mime;
-					} else {
-						// Fallback if type cannot be determined
-						if (!fileName) fileName = `attachment_${Date.now()}`;
-					}
+					// Fallback since file-type detection is not available in n8n
+					if (!fileName) fileName = `attachment_${Date.now()}.bin`;
+					else if (!fileName.includes('.')) fileName = `${fileName}.bin`;
+					mimeType = 'application/octet-stream';
 				}
 
 				// 4. Prepare binary data for n8n output
@@ -303,12 +292,3 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Prom
 	}
 }
 
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF file from path: ${error.message}`);
-	}
-}

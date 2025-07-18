@@ -101,11 +101,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -153,21 +148,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.AddHtmlHeaderFooter],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to add HTML header/footer to',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddHtmlHeaderFooter],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -434,11 +414,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		case 'filePath': {
-			filePath = this.getNodeParameter('filePath', index) as string;
-			docContent = await readPdfFromFile(filePath, logger);
-			actualDocName = docName;
-			logger.log('info', `Read PDF from file path: ${filePath}`);
-			break;
+			throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 		}
 
 		default:
@@ -546,11 +522,7 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string, logge
 			encoding: null,
 		});
 
-		if (response.statusCode !== 200) {
-			throw new Error(`Failed to download PDF from URL: ${response.statusCode}`);
-		}
-
-		const buffer = Buffer.from(response.body);
+		const buffer = Buffer.from(response);
 
 		// Validate that it's actually a PDF
 		const pdfHeader = buffer.toString('ascii', 0, 4);
@@ -569,69 +541,6 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string, logge
 	}
 }
 
-/**
- * Read PDF from local file path and return as base64 string
- */
-async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
-	try {
-		logger?.log('info', `Reading PDF from file path: ${filePath}`);
-
-		// Validate file path
-		if (!filePath || typeof filePath !== 'string') {
-			throw new Error('Invalid file path provided');
-		}
-
-		// Check if file exists and is readable
-		const fs = require('fs');
-		const path = require('path');
-
-		if (!fs.existsSync(filePath)) {
-			throw new Error(`File not found: ${filePath}`);
-		}
-
-		const stats = fs.statSync(filePath);
-		if (!stats.isFile()) {
-			throw new Error(`Path is not a file: ${filePath}`);
-		}
-
-		// Validate file extension
-		validateFileExtension(path.basename(filePath), '.pdf', logger);
-
-		// Read the file
-		const buffer = fs.readFileSync(filePath);
-
-		// Validate that it's actually a PDF
-		const pdfHeader = buffer.toString('ascii', 0, 4);
-		if (pdfHeader !== '%PDF') {
-			throw new Error('File does not appear to be a valid PDF (missing PDF header)');
-		}
-
-		const base64Content = buffer.toString('base64');
-		logger?.log('info', `Successfully read PDF file: ${buffer.length} bytes`);
-
-		return base64Content;
-
-	} catch (error) {
-		logger?.log('error', 'Failed to read PDF from file', error);
-		throw new Error(`Failed to read PDF from file: ${error.message}`);
-	}
-}
-
-/**
- * Validate file extension
- */
-function validateFileExtension(fileName: string, expectedExtension: string, logger?: DebugLogger): void {
-	if (!fileName || typeof fileName !== 'string') {
-		throw new Error('Invalid file name provided');
-	}
-
-	const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-	if (extension !== expectedExtension.toLowerCase()) {
-		throw new Error(`File must have ${expectedExtension} extension. Found: ${extension}`);
-	}
-
-	logger?.log('info', `File extension validated: ${extension}`);
-}
 
 /**
  * Validate PDF content

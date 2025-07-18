@@ -7,9 +7,6 @@ import {
 } from '../GenericFunctions';
 
 declare const Buffer: any;
-declare const require: any;
-const fs = require('fs');
-const path = require('path');
 
 export const description: INodeProperties[] = [
 	{
@@ -34,11 +31,6 @@ export const description: INodeProperties[] = [
 				name: 'Binary Data',
 				value: 'binaryData',
 				description: 'Use PDF file from previous nodes',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
@@ -91,21 +83,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.SplitPdfRegular],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SplitPdfRegular],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -264,13 +241,14 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		pdfContentBase64 = await downloadPdfFromUrl(pdfUrl.trim());
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl.trim(),
+			encoding: null,
+		});
+		pdfContentBase64 = Buffer.from(response).toString('base64');
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		if (!filePath || filePath.trim() === '') {
-			throw new Error('File path is required');
-		}
-		pdfContentBase64 = await readPdfFromFile(filePath.trim());
+		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -321,46 +299,6 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	}
 	// --- END: Buffer/String Response Parsing ---
 
-	// --- BEGIN: Response Debug Logging ---
-	const debugLog: any = {
-		timestamp: new Date().toISOString(),
-		typeof: typeof parsedResponse,
-	};
-	if (Buffer.isBuffer(response)) {
-		debugLog.type = 'Buffer';
-		debugLog.firstBytesHex = response.slice(0, 8).toString('hex');
-		debugLog.firstBytesAscii = response.slice(0, 8).toString('ascii');
-		debugLog.length = response.length;
-	} else if (typeof response === 'string') {
-		debugLog.type = 'string';
-		debugLog.length = response.length;
-		debugLog.first200 = response.substring(0, 200);
-		try {
-			const buffer = Buffer.from(response, 'base64');
-			debugLog.base64FirstBytesHex = buffer.slice(0, 8).toString('hex');
-			debugLog.base64FirstBytesAscii = buffer.slice(0, 8).toString('ascii');
-		} catch {
-			// Ignore buffer conversion errors for debugging
-		}
-	} else if (Array.isArray(parsedResponse)) {
-		debugLog.type = 'array';
-		debugLog.length = parsedResponse.length;
-		debugLog.firstItemKeys = parsedResponse[0] ? Object.keys(parsedResponse[0]) : [];
-	} else if (typeof parsedResponse === 'object' && parsedResponse !== null) {
-		debugLog.type = 'object';
-		debugLog.keys = Object.keys(parsedResponse);
-		debugLog.preview = JSON.stringify(parsedResponse, null, 2).substring(0, 500);
-	} else {
-		debugLog.type = typeof parsedResponse;
-	}
-	const debugPath = path.join('/tmp', 'pdf4me_split_response_debug.json');
-	try {
-		fs.writeFileSync(debugPath, JSON.stringify(debugLog, null, 2));
-	} catch (e) {
-		// Ignore file write errors for debugging
-	}
-	// --- END: Response Debug Logging ---
-
 	// Robust response handling, matching split_pdf.py
 	const binaryData: { [key: string]: any } = {};
 	const filesSummary: any[] = [];
@@ -388,8 +326,8 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				});
 				idx++;
 			} else {
-				// Save problematic document for debugging
-				fs.writeFileSync(path.join('/tmp', `pdf4me_split_problem_doc_${idx}.json`), JSON.stringify(doc, null, 2));
+				// Log problematic document for debugging
+				console.warn('Problematic document in split response:', JSON.stringify(doc, null, 2));
 			}
 		}
 		totalFiles = filesSummary.length;
@@ -412,8 +350,8 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				});
 				idx++;
 			} else {
-				// Save problematic document for debugging
-				fs.writeFileSync(path.join('/tmp', `pdf4me_split_problem_doc_${idx}.json`), JSON.stringify(doc, null, 2));
+				// Log problematic document for debugging
+				console.warn('Problematic document in split response:', JSON.stringify(doc, null, 2));
 			}
 		}
 		totalFiles = filesSummary.length;
@@ -433,14 +371,9 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		totalFiles = 1;
 		responseType = 'Single PDF (legacy)';
 	} else {
-		// Unexpected response: save for debugging
-		const debugPath = path.join('/tmp', 'pdf4me_split_raw_response.json');
-		try {
-			fs.writeFileSync(debugPath, JSON.stringify(parsedResponse, null, 2));
-		} catch (e) {
-			// Ignore file write errors for debugging
-		}
-		throw new Error('Unexpected response format from PDF4me SplitPdf API. Raw response saved to /tmp/pdf4me_split_raw_response.json');
+		// Unexpected response: log for debugging
+		console.warn('Unexpected response format from PDF4me SplitPdf API:', JSON.stringify(parsedResponse, null, 2));
+		throw new Error('Unexpected response format from PDF4me SplitPdf API. Check console for details.');
 	}
 
 	// Compose output directory and folder name (for compatibility, not actually used here)
@@ -467,22 +400,3 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	return [output];
 }
 
-// Helper functions for downloading and reading files
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	try {
-		const axios = require('axios');
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		return Buffer.from(response.data).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
-}
-
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF from file: ${error.message}`);
-	}
-}
