@@ -411,10 +411,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			break;
 		}
 
-		case 'filePath': {
-			throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
-		}
-
 		default:
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}

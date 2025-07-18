@@ -1,6 +1,5 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meApiRequest } from '../GenericFunctions';
-import { readFileSync } from 'fs';
 
 export const description: INodeProperties[] = [
 	{
@@ -25,11 +24,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the template file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide a local file path to the template file',
 			},
 		],
 		displayOptions: {
@@ -91,7 +85,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentsMultiple],
-				templateInputDataType: ['base64', 'filePath', 'url'],
+				templateInputDataType: ['base64', 'url'],
 			},
 		},
 	},
@@ -107,21 +101,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.GenerateDocumentsMultiple],
 				templateInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local Template File Path',
-		name: 'templateFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the template file',
-		placeholder: '/path/to/template.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentsMultiple],
-				templateInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -170,11 +149,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the data file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide a local file path to the data file',
 			},
 		],
 		displayOptions: {
@@ -266,7 +240,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentsMultiple],
-				documentInputDataType: ['base64', 'filePath', 'url'],
+				documentInputDataType: ['base64', 'url'],
 			},
 		},
 	},
@@ -282,21 +256,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.GenerateDocumentsMultiple],
 				documentInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local Document Data File Path',
-		name: 'documentDataFilePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the data file',
-		placeholder: '/path/to/data.json',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentsMultiple],
-				documentInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -396,11 +355,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
 		const response = await this.helpers.request({ method: 'GET', url: templateFileUrl, encoding: null });
 		templateFileData = Buffer.from(response).toString('base64');
-	} else if (templateInputDataType === 'filePath') {
-		const templateFilePath = this.getNodeParameter('templateFilePath', index) as string;
-		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
-		const fileBuffer = readFileSync(templateFilePath);
-		templateFileData = fileBuffer.toString('base64');
 	} else {
 		throw new Error(`Unsupported template input type: ${templateInputDataType}`);
 	}
@@ -424,10 +378,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const documentDataFileUrl = this.getNodeParameter('documentDataFileUrl', index) as string;
 		const response = await this.helpers.request({ method: 'GET', url: documentDataFileUrl, encoding: null });
 		documentDataFile = Buffer.from(response).toString('base64');
-	} else if (documentInputDataType === 'filePath') {
-		const documentDataFilePath = this.getNodeParameter('documentDataFilePath', index) as string;
-		const fileBuffer = readFileSync(documentDataFilePath);
-		documentDataFile = fileBuffer.toString('base64');
 	} else {
 		throw new Error(`Unsupported document input type: ${documentInputDataType}`);
 	}

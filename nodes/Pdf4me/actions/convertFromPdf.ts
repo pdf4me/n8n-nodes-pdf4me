@@ -67,11 +67,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -119,21 +114,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertFromPDF],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to convert',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertFromPDF],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -356,9 +336,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		});
 		const buffer = Buffer.from(response as Buffer);
 		docContent = buffer.toString('base64');
-
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);

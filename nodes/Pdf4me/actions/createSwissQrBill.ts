@@ -574,8 +574,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
 		docContent = await downloadPdfFromUrl.call(this, fileUrl);
 		docName = fileName || 'document.pdf';
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

@@ -99,11 +99,6 @@ export const description: INodeProperties[] = [
 				value: 'url',
 				description: 'Provide URL to PDF file',
 			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
 		],
 	},
 	{
@@ -151,21 +146,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.AddAttachmentToPdf],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to add attachments to',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddAttachmentToPdf],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -236,11 +216,6 @@ export const description: INodeProperties[] = [
 								name: 'URL',
 								value: 'url',
 								description: 'Provide URL to file',
-							},
-							{
-								name: 'File Path',
-								value: 'filePath',
-								description: 'Provide local file path',
 							},
 						],
 					},
@@ -464,8 +439,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				contentLength: docContent.length,
 				contentPreview: docContent.substring(0, 100) + '...',
 			});
-		} else if (inputDataType === 'filePath') {
-			throw new Error('File path input is not supported in this environment');
 		} else {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
@@ -550,8 +523,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						contentLength: attachmentContent.length,
 						contentPreview: attachmentContent.substring(0, 100) + '...',
 					});
-				} else if (attachmentContentType === 'filePath') {
-					throw new Error('File path input is not supported in this environment');
 				} else {
 					throw new Error(`Unsupported attachment content type: ${attachmentContentType}`);
 				}

@@ -328,20 +328,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 
-		docContent = await downloadPdfFromUrl(pdfUrl);
+		docContent = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			headers: {
+				'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
+				'Accept': 'application/pdf,application/octet-stream,*/*',
+			},
+			timeout: 30000, // 30 seconds timeout
+		});
 
 	} else if (inputDataType === 'filePath') {
-		// Use local file path - read the file and convert to base64
-		const filePath = this.getNodeParameter('filePath', index) as string;
-
-		// Validate file path (basic check)
-		if (!filePath.includes('/') && !filePath.includes('\\')) {
-			throw new Error('Invalid file path. Please provide a complete path to the PDF file.');
-		}
-
-
-		docContent = await readPdfFromFile(filePath);
-
+		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -433,8 +431,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// --- END: Buffer/String Response Parsing ---
 
 		// --- BEGIN: Response Debug Logging ---
-		const fs = await import('fs');
-		const path = await import('path');
 		const debugLog: any = {
 			timestamp: new Date().toISOString(),
 			typeof: typeof parsedResponse,
@@ -466,9 +462,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else {
 			debugLog.type = typeof parsedResponse;
 		}
-		const debugPath = path.join('/tmp', 'pdf4me_createimages_response_debug.json');
 		try {
-			fs.writeFileSync(debugPath, JSON.stringify(debugLog, null, 2));
+			// This.helpers.fs is not available, so we'll skip file writing for now.
+			// If debugging is critical, this needs to be refactored to use this.helpers.request
+			// or a different method to fetch the response for logging.
+			// For now, we'll just log to console.
+			console.log('PDF4me CreateImages Response Debug:', JSON.stringify(debugLog, null, 2));
 		} catch (e) {
 			// Ignore file write errors for debugging
 		}
@@ -516,7 +515,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 				} else {
 					// Save problematic document for debugging
-					fs.writeFileSync(path.join('/tmp', `pdf4me_createimages_problem_doc_${i + 1}.json`), JSON.stringify(imageDoc, null, 2));
+					// This.helpers.fs is not available, so we'll skip file writing for now.
+					// If debugging is critical, this needs to be refactored.
+					console.warn(`PDF4me CreateImages: Problem with document ${i + 1}:`, imageDoc);
 				}
 			}
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.outputDocuments) {
@@ -556,7 +557,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 				} else {
 					// Save problematic document for debugging
-					fs.writeFileSync(path.join('/tmp', `pdf4me_createimages_problem_doc_${i + 1}.json`), JSON.stringify(imageDoc, null, 2));
+					// This.helpers.fs is not available, so we'll skip file writing for now.
+					// If debugging is critical, this needs to be refactored.
+					console.warn(`PDF4me CreateImages: Problem with document ${i + 1}:`, imageDoc);
 				}
 			}
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
@@ -589,14 +592,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		} else {
 			// Unexpected response format - save for debugging
-			const fs = await import('fs');
-			const path = await import('path');
-			const debugPath = path.join('/tmp', 'pdf4me_createimages_raw_response.json');
-			try {
-				fs.writeFileSync(debugPath, JSON.stringify(parsedResponse, null, 2));
-			} catch (e) {
-				// Ignore file write errors for debugging
-			}
+			// This.helpers.fs is not available, so we'll skip file writing for now.
+			// If debugging is critical, this needs to be refactored.
+			console.warn('PDF4me CreateImages: Unexpected response format from PDF4me API. Raw response:', parsedResponse);
 			throw new Error('Unexpected response format from PDF4me CreateImages API. Raw response saved to /tmp/pdf4me_createimages_raw_response.json');
 		}
 
@@ -616,190 +614,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 		throw error;
-	}
-}
-
-/**
- * Download PDF from URL and convert to base64
- */
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	const https = await import('https');
-	const http = await import('http');
-
-	const parsedUrl = new URL(pdfUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	// Set up request options with timeout and user agent
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000, // 30 seconds timeout
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'application/pdf,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			// Check for redirects
-			if (res.statusCode >= 300 && res.statusCode < 400) {
-				const location = res.headers.location;
-				if (location) {
-					reject(new Error(
-						`URL redirects to: ${location}\n` +
-						'Please use the final URL directly instead of the redirecting URL.',
-					));
-					return;
-				}
-			}
-
-			// Check for error status codes
-			if (res.statusCode !== 200) {
-				reject(new Error(
-					`HTTP Error ${res.statusCode}: ${res.statusMessage}\n` +
-					'The server returned an error instead of the PDF file. ' +
-					'This might indicate:\n' +
-					'- The file doesn\'t exist\n' +
-					'- Authentication is required\n' +
-					'- The URL is incorrect\n' +
-					'- Server is experiencing issues',
-				));
-				return;
-			}
-
-			const chunks: any[] = [];
-			let totalSize = 0;
-
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-				totalSize += chunk.length;
-
-				// Check if we're getting too much data (likely HTML error page)
-				if (totalSize > 1024 * 1024) { // 1MB limit
-					req.destroy();
-					reject(new Error(
-						`Downloaded content is too large (${totalSize} bytes). ` +
-						'This might be an HTML error page instead of a PDF file. ' +
-						'Please check the URL and ensure it points directly to a PDF file.',
-					));
-				}
-			});
-
-			res.on('end', () => {
-				if (totalSize === 0) {
-					reject(new Error('Downloaded file is empty. Please check the URL.'));
-					return;
-				}
-
-				// Combine chunks and convert to base64
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-
-				// Validate the PDF content
-				if (base64Content.length < 100) {
-					reject(new Error(
-						`Downloaded file is too small (${base64Content.length} base64 chars). ` +
-						'Please ensure the URL points to a valid PDF file.',
-					));
-					return;
-				}
-
-				// Check if it starts with PDF header
-				const decodedContent = Buffer.from(base64Content, 'base64').toString('ascii', 0, 10);
-				if (!decodedContent.startsWith('%PDF')) {
-					// Try to get more info about what we actually downloaded
-					const first100Chars = Buffer.from(base64Content, 'base64').toString('ascii', 0, 100);
-					const isHtml = first100Chars.toLowerCase().includes('<html') ||
-                                  first100Chars.toLowerCase().includes('<!doctype');
-
-					let errorMessage = 'The downloaded file does not appear to be a valid PDF file. ' +
-						'PDF files should start with "%PDF".\n\n' +
-						`Downloaded content starts with: "${decodedContent}"\n\n`;
-
-					if (isHtml) {
-						errorMessage += 'The downloaded content appears to be HTML (likely an error page). ' +
-							'This usually means:\n' +
-							'1. The URL requires authentication\n' +
-							'2. The file doesn\'t exist\n' +
-							'3. The server is returning an error page\n' +
-							'4. The URL is incorrect\n\n' +
-							'Please check the URL and ensure it points directly to a PDF file.';
-					} else {
-						errorMessage += 'This might indicate:\n' +
-							'1. The file is corrupted\n' +
-							'2. The URL points to a different file type\n' +
-							'3. The server is not serving the file correctly\n\n' +
-							'Please verify the URL and try again.';
-					}
-
-					reject(new Error(errorMessage));
-					return;
-				}
-
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			req.destroy();
-			reject(new Error('Download timeout. The server took too long to respond.'));
-		});
-
-		req.end();
-	});
-}
-
-/**
- * Read PDF from local file path and convert to base64
- */
-async function readPdfFromFile(filePath: string): Promise<string> {
-	const fs = await import('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-
-		// Validate the PDF content
-		if (base64Content.length < 100) {
-			throw new Error('PDF file appears to be too small. Please ensure the file is a valid PDF.');
-		}
-
-		// Check if it starts with PDF header
-		const decodedContent = Buffer.from(base64Content, 'base64').toString('ascii', 0, 10);
-		if (!decodedContent.startsWith('%PDF')) {
-			throw new Error(
-				'The file does not appear to be a valid PDF file. ' +
-				'PDF files should start with "%PDF".\n\n' +
-				`File content starts with: "${decodedContent}"\n\n` +
-				'This might indicate:\n' +
-				'1. The file is corrupted\n' +
-				'2. The file is not actually a PDF\n' +
-				'3. The file path is incorrect\n\n' +
-				'Please verify the file path and ensure it points to a valid PDF file.',
-			);
-		}
-
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}\n\nPlease check the file path and ensure the file exists.`);
-		} else if (error.code === 'EACCES') {
-			throw new Error(`Permission denied: ${filePath}\n\nPlease check file permissions and ensure you have read access.`);
-		} else {
-			throw new Error(`Error reading file: ${error.message}`);
-		}
 	}
 }
 

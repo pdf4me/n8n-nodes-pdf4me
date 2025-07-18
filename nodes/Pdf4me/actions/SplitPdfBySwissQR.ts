@@ -215,8 +215,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} catch (error) {
 			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

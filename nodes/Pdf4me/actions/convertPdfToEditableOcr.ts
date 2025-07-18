@@ -32,11 +32,6 @@ export const description: INodeProperties[] = [
 				description: 'Provide PDF content as base64 encoded string',
 			},
 			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
-			},
-			{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -87,21 +82,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertPdfToEditableOcr],
 				pdfInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'PDF File Path',
-		name: 'pdfFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertPdfToEditableOcr],
-				pdfInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -236,8 +216,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = item[0].binary[binaryPropertyName].fileName || 'input.pdf';
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
-	} else if (pdfInputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		const response = await this.helpers.request({

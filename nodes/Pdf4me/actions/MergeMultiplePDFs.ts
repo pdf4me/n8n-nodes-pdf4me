@@ -37,11 +37,6 @@ export const description: INodeProperties[] = [
 				description: 'Use PDF files from previous nodes',
 			},
 			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file paths to PDF files',
-			},
-			{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URLs to PDF files',
@@ -161,47 +156,6 @@ export const description: INodeProperties[] = [
 						default: '',
 						description: 'URL to the PDF file',
 						placeholder: 'https://example.com/document.pdf',
-					},
-					{
-						displayName: 'File Name',
-						name: 'fileName',
-						type: 'string',
-						default: '',
-						description: 'Optional name for the PDF file (for reference)',
-						placeholder: 'document1.pdf',
-					},
-				],
-			},
-		],
-	},
-	{
-		displayName: 'PDF Files',
-		name: 'pdfFilesPath',
-		type: 'fixedCollection',
-		typeOptions: {
-			multipleValues: true,
-		},
-		placeholder: 'Add PDF File',
-		default: {},
-		description: 'Add multiple PDF files to merge',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeMultiplePDFs],
-				inputDataType: ['filePath'],
-			},
-		},
-		options: [
-			{
-				displayName: 'PDF File',
-				name: 'pdfFile',
-				values: [
-					{
-						displayName: 'File Path',
-						name: 'filePath',
-						type: 'string',
-						default: '',
-						description: 'Local file path to the PDF file',
-						placeholder: '/path/to/document.pdf',
 					},
 					{
 						displayName: 'File Name',
@@ -410,24 +364,6 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 			const buffer = Buffer.from(response as Buffer);
 			const base64Content = buffer.toString('base64');
 			pdfContentsBase64.push(base64Content);
-		}
-	} else if (inputDataType === 'filePath') {
-		// Get PDF contents from multiple file paths
-		const pdfFiles = this.getNodeParameter('pdfFilesPath', index) as IDataObject;
-		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-
-		if (!pdfFileArray || pdfFileArray.length === 0) {
-			throw new Error('At least one PDF file is required');
-		}
-
-		pdfContentsBase64 = [];
-		for (const pdfFile of pdfFileArray) {
-			const filePath = pdfFile.filePath as string;
-			if (!filePath || filePath.trim() === '') {
-				const fileName = pdfFile.fileName as string || 'unnamed';
-				throw new Error(`File path is required for file '${fileName}'`);
-			}
-			throw new Error('File path input is not supported in this environment');
 		}
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
