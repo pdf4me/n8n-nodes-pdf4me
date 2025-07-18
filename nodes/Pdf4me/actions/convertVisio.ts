@@ -5,7 +5,6 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 } from '../GenericFunctions';
-import { readFileSync } from 'fs';
 
 // Make Buffer available (it's a Node.js global)
 declare const Buffer: any;
@@ -38,11 +37,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the VISIO file to convert',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide a local file path to the VISIO file',
 			},
 		],
 	},
@@ -99,7 +93,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
-				inputDataType: ['base64', 'filePath', 'url'],
+				inputDataType: ['base64', 'url'],
 			},
 		},
 	},
@@ -115,21 +109,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertVisio],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the VISIO file to convert',
-		placeholder: '/path/to/diagram.vsdx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertVisio],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -446,22 +425,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = Buffer.from(response).toString('base64');
 		} catch (error) {
 			throw new Error(`Failed to download file from URL: ${fileUrl}. Error: ${error}`);
-		}
-	} else if (inputDataType === 'filePath') {
-		// Local file path input
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docName = this.getNodeParameter('inputFileNameRequired', index) as string;
-
-		if (!docName) {
-			throw new Error('Input file name is required for file path input type.');
-		}
-
-		// Read the local file and convert to base64
-		try {
-			const fileBuffer = readFileSync(filePath);
-			docContent = fileBuffer.toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to read local file: ${filePath}. Error: ${error}`);
 		}
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);

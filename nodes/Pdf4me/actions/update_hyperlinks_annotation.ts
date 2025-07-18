@@ -1,8 +1,6 @@
 import { IExecuteFunctions } from 'n8n-workflow';
 import { IDataObject, INodeExecutionData, INodeProperties } from 'n8n-workflow';
 import { pdf4meAsyncRequest, ActionConstants } from '../GenericFunctions';
-import fs from 'node:fs';
-import axios from 'axios';
 
 export const description: INodeProperties[] = [
 	{
@@ -10,10 +8,21 @@ export const description: INodeProperties[] = [
 		name: 'inputDataType',
 		type: 'options',
 		options: [
-			{ name: 'Binary Data', value: 'binaryData' },
-			{ name: 'Base64', value: 'base64' },
-			{ name: 'File Path', value: 'filePath' },
-			{ name: 'URL', value: 'url' },
+			{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+			{
+				name: 'Base64 String',
+				value: 'base64',
+				description: 'Provide PDF content as base64 encoded string',
+			},
+			{
+				name: 'URL',
+				value: 'url',
+				description: 'Provide URL to PDF file',
+			},
 		],
 		default: 'binaryData',
 		description: 'How to provide the PDF input',
@@ -50,30 +59,19 @@ export const description: INodeProperties[] = [
 		description: 'Base64-encoded PDF content',
 	},
 	{
-		displayName: 'File Path',
-		name: 'filePath',
-		type: 'string',
-		default: '',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.UpdateHyperlinksAnnotation],
-				inputDataType: ['filePath'],
-			},
-		},
-		description: 'Path to the PDF file',
-	},
-	{
 		displayName: 'PDF URL',
 		name: 'pdfUrl',
 		type: 'string',
+		required: true,
 		default: '',
+		description: 'URL to the PDF file to update hyperlinks annotation',
+		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.UpdateHyperlinksAnnotation],
 				inputDataType: ['url'],
 			},
 		},
-		description: 'URL to download the PDF',
 	},
 	{
 		displayName: 'Output File Name',
@@ -207,15 +205,14 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			encoding: null, // for binary
+		});
+		const buffer = Buffer.from(response, 'binary');
 		docContent = buffer.toString('base64');
 		docName = pdfUrl.split('/').pop() || outputFileName;
 	} else {

@@ -6,8 +6,6 @@ import {
 	pdf4meAsyncRequest,
 } from '../GenericFunctions';
 import JSZip from 'jszip';
-const fs = require('fs');
-const path = require('path');
 
 declare const Buffer: any;
 declare const require: any;
@@ -312,13 +310,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		pdfContentBase64 = await downloadPdfFromUrl(pdfUrl.trim());
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		if (!filePath || filePath.trim() === '') {
-			throw new Error('File path is required');
+		try {
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: pdfUrl.trim(),
+				encoding: null,
+			});
+			pdfContentBase64 = Buffer.from(response).toString('base64');
+		} catch (error) {
+			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
-		pdfContentBase64 = await readPdfFromFile(filePath.trim());
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -391,12 +392,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else {
 		debugLog.type = typeof parsedResponse;
 	}
-	const debugPath = path.join('/tmp', 'pdf4me_split_barcode_response_debug.json');
-	try {
-		fs.writeFileSync(debugPath, JSON.stringify(debugLog, null, 2));
-	} catch (e) {
-		// Ignore file write errors for debugging
-	}
+	// Debug logging removed due to n8n restrictions
 	// --- END: Response Debug Logging ---
 
 	// --- BEGIN: Robust Response Handling ---
@@ -505,14 +501,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			totalFiles = 1;
 			responseType = 'Single PDF (legacy)';
 		} else {
-			// Unexpected response: save for debugging
-			const debugPath = path.join('/tmp', 'pdf4me_split_barcode_raw_response.json');
-			try {
-				fs.writeFileSync(debugPath, JSON.stringify(parsedResponse, null, 2));
-			} catch (e) {
-				// Ignore file write errors for debugging
-			}
-			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API. Raw response saved to /tmp/pdf4me_split_barcode_raw_response.json');
+			// Unexpected response: debug logging removed due to n8n restrictions
+			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API.');
 		}
 	}
 
@@ -536,23 +526,4 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	return [output];
 }
 
-// Helper functions for downloading and reading files
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	try {
-		const axios = require('axios');
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		return Buffer.from(response.data).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
-}
 
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF file from path: ${error.message}`);
-	}
-}

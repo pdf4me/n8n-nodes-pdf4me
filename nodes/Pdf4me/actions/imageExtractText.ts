@@ -151,17 +151,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: imageUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response, 'binary');
 		docContent = buffer.toString('base64');
 		docName = imageUrl.split('/').pop() || outputFileName;
 	} else {
