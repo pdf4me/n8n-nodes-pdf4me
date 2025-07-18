@@ -9,7 +9,6 @@ import {
 // Make Node.js globals available
 // declare const Buffer: any;
 // declare const URL: any;
-declare const require: any;
 // declare const console: any;
 
 // Simplified debug configuration
@@ -588,13 +587,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else if (inputDataType === 'url') {
 			logger.log('debug', 'Processing PDF from URL');
 			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-			docContent = await downloadPdfFromUrl(pdfUrl, logger);
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: pdfUrl,
+				encoding: null,
+			});
+			const buffer = Buffer.from(response as Buffer);
+			docContent = buffer.toString('base64');
 			logger.log('debug', 'PDF downloaded from URL', { length: docContent.length });
 		} else if (inputDataType === 'filePath') {
-			logger.log('debug', 'Processing PDF from file path');
-			const filePath = this.getNodeParameter('filePath', index) as string;
-			docContent = await readPdfFromFile(filePath, logger);
-			logger.log('debug', 'PDF read from file', { length: docContent.length });
+			throw new Error('File path input is not supported in this environment');
 		} else {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
@@ -634,13 +636,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else if (imageInputDataType === 'url') {
 			logger.log('debug', 'Processing image from URL');
 			const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-			imageContent = await downloadImageFromUrl(imageUrl, logger);
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: imageUrl,
+				encoding: null,
+			});
+			const buffer = Buffer.from(response as Buffer);
+			imageContent = buffer.toString('base64');
 			logger.log('debug', 'Image downloaded from URL', { length: imageContent.length });
 		} else if (imageInputDataType === 'filePath') {
-			logger.log('debug', 'Processing image from file path');
-			const imageFilePath = this.getNodeParameter('imageFilePath', index) as string;
-			imageContent = await readImageFromFile(imageFilePath, logger);
-			logger.log('debug', 'Image read from file', { length: imageContent.length });
+			throw new Error('File path input is not supported in this environment');
 		} else {
 			throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
 		}
@@ -786,213 +791,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 /**
  * Download PDF from URL and convert to base64
  */
-async function downloadPdfFromUrl(pdfUrl: string, logger?: DebugLogger): Promise<string> {
-	const https = require('https');
-	const http = require('http');
-
-	const parsedUrl = new URL(pdfUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000,
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'application/pdf,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			if (res.statusCode !== 200) {
-				const error = `HTTP Error ${res.statusCode}: ${res.statusMessage}`;
-				logger?.log('error', 'Download failed with HTTP error', { statusCode: res.statusCode, statusMessage: res.statusMessage });
-				reject(new Error(error));
-				return;
-			}
-
-			const chunks: any[] = [];
-			let totalSize = 0;
-
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-				totalSize += chunk.length;
-			});
-
-			res.on('end', () => {
-				if (totalSize === 0) {
-					logger?.log('error', 'Downloaded file is empty');
-					reject(new Error('Downloaded file is empty. Please check the URL.'));
-					return;
-				}
-
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				logger?.log('debug', 'File downloaded successfully', {
-					url: pdfUrl,
-					fileSize: totalSize,
-					base64Length: base64Content.length,
-				});
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				logger?.log('error', 'Download stream error', { error: error.message });
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			logger?.log('error', 'Request error', { error: error.message });
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			logger?.log('error', 'Download timeout');
-			req.destroy();
-			reject(new Error('Download timeout. The server took too long to respond.'));
-		});
-
-		req.end();
-	});
-}
 
 /**
  * Read PDF from local file path and convert to base64
  */
-async function readPdfFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
-	const fs = require('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-		logger?.log('debug', 'File read successfully', {
-			filePath,
-			fileSize: fileBuffer.length,
-			base64Length: base64Content.length,
-		});
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			logger?.log('error', 'File not found', { filePath });
-			throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-		} else if (error.code === 'EACCES') {
-			logger?.log('error', 'Permission denied', { filePath });
-			throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-		} else {
-			logger?.log('error', 'File read error', { filePath, error: error.message });
-			throw new Error(`Error reading file: ${error.message}`);
-		}
-	}
-}
 
 /**
  * Download image from URL and convert to base64
  */
-async function downloadImageFromUrl(imageUrl: string, logger?: DebugLogger): Promise<string> {
-	const https = require('https');
-	const http = require('http');
-
-	const parsedUrl = new URL(imageUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000,
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'image/*,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			if (res.statusCode !== 200) {
-				const error = `HTTP Error ${res.statusCode}: ${res.statusMessage}`;
-				logger?.log('error', 'Download failed with HTTP error', { statusCode: res.statusCode, statusMessage: res.statusMessage });
-				reject(new Error(error));
-				return;
-			}
-
-			const chunks: any[] = [];
-			let totalSize = 0;
-
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-				totalSize += chunk.length;
-			});
-
-			res.on('end', () => {
-				if (totalSize === 0) {
-					logger?.log('error', 'Downloaded file is empty');
-					reject(new Error('Downloaded file is empty. Please check the URL.'));
-					return;
-				}
-
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				logger?.log('debug', 'File downloaded successfully', {
-					url: imageUrl,
-					fileSize: totalSize,
-					base64Length: base64Content.length,
-				});
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				logger?.log('error', 'Download stream error', { error: error.message });
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			logger?.log('error', 'Request error', { error: error.message });
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			logger?.log('error', 'Download timeout');
-			req.destroy();
-			reject(new Error('Download timeout. The server took too long to respond.'));
-		});
-
-		req.end();
-	});
-}
 
 /**
  * Read image from local file path and convert to base64
  */
-async function readImageFromFile(filePath: string, logger?: DebugLogger): Promise<string> {
-	const fs = require('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-		logger?.log('debug', 'File read successfully', {
-			filePath,
-			fileSize: fileBuffer.length,
-			base64Length: base64Content.length,
-		});
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			logger?.log('error', 'File not found', { filePath });
-			throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-		} else if (error.code === 'EACCES') {
-			logger?.log('error', 'Permission denied', { filePath });
-			throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-		} else {
-			logger?.log('error', 'File read error', { filePath, error: error.message });
-			throw new Error(`Error reading file: ${error.message}`);
-		}
-	}
-}

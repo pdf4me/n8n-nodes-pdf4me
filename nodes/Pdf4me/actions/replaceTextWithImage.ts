@@ -6,7 +6,6 @@ import {
 } from '../GenericFunctions';
 
 // declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -31,11 +30,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
@@ -92,21 +86,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'PDF File Path',
-		name: 'pdfFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceTextWithImage],
-				pdfInputDataType: ['filePath'],
-			},
-		},
-	},
-	{
 		displayName: 'Image Input Data Type',
 		name: 'imageInputDataType',
 		type: 'options',
@@ -128,11 +107,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
 			},
 			{
 				name: 'URL',
@@ -185,21 +159,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ReplaceTextWithImage],
 				imageInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Image File Path',
-		name: 'imageFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file',
-		placeholder: '/path/to/image.png',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceTextWithImage],
-				imageInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -295,18 +254,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
 	} else if (pdfInputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('pdfFilePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || 'input.pdf';
+		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
-		docContent = buffer.toString('base64');
-		docName = pdfUrl.split('/').pop() || 'input.pdf';
+		try {
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: pdfUrl,
+				encoding: null,
+			});
+			const buffer = Buffer.from(response, 'binary');
+			docContent = buffer.toString('base64');
+			docName = pdfUrl.split('/').pop() || 'input.pdf';
+		} catch (error) {
+			throw new Error(`Failed to fetch PDF from URL: ${error.message}`);
+		}
 	} else {
 		throw new Error(`Unsupported PDF input data type: ${pdfInputDataType}`);
 	}
@@ -324,16 +286,20 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (imageInputDataType === 'base64') {
 		imageContent = this.getNodeParameter('imageBase64Content', index) as string;
 	} else if (imageInputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('imageFilePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		imageContent = fileBuffer.toString('base64');
+		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else if (imageInputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
-		imageContent = buffer.toString('base64');
+		try {
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: imageUrl,
+				encoding: null,
+			});
+			const buffer = Buffer.from(response, 'binary');
+			imageContent = buffer.toString('base64');
+		} catch (error) {
+			throw new Error(`Failed to fetch image from URL: ${error.message}`);
+		}
 	} else {
 		throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
 	}

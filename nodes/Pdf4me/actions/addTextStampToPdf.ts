@@ -9,7 +9,6 @@ import {
 // Make Node.js globals available
 // declare const Buffer: any;
 // declare const URL: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -378,11 +377,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		// Download PDF from URL
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl(pdfUrl);
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: pdfUrl,
+			encoding: null,
+		});
+		const buffer = Buffer.from(response as Buffer);
+		docContent = buffer.toString('base64');
 	} else if (inputDataType === 'filePath') {
-		// Read PDF from local file path
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readPdfFromFile(filePath);
+		throw new Error('File path input is not supported in this environment');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -460,82 +463,4 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	throw new Error('No response data received from PDF4ME API');
 }
 
-/**
- * Download PDF from URL and convert to base64
- */
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	const https = require('https');
-	const http = require('http');
 
-	const parsedUrl = new URL(pdfUrl);
-	const isHttps = parsedUrl.protocol === 'https:';
-	const client = isHttps ? https : http;
-
-	const options = {
-		hostname: parsedUrl.hostname,
-		port: parsedUrl.port || (isHttps ? 443 : 80),
-		path: parsedUrl.pathname + parsedUrl.search,
-		method: 'GET',
-		timeout: 30000,
-		headers: {
-			'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-			'Accept': 'application/pdf,application/octet-stream,*/*',
-		},
-	};
-
-	return new Promise((resolve, reject) => {
-		const req = client.request(options, (res: any) => {
-			if (res.statusCode !== 200) {
-				reject(new Error(`HTTP Error ${res.statusCode}: ${res.statusMessage}`));
-				return;
-			}
-
-			const chunks: any[] = [];
-			res.on('data', (chunk: any) => {
-				chunks.push(chunk);
-			});
-
-			res.on('end', () => {
-				const buffer = Buffer.concat(chunks);
-				const base64Content = buffer.toString('base64');
-				resolve(base64Content);
-			});
-
-			res.on('error', (error: any) => {
-				reject(new Error(`Download error: ${error.message}`));
-			});
-		});
-
-		req.on('error', (error: any) => {
-			reject(new Error(`Request error: ${error.message}`));
-		});
-
-		req.on('timeout', () => {
-			req.destroy();
-			reject(new Error('Download timeout'));
-		});
-
-		req.end();
-	});
-}
-
-/**
- * Read PDF from local file path and convert to base64
- */
-async function readPdfFromFile(filePath: string): Promise<string> {
-	const fs = require('fs');
-
-	try {
-		const fileBuffer = fs.readFileSync(filePath);
-		const base64Content = fileBuffer.toString('base64');
-		return base64Content;
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}`);
-		} else if (error.code === 'EACCES') {
-			throw new Error(`Permission denied: ${filePath}`);
-		} else {
-			throw new Error(`Error reading file: ${error.message}`);
-		}
-	}
-}

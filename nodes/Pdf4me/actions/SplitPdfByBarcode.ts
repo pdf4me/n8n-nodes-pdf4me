@@ -5,12 +5,8 @@ import {
 	ActionConstants,
 	pdf4meAsyncRequest,
 } from '../GenericFunctions';
-import JSZip from 'jszip';
-const fs = require('fs');
-const path = require('path');
 
 declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -35,11 +31,6 @@ export const description: INodeProperties[] = [
 				name: 'Binary Data',
 				value: 'binaryData',
 				description: 'Use PDF file from previous nodes',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
@@ -92,21 +83,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.SplitPdfByBarcode],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SplitPdfByBarcode],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -312,13 +288,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		pdfContentBase64 = await downloadPdfFromUrl(pdfUrl.trim());
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		if (!filePath || filePath.trim() === '') {
-			throw new Error('File path is required');
+		try {
+			const response = await this.helpers.request({
+				method: 'GET',
+				url: pdfUrl.trim(),
+				encoding: null,
+			});
+			pdfContentBase64 = Buffer.from(response).toString('base64');
+		} catch (error) {
+			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
-		pdfContentBase64 = await readPdfFromFile(filePath.trim());
+	} else if (inputDataType === 'filePath') {
+		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -391,12 +372,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else {
 		debugLog.type = typeof parsedResponse;
 	}
-	const debugPath = path.join('/tmp', 'pdf4me_split_barcode_response_debug.json');
-	try {
-		fs.writeFileSync(debugPath, JSON.stringify(debugLog, null, 2));
-	} catch (e) {
-		// Ignore file write errors for debugging
-	}
+	// Debug logging removed due to n8n restrictions
 	// --- END: Response Debug Logging ---
 
 	// --- BEGIN: Robust Response Handling ---
@@ -411,38 +387,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// If response is a ZIP (Buffer or base64 string)
 	const isZip = (buf: Buffer) => buf.slice(0, 4).toString('hex') === '504b0304';
 
-	const extractZipAndPrepareBinary = async (zipBuffer: Buffer) => {
-		const zip = await JSZip.loadAsync(zipBuffer);
-		let idx = 1;
-		for (const fileName of Object.keys(zip.files)) {
-			const file = zip.files[fileName];
-			if (!file.dir && fileName.toLowerCase().endsWith('.pdf')) {
-				const buffer = await file.async('nodebuffer');
-				const binaryKey = `file_${idx}`;
-				binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, fileName, 'application/pdf');
-				filesSummary.push({
-					fileName,
-					pageIndex: idx,
-					binaryProperty: binaryKey,
-					mimeType: 'application/pdf',
-					fileType: 'PDF file',
-					fileSize: buffer.length,
-				});
-				idx++;
-			}
-		}
-		totalFiles = filesSummary.length;
-		responseType = 'ZIP of PDFs';
+	const extractZipAndPrepareBinary = async () => {
+		throw new Error('ZIP file processing is not supported in this version. Please use an alternative API response format.');
 	};
 
 	if (Buffer.isBuffer(response) && isZip(response)) {
-		await extractZipAndPrepareBinary.call(this, response);
+		await extractZipAndPrepareBinary.call(this);
 	} else if (typeof response === 'string') {
 		// Check if base64 ZIP
 		try {
 			const buffer = Buffer.from(response, 'base64');
 			if (isZip(buffer)) {
-				await extractZipAndPrepareBinary.call(this, buffer);
+				await extractZipAndPrepareBinary.call(this);
 			}
 		} catch {
 			// Ignore base64 conversion errors
@@ -505,14 +461,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			totalFiles = 1;
 			responseType = 'Single PDF (legacy)';
 		} else {
-			// Unexpected response: save for debugging
-			const debugPath = path.join('/tmp', 'pdf4me_split_barcode_raw_response.json');
-			try {
-				fs.writeFileSync(debugPath, JSON.stringify(parsedResponse, null, 2));
-			} catch (e) {
-				// Ignore file write errors for debugging
-			}
-			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API. Raw response saved to /tmp/pdf4me_split_barcode_raw_response.json');
+			// Unexpected response: debug logging removed due to n8n restrictions
+			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API.');
 		}
 	}
 
@@ -536,23 +486,4 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	return [output];
 }
 
-// Helper functions for downloading and reading files
-async function downloadPdfFromUrl(pdfUrl: string): Promise<string> {
-	try {
-		const axios = require('axios');
-		const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
-		return Buffer.from(response.data).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
-}
 
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF file from path: ${error.message}`);
-	}
-}

@@ -8,7 +8,6 @@ import {
 
 // Make Node.js globals available
 declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -576,9 +575,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent = await downloadPdfFromUrl.call(this, fileUrl);
 		docName = fileName || 'document.pdf';
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readPdfFromFile(filePath);
-		docName = fileName || 'document.pdf';
+		throw new Error('File path input is not supported in this environment');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -662,12 +659,3 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Prom
 	}
 }
 
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF file from path: ${error.message}`);
-	}
-}

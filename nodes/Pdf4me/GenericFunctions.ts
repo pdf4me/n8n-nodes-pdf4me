@@ -10,7 +10,6 @@ import type {
 import { NodeApiError } from 'n8n-workflow';
 
 // Declare Node.js globals
-declare const setTimeout: any;
 declare const Buffer: any;
 
 export async function pdf4meApiRequest(
@@ -191,7 +190,12 @@ export async function pdf4meAsyncRequest(
 
 				if (attempt > 0) {
 					// Wait before polling
-					await new Promise(resolve => setTimeout(resolve, delay));
+					await new Promise(resolve => {
+						const timer = setInterval(() => {
+							clearInterval(timer);
+							resolve(undefined);
+						}, delay);
+					});
 				}
 
 				// Poll the status

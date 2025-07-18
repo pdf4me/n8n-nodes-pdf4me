@@ -6,7 +6,6 @@ import { pdf4meAsyncRequest } from '../GenericFunctions';
 // Make Node.js globals available
 // declare const Buffer: any;
 // declare const URL: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -36,11 +35,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 		],
 	},
@@ -89,21 +83,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.RotatePage],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to rotate pages from',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.RotatePage],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -222,8 +201,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readPdfFromFile(filePath);
+		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -292,12 +270,3 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Prom
 	}
 }
 
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF file from path: ${error.message}`);
-	}
-}

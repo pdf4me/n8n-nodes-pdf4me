@@ -6,7 +6,6 @@ import { pdf4meAsyncRequest } from '../GenericFunctions';
 // Make Node.js globals available
 // declare const Buffer: any;
 // declare const URL: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -185,9 +184,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
-	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		docContent = await readPdfFromFile(filePath);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -257,12 +253,3 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Prom
 }
 
 // Helper function to read PDF from local file
-async function readPdfFromFile(filePath: string): Promise<string> {
-	try {
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		return fileBuffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to read PDF file: ${error.message}`);
-	}
-}

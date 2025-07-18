@@ -6,7 +6,6 @@ import {
 } from '../GenericFunctions';
 
 // declare const Buffer: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -31,11 +30,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
 			},
 			{
 				name: 'URL',
@@ -88,21 +82,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ReadBarcodeFromImage],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file to read barcodes from',
-		placeholder: '/path/to/image.jpg',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReadBarcodeFromImage],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -170,16 +149,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'filePath') {
-		const filePath = this.getNodeParameter('filePath', index) as string;
-		const fs = require('fs');
-		const fileBuffer = fs.readFileSync(filePath);
-		docContent = fileBuffer.toString('base64');
-		docName = filePath.split('/').pop() || outputFileName;
+		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const axios = require('axios');
-		const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-		const buffer = Buffer.from(response.data, 'binary');
+		if (!imageUrl || imageUrl.trim() === '') {
+			throw new Error('Image URL is required');
+		}
+		const response = await this.helpers.request({
+			method: 'GET',
+			url: imageUrl.trim(),
+			encoding: null,
+		});
+		const buffer = Buffer.from(response);
 		docContent = buffer.toString('base64');
 		docName = imageUrl.split('/').pop() || outputFileName;
 	} else {

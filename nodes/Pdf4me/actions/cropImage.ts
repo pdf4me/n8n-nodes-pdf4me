@@ -9,7 +9,6 @@ import {
 // Make Buffer and setTimeout available (Node.js globals)
 // declare const Buffer: any;
 // declare const setTimeout: any;
-declare const require: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -34,11 +33,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
 			},
 		],
 	},
@@ -71,21 +65,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.CropImage],
 				inputDataType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file to crop',
-		placeholder: '/path/to/image.jpg',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CropImage],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -332,38 +311,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 	} else if (inputDataType === 'filePath') {
-		// Use local file path - read the file and convert to base64
-		const filePath = this.getNodeParameter('filePath', index) as string;
-
-		// Validate file path (basic check)
-		if (!filePath.includes('/') && !filePath.includes('\\')) {
-			throw new Error('Invalid file path. Please provide a complete path to the image file.');
-		}
-
-		try {
-			// Read the file and convert to base64
-			const fs = require('fs');
-			const fileBuffer = fs.readFileSync(filePath);
-			docContent = fileBuffer.toString('base64');
-
-			// Validate the image content
-			if (docContent.length < 50) {
-				throw new Error('Image file appears to be too small. Please ensure the file is a valid image.');
-			}
-
-			// Extract filename from path for original filename
-			const pathParts = filePath.replace(/\\/g, '/').split('/');
-			originalFileName = pathParts[pathParts.length - 1];
-
-		} catch (error) {
-			if (error.code === 'ENOENT') {
-				throw new Error(`File not found: ${filePath}. Please check the file path and ensure the file exists.`);
-			} else if (error.code === 'EACCES') {
-				throw new Error(`Permission denied: ${filePath}. Please check file permissions.`);
-			} else {
-				throw new Error(`Error reading file: ${error.message}`);
-			}
-		}
+		throw new Error('File path input is not supported. Please use binary data or base64 string instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
