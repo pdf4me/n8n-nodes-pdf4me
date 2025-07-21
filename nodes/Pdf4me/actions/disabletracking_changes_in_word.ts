@@ -67,21 +67,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the Word document to process',
-		placeholder: '/path/to/document.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.DisableTrackingChangesInWord],
-				inputDataType: ['filePath'],
-			},
-		},
-	},
-	{
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
@@ -127,11 +112,12 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'url') {
 		const docUrl = this.getNodeParameter('docUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: docUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response, 'binary');
 		docContent = buffer.toString('base64');
 		docName = docUrl.split('/').pop() || outputFileName;

@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer available (Node.js global)
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -474,19 +473,18 @@ const downloadHtmlFromUrl = async (helpers: IExecuteFunctions['helpers'], htmlUr
 	 */
 	try {
 		// Download the HTML file
-		const response = await helpers.request({
+		const response = await helpers.httpRequest({
 			method: 'GET',
 			url: htmlUrl,
-			json: false, // Ensure binary data is returned
+			encoding: 'arraybuffer',
 		});
 
-		if (response.status >= 400) {
-			throw new Error(`Failed to download HTML from URL: ${response.status} ${response.statusText}`);
+		if (response.statusCode >= 400) {
+			throw new Error(`Failed to download HTML from URL: ${response.statusCode} ${response.statusMessage}`);
 		}
 
-		// Get the file as array buffer
-		const arrayBuffer = await response.body;
-		const buffer = Buffer.from(arrayBuffer);
+		// Get the file as buffer
+		const buffer = Buffer.from(response.body);
 
 		// Convert to base64
 		const base64Content = buffer.toString('base64');

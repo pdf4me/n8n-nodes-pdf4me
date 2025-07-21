@@ -5,7 +5,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -30,11 +29,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 			{
 				name: 'URL',
@@ -87,21 +81,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.FindAndReplaceText],
 				pdfInputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'PDF File Path',
-		name: 'pdfFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.FindAndReplaceText],
-				pdfInputDataType: ['filePath'],
 			},
 		},
 	},
@@ -189,15 +168,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = item[0].binary[binaryPropertyName].fileName || 'input.pdf';
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
-	} else if (pdfInputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: pdfUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response as Buffer);
 		docContent = buffer.toString('base64');
 		docName = pdfUrl.split('/').pop() || 'input.pdf';

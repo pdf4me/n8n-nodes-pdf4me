@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer and other Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
 // declare const setTimeout: any;
@@ -356,11 +355,17 @@ async function getPdfContents(this: IExecuteFunctions, index: number, inputDataT
 				const fileName = pdfFile.fileName as string || 'unnamed';
 				throw new Error(`PDF URL is required for file '${fileName}'`);
 			}
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+
+				method: 'GET' as const,
+
 				url: pdfUrl.trim(),
-				encoding: null,
-			});
+
+				encoding: 'arraybuffer' as const,
+
+			};
+
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response as Buffer);
 			const base64Content = buffer.toString('base64');
 			pdfContentsBase64.push(base64Content);

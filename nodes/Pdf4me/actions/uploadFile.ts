@@ -1,11 +1,9 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meAsyncRequest,
 	ActionConstants,
 } from '../GenericFunctions';
 
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -123,12 +121,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = 'uploaded_file';
 	} else if (inputDataType === 'url') {
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			method: 'GET' as const,
 			url: fileUrl,
-			encoding: null,
+			encoding: 'arraybuffer' as const,
 		});
-		const buffer = Buffer.from(response, 'binary');
+		const buffer = await this.helpers.binaryToBuffer(response);
 		docContent = buffer.toString('base64');
 		docName = fileUrl.split('/').pop() || 'uploaded_file';
 	} else {
@@ -142,19 +140,36 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		hours,
 	};
 
-	// Make the API request using the standard pattern
-	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/UploadFile', body);
+	// Make the API request using the new httpRequestWithAuthentication helper
+	const options = {
+		url: 'https://api-dev.pdf4me.com/api/v2/UploadFile',
+		method: 'POST' as const,
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: body,
+		json: true, // Parse response as JSON
+	};
+	
+	const result: any = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
-	// Return the result
+	// Extract document URL from response
+	let documentUrl;
+	
+	if (result.documents && result.documents.length > 0) {
+		documentUrl = result.documents[0].documentUrl;
+	} else if (result.documentUrl) {
+		documentUrl = result.documentUrl;
+	}
+	
+	if (!documentUrl) {
+		throw new Error('No document URL found in response');
+	}
+	
 	return [
 		{
 			json: {
-				success: true,
-				message: 'File uploaded successfully',
-				documentUrl: result.documentUrl || result.documents?.[0]?.documentUrl,
-				fileName: docName,
-				hours: hours,
-				...result,
+				documentUrl: documentUrl,
 			},
 		},
 	];

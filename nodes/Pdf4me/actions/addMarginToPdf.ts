@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 
 export const description: INodeProperties[] = [
@@ -238,14 +237,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		// Download PDF from URL
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: pdfUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		docContent = Buffer.from(response).toString('base64');
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use Binary Data, Base64 String, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

@@ -4,7 +4,6 @@ import { sanitizeProfiles, ActionConstants } from '../GenericFunctions';
 import { pdf4meAsyncRequest } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 
 export const description: INodeProperties[] = [
@@ -35,11 +34,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 		],
 	},
@@ -88,21 +82,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.DeleteBlankPagesFromPdf],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to delete blank pages from',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.DeleteBlankPagesFromPdf],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -188,8 +167,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -244,11 +221,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 // Helper functions for downloading and reading files
 async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
 	try {
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: pdfUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		return Buffer.from(response).toString('base64');
 	} catch (error) {
 		throw new Error(`Failed to download PDF from URL: ${error.message}`);

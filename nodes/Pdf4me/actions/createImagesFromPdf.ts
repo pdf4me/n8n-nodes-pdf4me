@@ -6,7 +6,6 @@ import {
 } from '../GenericFunctions';
 
 // Declare Node.js global
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -36,11 +35,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to PDF file',
 			},
 		],
 	},
@@ -89,21 +83,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.CreateImagesFromPdf],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the PDF file to convert',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CreateImagesFromPdf],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -328,18 +307,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 
-		docContent = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: pdfUrl,
 			headers: {
 				'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
 				'Accept': 'application/pdf,application/octet-stream,*/*',
 			},
 			timeout: 30000, // 30 seconds timeout
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		docContent = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -467,7 +446,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// If debugging is critical, this needs to be refactored to use this.helpers.request
 			// or a different method to fetch the response for logging.
 			// For now, we'll just log to console.
-			console.log('PDF4me CreateImages Response Debug:', JSON.stringify(debugLog, null, 2));
 		} catch (e) {
 			// Ignore file write errors for debugging
 		}

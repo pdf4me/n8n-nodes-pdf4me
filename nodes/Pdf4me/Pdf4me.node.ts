@@ -79,6 +79,7 @@ import * as convertMarkdownToPdf from './actions/convertMarkdownToPdf';
 import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
 import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
+import * as uploadFile from './actions/uploadFile';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -245,6 +246,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await convertPdfToWord.execute.call(this, i)));
 				} else if (action === ActionConstants.ConvertVisio) {
 					operationResult.push(...(await convertVisio.execute.call(this, i)));
+				} else if (action === ActionConstants.UploadFile) {
+					operationResult.push(...(await uploadFile.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

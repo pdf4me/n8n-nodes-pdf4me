@@ -6,7 +6,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -31,11 +30,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
 			},
 			{
 				name: 'URL',
@@ -74,21 +68,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ConvertImageFormat],
 				inputDataType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Image File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file',
-		placeholder: '/path/to/image.jpg',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertImageFormat],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -196,16 +175,20 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 		try {
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+
+				method: 'GET' as const,
+
 				url: imageUrl,
-				encoding: null,
-			});
+
+				encoding: 'arraybuffer' as const,
+
+			};
+
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response, 'binary');
 			docContent = buffer.toString('base64');
 			docName = imageUrl.split('/').pop() || outputFileName;

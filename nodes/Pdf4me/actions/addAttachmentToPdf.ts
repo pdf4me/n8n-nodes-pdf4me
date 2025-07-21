@@ -37,7 +37,6 @@ import {
  */
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
 // declare const process: any;
@@ -245,14 +244,6 @@ export const description: INodeProperties[] = [
 						placeholder: 'data',
 					},
 					{
-						displayName: 'File Path',
-						name: 'attachmentFilePath',
-						type: 'string',
-						default: '',
-						description: 'Local file path to the attachment file',
-						placeholder: '/path/to/attachment.txt',
-					},
-					{
 						displayName: 'File URL',
 						name: 'attachmentUrl',
 						type: 'string',
@@ -428,10 +419,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Download PDF from URL
 			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 			logger.log('debug', 'Downloading PDF from URL', { url: pdfUrl });
-			const response = await this.helpers.request({
-				method: 'GET',
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+				method: 'GET' as const,
 				url: pdfUrl,
-				encoding: null,
+				encoding: 'arraybuffer' as const,
 			});
 			const buffer = Buffer.from(response as Buffer);
 			docContent = buffer.toString('base64');
@@ -512,10 +503,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					// Download attachment from URL
 					const attachmentUrl = attachment.attachmentUrl as string;
 					logger.log('debug', 'Downloading attachment from URL', { url: attachmentUrl });
-					const response = await this.helpers.request({
-						method: 'GET',
+					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+						method: 'GET' as const,
 						url: attachmentUrl,
-						encoding: null,
+						encoding: 'arraybuffer' as const,
 					});
 					const buffer = Buffer.from(response as Buffer);
 					attachmentContent = buffer.toString('base64');

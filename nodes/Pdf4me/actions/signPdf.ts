@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 
 export const description: INodeProperties[] = [
@@ -489,11 +488,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		// Download PDF from URL
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: pdfUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response, 'binary');
 		docContent = buffer.toString('base64');
 	} else {
@@ -530,11 +530,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (signatureImageInputType === 'url') {
 		// Download signature image from URL
 		const signatureImageUrl = this.getNodeParameter('signatureImageUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: signatureImageUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response, 'binary');
 		imageFile = buffer.toString('base64');
 	} else {

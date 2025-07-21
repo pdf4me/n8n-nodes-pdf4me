@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer and setTimeout available (Node.js globals)
-// declare const Buffer: any;
 // declare const setTimeout: any;
 
 export const description: INodeProperties[] = [
@@ -266,7 +265,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const docName = this.getNodeParameter('docName', index) as string;
+	let docName = this.getNodeParameter('docName', index) as string;
 	const cropType = this.getNodeParameter('cropType', index) as string;
 
 	// Only get the relevant options based on crop type
@@ -310,8 +309,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data or base64 string instead.');
+	} else if (inputDataType === 'url') {
+		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			method: 'GET' as const,
+			url: imageUrl,
+			encoding: 'arraybuffer' as const,
+		});
+		const buffer = Buffer.from(response as Buffer);
+		docContent = buffer.toString('base64');
+		docName = imageUrl.split('/').pop() || outputFileName;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

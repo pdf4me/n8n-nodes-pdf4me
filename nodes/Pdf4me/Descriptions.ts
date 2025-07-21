@@ -73,12 +73,13 @@ import * as convertMarkdownToPdf from './actions/convertMarkdownToPdf';
 import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
 import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
+import * as uploadFile from './actions/uploadFile';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
 	displayName: 'PDF4ME',
 	name: 'pdf4me',
-	description: 'Generate barcodes, convert URLs to PDF, convert PDFs to Word, convert JSON to Excel, crop images, extract pages, and more using PDF4ME API',
+	description: 'Comprehensive PDF and document processing: generate barcodes, convert files, extract data, manipulate images, and automate workflows with the PDF4ME API',
 	defaults: {
 		name: 'PDF4ME',
 	},
@@ -543,6 +544,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.ConvertMarkdownToPdf,
 					action: ActionConstants.ConvertMarkdownToPdf,
 				},
+				{
+					name: 'Upload File To PDF4me',
+					description: 'Upload files to PDF4ME for further processing',
+					value: ActionConstants.UploadFile,
+					action: ActionConstants.UploadFile,
+				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -619,6 +626,7 @@ export const descriptions: INodeTypeDescription = {
 		...convertPdfToPowerpoint.description,
 		...convertPdfToExcel.description,
 		...convertVisio.description,
+		...uploadFile.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

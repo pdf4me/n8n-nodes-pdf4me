@@ -5,7 +5,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -300,14 +299,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl: string): Promise<string> => {
 	try {
-		const response = await helpers.request({
+		const response = await helpers.httpRequest({
 			method: 'GET',
 			url: pdfUrl,
-			json: false,
+			encoding: 'arraybuffer',
 		});
-		const arrayBuffer = response.data;
-		const buffer = Buffer.from(arrayBuffer);
+		
+		const buffer = Buffer.from(response.body);
 		const base64Content = buffer.toString('base64');
+		
 		if (base64Content.length < 100) {
 			throw new Error('Downloaded file appears to be too small. Please ensure the URL points to a valid PDF file.');
 		}

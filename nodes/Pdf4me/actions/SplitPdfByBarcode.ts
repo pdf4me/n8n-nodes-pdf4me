@@ -6,7 +6,6 @@ import {
 	pdf4meAsyncRequest,
 } from '../GenericFunctions';
 
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -289,17 +288,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('PDF URL is required');
 		}
 		try {
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+				method: 'GET' as const,
 				url: pdfUrl.trim(),
-				encoding: null,
-			});
+				encoding: 'arraybuffer' as const,
+			};
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			pdfContentBase64 = Buffer.from(response).toString('base64');
 		} catch (error) {
 			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported. Please use binary data, base64 string, or URL instead.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

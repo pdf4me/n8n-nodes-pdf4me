@@ -145,10 +145,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		const documentUrl = this.getNodeParameter('documentUrl', index) as string;
 		docName = this.getNodeParameter('documentNameRequired', index) as string;
-		const response = await this.helpers.request({ method: 'GET', url: documentUrl, encoding: null });
+		const options = { method: 'GET' as const, url: documentUrl, encoding: 'arraybuffer' as const };
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		docContent = Buffer.from(response).toString('base64');
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input type: ${inputDataType}`);
 	}

@@ -301,7 +301,7 @@ The package can be installed in different locations:
 
 2. **Verify module loading**:
    ```bash
-   node -e "try { require('n8n-nodes-pdf4me'); console.log('✅ Module loads successfully'); } catch(e) { console.log('❌ Error:', e.message); }"
+   node -e "try { require('n8n-nodes-pdf4me'); } catch(e) { throw new Error('Module loading failed: ' + e.message); }"
    ```
 
 3. **Check file permissions**:
