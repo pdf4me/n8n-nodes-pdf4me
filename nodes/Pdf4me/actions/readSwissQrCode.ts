@@ -134,11 +134,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: pdfUrl.trim(),
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response);
 		docContent = buffer.toString('base64');
 		docName = pdfUrl.split('/').pop() || docName;

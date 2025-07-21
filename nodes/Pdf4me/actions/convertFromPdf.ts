@@ -8,7 +8,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer and setTimeout available (they're Node.js globals)
-// declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
 // declare const setTimeout: any;
@@ -329,11 +328,27 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+
+
+			method: 'GET' as const,
+
+
+
 			url: pdfUrl,
-			encoding: null,
-		});
+
+
+
+			encoding: 'arraybuffer' as const,
+
+
+
+		};
+
+
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response as Buffer);
 		docContent = buffer.toString('base64');
 

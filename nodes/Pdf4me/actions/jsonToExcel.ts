@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer available (it's a Node.js global)
-// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{

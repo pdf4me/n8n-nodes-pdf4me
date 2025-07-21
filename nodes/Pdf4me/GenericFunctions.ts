@@ -9,9 +9,6 @@ import type {
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
-// Declare Node.js globals
-declare const Buffer: any;
-
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	url: string,
@@ -20,12 +17,10 @@ export async function pdf4meApiRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
-	const credentials = await this.getCredentials('pdf4meApi');
 	let options: IRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
-			'Authorization': `Basic ${credentials.apiKey}`,
 			'Content-Type': 'application/json',
 		},
 		method,
@@ -44,14 +39,23 @@ export async function pdf4meApiRequest(
 	try {
 		// Debug: Log authentication info (without exposing the full key)
 
-		const response = await this.helpers.request(options);
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: `${options.baseURL}${options.url}`,
+			method: options.method,
+			headers: options.headers,
+			body: options.body,
+			qs: options.qs,
+			encoding: options.encoding === null ? ('arraybuffer' as const) : (options.encoding as any),
+			skipSslCertificateValidation: !options.rejectUnauthorized,
+			returnFullResponse: options.resolveWithFullResponse,
+			json: options.json,
+		});
 
 		// Check if response is successful
 		if (response.statusCode === 200) {
 			// Return binary content
-			let result;
-			if (Buffer.isBuffer(response.body)) {
-				result = response.body;
+			if (response.body instanceof Buffer) {
+				return response.body;
 			} else if (typeof response.body === 'string') {
 				// If it's a string, it might be an error message
 				if (response.body.length < 100) {
@@ -59,20 +63,13 @@ export async function pdf4meApiRequest(
 				}
 				// Try to convert from base64 if it's a long string
 				try {
-					result = Buffer.from(response.body, 'base64');
+					return Buffer.from(response.body, 'base64');
 				} catch (error) {
 					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 				}
 			} else {
-				result = Buffer.from(response.body, 'binary');
+				return Buffer.from(response.body, 'binary');
 			}
-
-			// Validate the result
-			if (!Buffer.isBuffer(result)) {
-				throw new Error('Failed to convert response to Buffer');
-			}
-
-			return result;
 		} else {
 			// Error response - try to parse as JSON for error details
 			let errorMessage = `HTTP ${response.statusCode}`;
@@ -99,8 +96,6 @@ export async function pdf4meAsyncRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
-	const credentials = await this.getCredentials('pdf4meApi');
-
 	// Add async flag to body
 	const asyncBody = { ...body, async: true };
 
@@ -111,7 +106,6 @@ export async function pdf4meAsyncRequest(
 		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
-			'Authorization': `Basic ${credentials.apiKey}`,
 			'Content-Type': 'application/json',
 		},
 		method,
@@ -127,32 +121,39 @@ export async function pdf4meAsyncRequest(
 
 	try {
 		// Make initial request
-		const response = await this.helpers.request(options);
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: `${options.baseURL}${options.url}`,
+			method: options.method,
+			headers: options.headers,
+			body: options.body,
+			qs: options.qs,
+			encoding: options.encoding === null ? ('arraybuffer' as const) : (options.encoding as any),
+			skipSslCertificateValidation: !options.rejectUnauthorized,
+			returnFullResponse: options.resolveWithFullResponse,
+			json: options.json,
+			timeout: options.timeout,
+		});
 
 		if (response.statusCode === 200) {
 			// Immediate success
 			if (isJsonResponse) {
 				return response.body;
 			} else {
-				let result;
-				if (Buffer.isBuffer(response.body)) {
-					result = response.body;
+				// Handle binary response
+				if (response.body instanceof Buffer) {
+					return response.body;
 				} else if (typeof response.body === 'string') {
 					if (response.body.length < 100) {
 						throw new Error(`API returned error message: ${response.body}`);
 					}
 					try {
-						result = Buffer.from(response.body, 'base64');
+						return Buffer.from(response.body, 'base64');
 					} catch {
 						throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 					}
 				} else {
-					result = Buffer.from(response.body, 'binary');
+					return Buffer.from(response.body, 'binary');
 				}
-				if (!Buffer.isBuffer(result)) {
-					throw new Error('Failed to convert response to Buffer');
-				}
-				return result;
 			}
 		} else if (response.statusCode === 202) {
 			// Async processing - instruct user to use Wait node and workflow polling

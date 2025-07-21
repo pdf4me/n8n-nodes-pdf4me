@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer available (Node.js global)
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -114,19 +113,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Markdown File Path',
-		name: 'mdFilePath',
-		type: 'string',
-		default: '',
-		description: 'Path to .md file inside ZIP (empty for single file)',
-		placeholder: '',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertMarkdownToPdf],
-			},
-		},
-	},
-	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -156,28 +142,22 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	let inputDataType: string;
 	let outputFileName: string;
-	let docName: string;
-	let mdFilePath: string;
 	let advancedOptions: IDataObject;
 
 	if (operation === ActionConstants.ConvertToPdf) {
 		// Use the parameters from the Convert to PDF action
 		inputDataType = this.getNodeParameter('mdInputDataType', index) as string;
 		outputFileName = this.getNodeParameter('mdOutputFileName', index) as string;
-		docName = this.getNodeParameter('mdDocName', index) as string;
-		mdFilePath = this.getNodeParameter('mdFilePath', index) as string;
 		advancedOptions = this.getNodeParameter('mdAdvancedOptions', index) as IDataObject;
 	} else {
 		// Use the original parameters (for backward compatibility)
 		inputDataType = this.getNodeParameter('inputDataType', index) as string;
 		outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		docName = this.getNodeParameter('docName', index) as string;
-		mdFilePath = this.getNodeParameter('mdFilePath', index) as string;
 		advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	}
 
 	let docContent: string;
-	let originalFileName = docName;
+	let originalFileName: string = 'markdown_file';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -223,8 +203,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		docContent = await downloadMarkdownFromUrl(markdownUrl);
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -238,7 +216,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
-		mdFilePath,
 		async: true, // Asynchronous processing as per Python sample
 	};
 

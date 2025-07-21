@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "n8n community node for PDF4ME API integration",
   "keywords": [
     "n8n-community-node-package"
@@ -15,10 +15,10 @@
     "type": "git",
     "url": "git+https://github.com/pdf4me/n8n-nodes-pdf4me.git"
   },
-  "main": "index.js",
-  "bin": {
-    "n8n-nodes-pdf4me": "index.js"
+  "engines": {
+    "node": ">=20.15"
   },
+  "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build",
     "dev": "tsc --watch",
@@ -26,8 +26,7 @@
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
     "prepublishOnly": "npm run build && npm run validate-build && eslint -c .eslintrc.prepublish.js nodes credentials package.json",
-    "validate-build": "node -e \"const fs=require('fs'); const path=require('path'); const requiredFiles=['dist/nodes/Pdf4me/Pdf4me.node.js','dist/credentials/Pdf4meApi.credentials.js']; requiredFiles.forEach(f=>{if(!fs.existsSync(f))throw new Error('Missing required file: '+f);}); console.log('✅ All required files present');\"",
-    "postinstall": "echo 'PDF4ME n8n node installed successfully. Restart n8n to use the node.'"
+    "validate-build": "node -e \"const fs=require('fs'); const path=require('path'); const requiredFiles=['dist/nodes/Pdf4me/Pdf4me.node.js','dist/credentials/Pdf4meApi.credentials.js']; requiredFiles.forEach(f=>{if(!fs.existsSync(f))throw new Error('Missing required file: '+f);});\""
   },
   "files": [
     "dist",

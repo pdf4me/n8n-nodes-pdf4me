@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -26,22 +25,17 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Binary Data',
 				value: 'binaryData',
-				description: 'Use binary data from previous node',
+				description: 'Use file from previous node',
 			},
 			{
 				name: 'Base64 String',
 				value: 'base64',
-				description: 'Provide base64 encoded content',
+				description: 'Provide file content as base64 encoded string',
 			},
 			{
 				name: 'URL',
 				value: 'url',
-				description: 'Provide URL to the file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to the file',
+				description: 'Provide URL to file',
 			},
 		],
 	},
@@ -85,21 +79,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'File Path',
-		name: 'filePath',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Local file path to the file to process',
-		placeholder: '/path/to/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CreateSwissQrBill],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -645,10 +624,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
 	try {
-		const response = await this.helpers.request({
-			method: 'GET',
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			method: 'GET' as const,
 			url: pdfUrl,
-			encoding: null,
+			encoding: 'arraybuffer' as const,
 		});
 
 		return Buffer.from(response).toString('base64');

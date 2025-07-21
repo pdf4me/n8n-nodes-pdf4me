@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -37,11 +36,6 @@ export const description: INodeProperties[] = [
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to Word file',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to Word file',
 			},
 		],
 	},
@@ -90,21 +84,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.ExtractTextFromWord],
 				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Local File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the Word file to extract text from',
-		placeholder: '/path/to/document.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ExtractTextFromWord],
-				inputDataType: ['filePath'],
 			},
 		},
 	},
@@ -239,8 +218,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		const wordUrl = this.getNodeParameter('wordUrl', index) as string;
 		docContent = await downloadWordFromUrl.call(this, wordUrl);
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -322,11 +299,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 async function downloadWordFromUrl(this: IExecuteFunctions, wordUrl: string): Promise<string> {
 	try {
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+			method: 'GET' as const,
+
 			url: wordUrl,
-			encoding: null,
-		});
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
 		return Buffer.from(response).toString('base64');
 	} catch (error) {

@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -32,11 +31,6 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to image file',
 			},
 			{
 				name: 'URL',
@@ -79,21 +73,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Image File Path',
-		name: 'filePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file',
-		placeholder: '/path/to/image.jpg',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddImageWatermarkToImage],
-				inputDataType: ['filePath'],
-			},
-		},
-	},
-	{
 		displayName: 'Image URL',
 		name: 'imageUrl',
 		type: 'string',
@@ -129,12 +108,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Base64 String',
 				value: 'base64',
-				description: 'Provide watermark image as base64 encoded string',
-			},
-			{
-				name: 'File Path',
-				value: 'filePath',
-				description: 'Provide local file path to watermark image',
+				description: 'Provide watermark image content as base64 encoded string',
 			},
 			{
 				name: 'URL',
@@ -173,21 +147,6 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.AddImageWatermarkToImage],
 				watermarkDataType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Watermark File Path',
-		name: 'watermarkFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the watermark image',
-		placeholder: '/path/to/watermark.png',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddImageWatermarkToImage],
-				watermarkDataType: ['filePath'],
 			},
 		},
 	},
@@ -364,15 +323,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: imageUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response as Buffer);
 		docContent = buffer.toString('base64');
 		docName = imageUrl.split('/').pop() || outputFileName;
@@ -393,15 +351,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		watermarkFileName = item[0].binary[binaryPropertyName].fileName || 'watermark.png';
 	} else if (watermarkDataType === 'base64') {
 		watermarkContent = this.getNodeParameter('watermarkBase64Content', index) as string;
-	} else if (watermarkDataType === 'filePath') {
-		throw new Error('File path input is not supported in this environment');
 	} else if (watermarkDataType === 'url') {
 		const watermarkImageUrl = this.getNodeParameter('watermarkImageUrl', index) as string;
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+			method: 'GET' as const,
 			url: watermarkImageUrl,
-			encoding: null,
-		});
+			encoding: 'arraybuffer' as const,
+		};
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		const buffer = Buffer.from(response as Buffer);
 		watermarkContent = buffer.toString('base64');
 		watermarkFileName = watermarkImageUrl.split('/').pop() || 'watermark.png';

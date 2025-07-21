@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer available (Node.js global)
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -207,8 +206,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		docContent = await downloadWordFromUrl(wordUrl);
-	} else if (inputDataType === 'filePath') {
-		throw new Error('File path input is not supported in n8n community nodes. Please use Binary Data, Base64 String, or URL.');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

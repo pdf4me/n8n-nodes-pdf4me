@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Buffer and other Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
 // declare const setTimeout: any;
@@ -299,11 +298,17 @@ async function getPdfContents(this: IExecuteFunctions, index: number, baseInputT
 		if (!basePdfUrl) {
 			throw new Error('Base PDF URL is required');
 		}
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+			method: 'GET' as const,
+
 			url: basePdfUrl,
-			encoding: null,
-		});
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		basePdfBase64 = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported base PDF input type: ${baseInputType}`);
@@ -329,11 +334,17 @@ async function getPdfContents(this: IExecuteFunctions, index: number, baseInputT
 		if (!layerPdfUrl) {
 			throw new Error('Layer PDF URL is required');
 		}
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+			method: 'GET' as const,
+
 			url: layerPdfUrl,
-			encoding: null,
-		});
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		layerPdfBase64 = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported layer PDF input type: ${layerInputType}`);

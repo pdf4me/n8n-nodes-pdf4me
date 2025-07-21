@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
 
@@ -220,21 +219,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Image File Path',
-		name: 'imageFilePath',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Local file path to the image file for stamp',
-		placeholder: '/path/to/stamp.png',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddImageStampToPdf],
-				imageInputDataType: ['filePath'],
-			},
-		},
-	},
+
 	{
 		displayName: 'Image Name',
 		name: 'imageName',
@@ -562,11 +547,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else if (inputDataType === 'url') {
 			logger.log('debug', 'Processing PDF from URL');
 			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+				method: 'GET' as const,
 				url: pdfUrl,
-				encoding: null,
-			});
+				encoding: 'arraybuffer' as const,
+			};
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response as Buffer);
 			docContent = buffer.toString('base64');
 			logger.log('debug', 'PDF downloaded from URL', { length: docContent.length });
@@ -609,11 +595,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} else if (imageInputDataType === 'url') {
 			logger.log('debug', 'Processing image from URL');
 			const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+				method: 'GET' as const,
 				url: imageUrl,
-				encoding: null,
-			});
+				encoding: 'arraybuffer' as const,
+			};
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response as Buffer);
 			imageContent = buffer.toString('base64');
 			logger.log('debug', 'Image downloaded from URL', { length: imageContent.length });

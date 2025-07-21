@@ -274,7 +274,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (wordInputDataType === 'url') {
 		const documentUrl = this.getNodeParameter('wordDocumentUrl', index) as string;
 		docName = this.getNodeParameter('wordDocumentNameRequired', index) as string;
-		const response = await this.helpers.request({ method: 'GET', url: documentUrl, encoding: null });
+		const options = { method: 'GET' as const, url: documentUrl, encoding: 'arraybuffer' as const };
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		docContent = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported Word document input type: ${wordInputDataType}`);
@@ -300,7 +301,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (imageInputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 		imageFileName = this.getNodeParameter('imageFileNameRequired', index) as string;
-		const response = await this.helpers.request({ method: 'GET', url: imageUrl, encoding: null });
+		const options = { method: 'GET' as const, url: imageUrl, encoding: 'arraybuffer' as const };
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		imageContent = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported image input type: ${imageInputDataType}`);

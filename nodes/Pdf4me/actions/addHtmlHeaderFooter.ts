@@ -38,7 +38,6 @@ import {
  */
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 // declare const console: any;
 // declare const process: any;
@@ -510,11 +509,17 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string, logge
 		}
 
 		// Download the PDF using n8n helpers
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+			method: 'GET' as const,
+
 			url: pdfUrl,
-			encoding: null,
-		});
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
 		const buffer = Buffer.from(response);
 

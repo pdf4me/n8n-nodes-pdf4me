@@ -5,7 +5,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-// declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -256,11 +255,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		try {
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+				method: 'GET' as const,
 				url: pdfUrl,
-				encoding: null,
-			});
+				encoding: 'arraybuffer' as const,
+			};
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response, 'binary');
 			docContent = buffer.toString('base64');
 			docName = pdfUrl.split('/').pop() || 'input.pdf';
@@ -286,11 +286,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (imageInputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 		try {
-			const response = await this.helpers.request({
-				method: 'GET',
+			const options = {
+				method: 'GET' as const,
 				url: imageUrl,
-				encoding: null,
-			});
+				encoding: 'arraybuffer' as const,
+			};
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response, 'binary');
 			imageContent = buffer.toString('base64');
 		} catch (error) {

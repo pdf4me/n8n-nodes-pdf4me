@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-// declare const Buffer: any;
 // declare const URL: any;
 
 export const description: INodeProperties[] = [
@@ -301,11 +300,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+			method: 'GET' as const,
+
 			url: pdfUrl.trim(),
-			encoding: null,
-		});
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		docContent = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);

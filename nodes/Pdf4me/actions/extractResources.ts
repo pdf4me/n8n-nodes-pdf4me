@@ -7,7 +7,6 @@ import {
 } from '../GenericFunctions';
 
 // Make Node.js globals available
-declare const Buffer: any;
 
 export const description: INodeProperties[] = [
 	{
@@ -274,11 +273,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
 	try {
-		const response = await this.helpers.request({
-			method: 'GET',
+		const options = {
+
+			method: 'GET' as const,
+
 			url: pdfUrl,
-			encoding: null,
-		});
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
 		return Buffer.from(response).toString('base64');
 	} catch (error) {

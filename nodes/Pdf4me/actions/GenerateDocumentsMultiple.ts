@@ -353,7 +353,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (templateInputDataType === 'url') {
 		const templateFileUrl = this.getNodeParameter('templateFileUrl', index) as string;
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
-		const response = await this.helpers.request({ method: 'GET', url: templateFileUrl, encoding: null });
+		const options = {
+
+			method: 'GET' as const,
+
+			url: templateFileUrl,
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		templateFileData = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported template input type: ${templateInputDataType}`);
@@ -376,7 +386,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		documentDataFile = this.getNodeParameter('documentBase64Content', index) as string;
 	} else if (documentInputDataType === 'url') {
 		const documentDataFileUrl = this.getNodeParameter('documentDataFileUrl', index) as string;
-		const response = await this.helpers.request({ method: 'GET', url: documentDataFileUrl, encoding: null });
+		const options = {
+
+			method: 'GET' as const,
+
+			url: documentDataFileUrl,
+
+			encoding: 'arraybuffer' as const,
+
+		};
+
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 		documentDataFile = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported document input type: ${documentInputDataType}`);
