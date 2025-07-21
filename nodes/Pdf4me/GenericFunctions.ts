@@ -299,4 +299,5 @@ export const ActionConstants = {
 	PdfToExcel: 'PDF To Excel',
 	ConvertPdfToExcel: 'Convert PDF To Excel',
 	ConvertVisio: 'Convert VISIO',
+	UploadFile: 'Upload File',
 };
