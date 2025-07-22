@@ -5,7 +5,7 @@ import type {
 	ILoadOptionsFunctions,
 	JsonObject,
 	IHttpRequestMethods,
-	IRequestOptions,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
@@ -17,7 +17,7 @@ export async function pdf4meApiRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
-	let options: IRequestOptions = {
+	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
@@ -27,9 +27,9 @@ export async function pdf4meApiRequest(
 		qs,
 		body,
 		json: false, // Don't parse as JSON for binary responses
-		encoding: null, // For binary responses
-		resolveWithFullResponse: true, // Need full response to check status
-		simple: false, // Don't throw on non-2xx status codes
+		encoding: 'arraybuffer' as const, // For binary responses
+		returnFullResponse: true, // Need full response to check status
+		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 	};
 	options = Object.assign({}, options, option);
 	if (Object.keys(options.body as IDataObject).length === 0) {
@@ -45,9 +45,9 @@ export async function pdf4meApiRequest(
 			headers: options.headers,
 			body: options.body,
 			qs: options.qs,
-			encoding: options.encoding === null ? ('arraybuffer' as const) : (options.encoding as any),
-			skipSslCertificateValidation: !options.rejectUnauthorized,
-			returnFullResponse: options.resolveWithFullResponse,
+			encoding: 'arraybuffer' as const,
+			// SSL validation is handled by n8n's httpRequestWithAuthentication
+			returnFullResponse: options.returnFullResponse,
 			json: options.json,
 		});
 
@@ -102,7 +102,7 @@ export async function pdf4meAsyncRequest(
 	// Determine if this is a JSON response operation (like CreateImages)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf');
 
-	let options: IRequestOptions = {
+	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
@@ -112,9 +112,9 @@ export async function pdf4meAsyncRequest(
 		qs,
 		body: asyncBody,
 		json: isJsonResponse, // Parse as JSON for CreateImages operations
-		resolveWithFullResponse: true, // Need full response to get headers
-		simple: false, // Don't throw on non-2xx status codes
-		encoding: null, // For potential binary response
+		returnFullResponse: true, // Need full response to get headers
+		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
+		encoding: 'arraybuffer' as const, // For potential binary response
 		timeout: 60000, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
@@ -127,9 +127,9 @@ export async function pdf4meAsyncRequest(
 			headers: options.headers,
 			body: options.body,
 			qs: options.qs,
-			encoding: options.encoding === null ? ('arraybuffer' as const) : (options.encoding as any),
-			skipSslCertificateValidation: !options.rejectUnauthorized,
-			returnFullResponse: options.resolveWithFullResponse,
+			encoding: 'arraybuffer' as const,
+			// SSL validation is handled by n8n's httpRequestWithAuthentication
+			returnFullResponse: options.returnFullResponse,
 			json: options.json,
 			timeout: options.timeout,
 		});
@@ -300,5 +300,5 @@ export const ActionConstants = {
 	PdfToExcel: 'PDF To Excel',
 	ConvertPdfToExcel: 'Convert PDF To Excel',
 	ConvertVisio: 'Convert VISIO',
-	UploadFile: 'Upload File',
+	UploadFile: 'Upload Files to Pdf4me',
 };
