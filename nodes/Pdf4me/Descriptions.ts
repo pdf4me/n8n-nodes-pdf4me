@@ -74,6 +74,7 @@ import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
 import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
+import * as parseDocument from './actions/parseDocument';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -159,6 +160,12 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Classify documents using AI to determine document type and extract relevant information',
 					value: ActionConstants.ClassifyDocument,
 					action: ActionConstants.ClassifyDocument,
+				},
+				{
+					name: 'Parse Document',
+					description: 'Parse documents to extract structured data using template-based parsing',
+					value: ActionConstants.ParseDocument,
+					action: ActionConstants.ParseDocument,
 				},
 				{
 					name: 'Convert From PDF',
@@ -601,6 +608,7 @@ export const descriptions: INodeTypeDescription = {
 		...readBarcodeFromPdf.description,
 		...readSwissQrCode.description,
 		...classifyDocument.description,
+		...parseDocument.description,
 		...extractFormDataFromPdf.description,
 		...extractPagesFromPdf.description,
 		...extractAttachmentFromPdf.description,

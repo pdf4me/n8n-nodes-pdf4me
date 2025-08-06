@@ -301,4 +301,5 @@ export const ActionConstants = {
 	ConvertPdfToExcel: 'Convert PDF To Excel',
 	ConvertVisio: 'Convert VISIO',
 	UploadFile: 'Upload Files to Pdf4me',
+	ParseDocument: 'Parse Document',
 };
