@@ -6,7 +6,7 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-// Make Buffer available (it's a Node.js global)
+
 
 export const description: INodeProperties[] = [
 	{

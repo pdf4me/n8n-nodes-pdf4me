@@ -7,8 +7,8 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-// Make Buffer available (Node.js global)
-declare const Buffer: any;
+
+
 
 export const description: INodeProperties[] = [
 	{
@@ -344,7 +344,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Check if it starts with PDF signature (%PDF)
 		const pdfSignature = pdfBuffer.toString('ascii', 0, 4);
 		if (pdfSignature !== '%PDF') {
-			console.warn('Warning: Response does not start with PDF signature, but proceeding anyway');
+			// Warning: Response does not start with PDF signature, but proceeding anyway
 		}
 
 		// Create binary data for output using n8n's helper

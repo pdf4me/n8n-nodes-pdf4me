@@ -9,6 +9,11 @@ import * as addImageStampToPdf from './actions/addImageStampToPdf';
 import * as addMarginToPdf from './actions/addMarginToPdf';
 import * as addPageNumberToPdf from './actions/addPageNumberToPdf';
 import * as addTextStampToPdf from './actions/addTextStampToPdf';
+import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
+import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
+import * as aiInvoiceParser from './actions/aiInvoiceParser';
+import * as aiProcessHealthCard from './actions/aiProcessHealthCard';
+import * as aiProcessContract from './actions/aiProcessContract';
 import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
@@ -23,8 +28,6 @@ import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
 import * as signPdf from './actions/signPdf';
 import * as urlToPdf from './actions/urlToPdf';
-import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
-import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
 import * as compressImage from './actions/compressImage';
 import * as convertImageFormat from './actions/convertImageFormat';
 import * as createImagesFromPdf from './actions/createImagesFromPdf';
@@ -69,7 +72,6 @@ import * as readBarcodeFromPdf from './actions/readBarcodeFromPdf';
 import * as readSwissQrCode from './actions/readSwissQrCode';
 import * as createPdfA from './actions/createPdfA';
 import * as convertHtmlToPdf from './actions/convertHtmlToPdf';
-import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as convertMarkdownToPdf from './actions/convertMarkdownToPdf';
 import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
 import * as convertPdfToExcel from './actions/convertPdfToExcel';
@@ -81,11 +83,11 @@ import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
-	displayName: 'PDF4ME',
+	displayName: 'PDF4me',
 	name: 'pdf4me',
 	description: 'Comprehensive PDF and document processing: generate barcodes, convert files, extract data, manipulate images, and automate workflows with the PDF4ME API',
 	defaults: {
-		name: 'PDF4ME',
+		name: 'PDF4me',
 	},
 	group: ['transform'],
 	icon: 'file:300.svg',
@@ -157,6 +159,24 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Add text stamps or watermarks to PDF documents',
 					value: ActionConstants.AddTextStampToPdf,
 					action: ActionConstants.AddTextStampToPdf,
+				},
+				{
+					name: 'AI-Invoice Parser',
+					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
+					value: ActionConstants.AiInvoiceParser,
+					action: ActionConstants.AiInvoiceParser,
+				},
+				{
+					name: 'AI-Process HealthCard',
+					description: 'Extract structured data from health cards using AI/ML technology for member management',
+					value: ActionConstants.AiProcessHealthCard,
+					action: ActionConstants.AiProcessHealthCard,
+				},
+				{
+					name: 'AI-Process Contract',
+					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
+					value: ActionConstants.AiProcessContract,
+					action: ActionConstants.AiProcessContract,
 				},
 				{
 					name: 'Generate Barcode',
@@ -298,7 +318,7 @@ export const descriptions: INodeTypeDescription = {
 				},
 				{
 					name: 'Add Text Watermark To Image',
-					description: 'Add text watermark to image documents',
+					description: 'Add text watermarks to images with positioning and styling options',
 					value: ActionConstants.AddTextWatermarkToImage,
 					action: ActionConstants.AddTextWatermarkToImage,
 				},
@@ -561,12 +581,6 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.ConvertHtmlToPdf,
 				},
 				{
-					name: 'Convert Word To PDF',
-					description: 'Convert Word documents to PDF with OCR support',
-					value: ActionConstants.ConvertWordToPdfForm,
-					action: ActionConstants.ConvertWordToPdfForm,
-				},
-				{
 					name: 'Convert Markdown To PDF',
 					description: 'Convert Markdown files to PDF documents',
 					value: ActionConstants.ConvertMarkdownToPdf,
@@ -590,6 +604,11 @@ export const descriptions: INodeTypeDescription = {
 		...addMarginToPdf.description,
 		...addPageNumberToPdf.description,
 		...addTextStampToPdf.description,
+		...addImageWatermarkToImage.description,
+		...addTextWatermarkToImage.description,
+		...aiInvoiceParser.description,
+		...aiProcessHealthCard.description,
+		...aiProcessContract.description,
 		...barcodeGenerator.description,
 		...cropImage.description,
 		...deleteBlankPagesFromPdf.description,
@@ -604,8 +623,6 @@ export const descriptions: INodeTypeDescription = {
 		...rotatePage.description,
 		...signPdf.description,
 		...urlToPdf.description,
-		...addImageWatermarkToImage.description,
-		...addTextWatermarkToImage.description,
 		...compressImage.description,
 		...convertImageFormat.description,
 		...createImagesFromPdf.description,
@@ -653,7 +670,6 @@ export const descriptions: INodeTypeDescription = {
 		...SplitPdfRegular.description,
 		...createPdfA.description,
 		...convertHtmlToPdf.description,
-		...convertWordToPdfForm.description,
 		...convertMarkdownToPdf.description,
 		...convertPdfToPowerpoint.description,
 		...convertPdfToExcel.description,
