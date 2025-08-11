@@ -226,6 +226,7 @@ export function sanitizeProfiles(data: IDataObject): void {
  */
 export const ActionConstants = {
 	AddAttachmentToPdf: 'Add Attachment To PDF',
+	AddBarcodeToPdf: 'Add Barcode To PDF',
 	AddFormFieldsToPdf: 'Add Form Fields To PDF',
 	FillPdfForm: 'Fill PDF Form',
 	AddHtmlHeaderFooter: 'Add HTML Header Footer',
@@ -302,4 +303,6 @@ export const ActionConstants = {
 	ConvertVisio: 'Convert VISIO',
 	UploadFile: 'Upload Files to Pdf4me',
 	ParseDocument: 'Parse Document',
+	LinearizePdf: 'Linearize PDF',
+	FlattenPdf: 'Flatten PDF',
 };

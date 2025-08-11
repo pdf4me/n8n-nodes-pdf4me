@@ -21,6 +21,7 @@ import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
 import * as extractPages from './actions/extractPages';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
+import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
 import * as fillPdfForm from './actions/fillPdfForm';
 import * as addHtmlHeaderFooter from './actions/addHtmlHeaderFooter';
@@ -81,6 +82,8 @@ import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as linearizePdf from './actions/linearizePdf';
+import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -131,6 +134,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await extractPages.execute.call(this, i)));
 				} else if (action === ActionConstants.AddAttachmentToPdf) {
 					operationResult.push(...(await addAttachmentToPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.AddBarcodeToPdf) {
+					operationResult.push(...(await addBarcodeToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.AddFormFieldsToPdf) {
 					operationResult.push(...(await addFormFieldsToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.FillPdfForm) {
@@ -251,6 +256,10 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await uploadFile.execute.call(this, i)));
 				} else if (action === ActionConstants.ParseDocument) {
 					operationResult.push(...(await parseDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.LinearizePdf) {
+					operationResult.push(...(await linearizePdf.execute.call(this, i)));
+				} else if (action === ActionConstants.FlattenPdf) {
+					operationResult.push(...(await flattenPdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

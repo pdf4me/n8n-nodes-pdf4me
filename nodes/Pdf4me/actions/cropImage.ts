@@ -285,7 +285,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	let docName = this.getNodeParameter('docName', index) as string;
+	const docName = this.getNodeParameter('docName', index) as string;
 	const cropType = this.getNodeParameter('cropType', index) as string;
 
 	// Only get the relevant options based on crop type

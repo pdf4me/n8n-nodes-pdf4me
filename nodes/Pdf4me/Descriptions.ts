@@ -1,6 +1,7 @@
 /* eslint-disable n8n-nodes-base/node-filename-against-convention, n8n-nodes-base/node-param-default-missing */
 import { INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
+import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
 import * as fillPdfForm from './actions/fillPdfForm';
 import * as addHtmlHeaderFooter from './actions/addHtmlHeaderFooter';
@@ -75,6 +76,8 @@ import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as linearizePdf from './actions/linearizePdf';
+import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -106,6 +109,12 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Add file attachments to PDF documents',
 					value: ActionConstants.AddAttachmentToPdf,
 					action: ActionConstants.AddAttachmentToPdf,
+				},
+				{
+					name: 'Add Barcode To PDF',
+					description: 'Add barcodes to existing PDF documents with positioning and styling options',
+					value: ActionConstants.AddBarcodeToPdf,
+					action: ActionConstants.AddBarcodeToPdf,
 				},
 				{
 					name: 'Add Form Fields To PDF',
@@ -166,6 +175,18 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Parse documents to extract structured data using template-based parsing',
 					value: ActionConstants.ParseDocument,
 					action: ActionConstants.ParseDocument,
+				},
+				{
+					name: 'Linearize PDF',
+					description: 'Optimize PDFs for web viewing with faster loading and progressive display',
+					value: ActionConstants.LinearizePdf,
+					action: ActionConstants.LinearizePdf,
+				},
+				{
+					name: 'Flatten PDF',
+					description: 'Convert interactive PDF elements into static, non-editable content',
+					value: ActionConstants.FlattenPdf,
+					action: ActionConstants.FlattenPdf,
 				},
 				{
 					name: 'Convert From PDF',
@@ -561,6 +582,7 @@ export const descriptions: INodeTypeDescription = {
 			default: ActionConstants.BarcodeGenerator,
 		},
 		...addAttachmentToPdf.description,
+		...addBarcodeToPdf.description,
 		...addFormFieldsToPdf.description,
 		...fillPdfForm.description,
 		...addHtmlHeaderFooter.description,
@@ -609,6 +631,8 @@ export const descriptions: INodeTypeDescription = {
 		...readSwissQrCode.description,
 		...classifyDocument.description,
 		...parseDocument.description,
+		...linearizePdf.description,
+		...flattenPdf.description,
 		...extractFormDataFromPdf.description,
 		...extractPagesFromPdf.description,
 		...extractAttachmentFromPdf.description,
