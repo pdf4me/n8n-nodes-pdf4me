@@ -495,7 +495,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					// Save problematic document for debugging
 					// This.helpers.fs is not available, so we'll skip file writing for now.
 					// If debugging is critical, this needs to be refactored.
-					console.warn(`PDF4me CreateImages: Problem with document ${i + 1}:`, imageDoc);
+					// Removed console.warn for compliance with n8n guidelines
 				}
 			}
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.outputDocuments) {
@@ -537,7 +537,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					// Save problematic document for debugging
 					// This.helpers.fs is not available, so we'll skip file writing for now.
 					// If debugging is critical, this needs to be refactored.
-					console.warn(`PDF4me CreateImages: Problem with document ${i + 1}:`, imageDoc);
+					// Removed console.warn for compliance with n8n guidelines
 				}
 			}
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
@@ -572,7 +572,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Unexpected response format - save for debugging
 			// This.helpers.fs is not available, so we'll skip file writing for now.
 			// If debugging is critical, this needs to be refactored.
-			console.warn('PDF4me CreateImages: Unexpected response format from PDF4me API. Raw response:', parsedResponse);
+			// Removed console.warn for compliance with n8n guidelines
 			throw new Error('Unexpected response format from PDF4me CreateImages API. Raw response saved to /tmp/pdf4me_createimages_raw_response.json');
 		}
 

@@ -6,8 +6,8 @@ import {
 	pdf4meAsyncRequest,
 } from '../GenericFunctions';
 
-// Make Buffer and setTimeout available (Node.js globals)
-// declare const setTimeout: any;
+
+
 
 export const description: INodeProperties[] = [
 	{
@@ -32,6 +32,11 @@ export const description: INodeProperties[] = [
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
+			},
+			{
+				name: 'URL',
+				value: 'url',
+				description: 'Provide URL to image file',
 			},
 		],
 	},
@@ -64,6 +69,21 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.CropImage],
 				inputDataType: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'Image URL',
+		name: 'imageUrl',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'URL to the image file to crop',
+		placeholder: 'https://example.com/image.jpg',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CropImage],
+				inputDataType: ['url'],
 			},
 		},
 	},
@@ -265,7 +285,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	let docName = this.getNodeParameter('docName', index) as string;
+	const docName = this.getNodeParameter('docName', index) as string;
 	const cropType = this.getNodeParameter('cropType', index) as string;
 
 	// Only get the relevant options based on crop type
@@ -316,9 +336,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			url: imageUrl,
 			encoding: 'arraybuffer' as const,
 		});
-		const buffer = Buffer.from(response as Buffer);
+		const buffer = await this.helpers.binaryToBuffer(response);
 		docContent = buffer.toString('base64');
-		docName = imageUrl.split('/').pop() || outputFileName;
+		originalFileName = imageUrl.split('/').pop() || outputFileName;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -395,7 +415,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Ensure responseData is a Buffer
 		let imageBuffer: any;
-		if (Buffer.isBuffer(responseData)) {
+		if (responseData instanceof Buffer) {
 			imageBuffer = responseData;
 		} else if (typeof responseData === 'string') {
 			// If it's a base64 string, convert to buffer

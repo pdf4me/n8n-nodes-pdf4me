@@ -7,20 +7,8 @@ import {
 } from 'n8n-workflow';
 
 import { descriptions } from './Descriptions';
-import * as barcodeGenerator from './actions/barcodeGenerator';
-import * as urlToPdf from './actions/urlToPdf';
-import * as convertPdfToWord from './actions/convertPdfToWord';
-import * as convertToPdf from './actions/convertToPdf';
-import * as jsonToExcel from './actions/jsonToExcel';
-import * as cropImage from './actions/cropImage';
-import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
-import * as overlayPDFs from './actions/OverlayPDFs';
-import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
-import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
-import * as rotateDocument from './actions/rotateDocument';
-import * as rotatePage from './actions/rotatePage';
-import * as extractPages from './actions/extractPages';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
+import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
 import * as fillPdfForm from './actions/fillPdfForm';
 import * as addHtmlHeaderFooter from './actions/addHtmlHeaderFooter';
@@ -30,6 +18,23 @@ import * as addPageNumberToPdf from './actions/addPageNumberToPdf';
 import * as addTextStampToPdf from './actions/addTextStampToPdf';
 import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
 import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
+import * as aiInvoiceParser from './actions/aiInvoiceParser';
+import * as aiProcessHealthCard from './actions/aiProcessHealthCard';
+import * as aiProcessContract from './actions/aiProcessContract';
+import * as barcodeGenerator from './actions/barcodeGenerator';
+import * as cropImage from './actions/cropImage';
+import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
+import * as overlayPDFs from './actions/OverlayPDFs';
+import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
+import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
+import * as rotateDocument from './actions/rotateDocument';
+import * as rotatePage from './actions/rotatePage';
+import * as extractPages from './actions/extractPages';
+import * as jsonToExcel from './actions/jsonToExcel';
+import * as convertPdfToWord from './actions/convertPdfToWord';
+import * as convertToPdf from './actions/convertToPdf';
+import * as signPdf from './actions/signPdf';
+import * as urlToPdf from './actions/urlToPdf';
 import * as compressImage from './actions/compressImage';
 import * as convertImageFormat from './actions/convertImageFormat';
 import * as createImagesFromPdf from './actions/createImagesFromPdf';
@@ -50,7 +55,6 @@ import * as protect_document from './actions/protect_document';
 import * as unlock_pdf from './actions/unlock_pdf';
 import * as disabletracking_changes_in_word from './actions/disabletracking_changes_in_word';
 import * as enableTrackingChangesInWord from './actions/enableTrackingChangesInWord';
-import * as signPdf from './actions/signPdf';
 import * as readBarcodeFromImage from './actions/readBarcodeFromImage';
 import * as classifyDocument from './actions/classifyDocument';
 import * as extractFormDataFromPdf from './actions/extractFormDataFromPdf';
@@ -80,6 +84,9 @@ import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
 import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
+import * as parseDocument from './actions/parseDocument';
+import * as linearizePdf from './actions/linearizePdf';
+import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -100,7 +107,15 @@ export class Pdf4me implements INodeType {
 			const action = this.getNodeParameter('operation', i);
 
 			try {
-				if (action === ActionConstants.BarcodeGenerator) {
+				if (action === ActionConstants.AddTextWatermarkToImage) {
+					operationResult.push(...(await addTextWatermarkToImage.execute.call(this, i)));
+				} else if (action === ActionConstants.AiInvoiceParser) {
+					operationResult.push(...(await aiInvoiceParser.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessHealthCard) {
+					operationResult.push(...(await aiProcessHealthCard.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessContract) {
+					operationResult.push(...(await aiProcessContract.execute.call(this, i)));
+				} else if (action === ActionConstants.BarcodeGenerator) {
 					operationResult.push(...(await barcodeGenerator.execute.call(this, i)));
 				} else if (action === ActionConstants.ClassifyDocument) {
 					operationResult.push(...(await classifyDocument.execute.call(this, i)));
@@ -130,6 +145,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await extractPages.execute.call(this, i)));
 				} else if (action === ActionConstants.AddAttachmentToPdf) {
 					operationResult.push(...(await addAttachmentToPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.AddBarcodeToPdf) {
+					operationResult.push(...(await addBarcodeToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.AddFormFieldsToPdf) {
 					operationResult.push(...(await addFormFieldsToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.FillPdfForm) {
@@ -146,8 +163,6 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await addTextStampToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.AddImageWatermarkToImage) {
 					operationResult.push(...(await addImageWatermarkToImage.execute.call(this, i)));
-				} else if (action === ActionConstants.AddTextWatermarkToImage) {
-					operationResult.push(...(await addTextWatermarkToImage.execute.call(this, i)));
 				} else if (action === ActionConstants.CompressImage) {
 					operationResult.push(...(await compressImage.execute.call(this, i)));
 				} else if (action === ActionConstants.ConvertImageFormat) {
@@ -248,6 +263,12 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await convertVisio.execute.call(this, i)));
 				} else if (action === ActionConstants.UploadFile) {
 					operationResult.push(...(await uploadFile.execute.call(this, i)));
+				} else if (action === ActionConstants.ParseDocument) {
+					operationResult.push(...(await parseDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.LinearizePdf) {
+					operationResult.push(...(await linearizePdf.execute.call(this, i)));
+				} else if (action === ActionConstants.FlattenPdf) {
+					operationResult.push(...(await flattenPdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

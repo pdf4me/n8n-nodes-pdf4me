@@ -17,8 +17,13 @@ export async function pdf4meApiRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
+	// Determine if this is a JSON response operation (AI processing endpoints)
+	const isJsonResponse = url.includes('/ProcessInvoice') || url.includes('/ProcessHealthCard') ||
+		url.includes('/ProcessContract') || url.includes('/ParseDocument') ||
+		url.includes('/ClassifyDocument');
+
 	let options: IHttpRequestOptions = {
-		baseURL: 'https://api.pdf4me.com',
+		baseURL: 'https://apipdf4me.com',
 		url: url,
 		headers: {
 			'Content-Type': 'application/json',
@@ -26,8 +31,8 @@ export async function pdf4meApiRequest(
 		method,
 		qs,
 		body,
-		json: false, // Don't parse as JSON for binary responses
-		encoding: 'arraybuffer' as const, // For binary responses
+		json: isJsonResponse, // Parse as JSON for AI processing operations
+		encoding: isJsonResponse ? undefined : 'arraybuffer' as const, // Use default encoding for JSON, arraybuffer for binary
 		returnFullResponse: true, // Need full response to check status
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 	};
@@ -53,7 +58,22 @@ export async function pdf4meApiRequest(
 
 		// Check if response is successful
 		if (response.statusCode === 200) {
-			// Return binary content
+			// For JSON responses (AI processing), parse and return JSON
+			if (isJsonResponse) {
+				if (response.body instanceof Buffer) {
+					// Convert buffer to string and parse as JSON
+					const jsonString = response.body.toString('utf8');
+					return JSON.parse(jsonString);
+				} else if (typeof response.body === 'string') {
+					// Parse string as JSON
+					return JSON.parse(response.body);
+				} else {
+					// Already parsed JSON object
+					return response.body;
+				}
+			}
+			
+			// For binary responses, return binary content
 			if (response.body instanceof Buffer) {
 				return response.body;
 			} else if (typeof response.body === 'string') {
@@ -99,11 +119,14 @@ export async function pdf4meAsyncRequest(
 	// Add async flag to body
 	const asyncBody = { ...body, async: true };
 
-	// Determine if this is a JSON response operation (like CreateImages)
-	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf');
+	// Determine if this is a JSON response operation (like CreateImages, AI processing)
+	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
+		url.includes('/ProcessInvoice') || url.includes('/ProcessHealthCard') ||
+		url.includes('/ProcessContract') || url.includes('/ParseDocument') ||
+		url.includes('/ClassifyDocument');
 
 	let options: IHttpRequestOptions = {
-		baseURL: 'https://api.pdf4me.com',
+		baseURL: 'https://apipdf4me.com',
 		url: url,
 		headers: {
 			'Content-Type': 'application/json',
@@ -226,6 +249,7 @@ export function sanitizeProfiles(data: IDataObject): void {
  */
 export const ActionConstants = {
 	AddAttachmentToPdf: 'Add Attachment To PDF',
+	AddBarcodeToPdf: 'Add Barcode To PDF',
 	AddFormFieldsToPdf: 'Add Form Fields To PDF',
 	FillPdfForm: 'Fill PDF Form',
 	AddHtmlHeaderFooter: 'Add HTML Header Footer',
@@ -235,6 +259,9 @@ export const ActionConstants = {
 	AddPageNumberToPdf: 'Add Page Number To PDF',
 	AddTextStampToPdf: 'Add Text Stamp To PDF',
 	AddTextWatermarkToImage: 'Add Text Watermark To Image',
+	AiInvoiceParser: 'AI-Invoice Parser',
+	AiProcessHealthCard: 'AI-Process HealthCard',
+	AiProcessContract: 'AI-Process Contract',
 	BarcodeGenerator: 'Barcode Generator',
 	ClassifyDocument: 'Classify Document',
 	CompressImage: 'Compress Image',
@@ -301,4 +328,7 @@ export const ActionConstants = {
 	ConvertPdfToExcel: 'Convert PDF To Excel',
 	ConvertVisio: 'Convert VISIO',
 	UploadFile: 'Upload Files to Pdf4me',
+	ParseDocument: 'Parse Document',
+	LinearizePdf: 'Linearize PDF',
+	FlattenPdf: 'Flatten PDF',
 };

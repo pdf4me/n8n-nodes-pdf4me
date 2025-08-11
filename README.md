@@ -61,7 +61,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^1.1.1"
+    "n8n-nodes-pdf4me": "^1.3.0"
   }
 }
 ```
@@ -70,7 +70,14 @@ For Docker-based deployments, add the package to your package.json and rebuild t
 
 This node provides comprehensive document processing capabilities through PDF4ME's API. Here are the available features:
 
-### 1. PDF Processing & Manipulation
+### 1. AI-Powered Document Processing
+- **AI-Invoice Parser**: Extract structured data from invoices using AI/ML technology for automated data entry
+- **AI-Process HealthCard**: Extract structured data from health cards using AI/ML technology for member management
+- **AI-Process Contract**: Extract structured data from contracts using AI/ML technology for legal document analysis
+- **Classify Document**: Classify documents using AI to determine document type and extract relevant information
+- **Parse Document**: Parse documents to extract structured data using template-based parsing
+
+### 2. PDF Processing & Manipulation
 - **Add Attachment to PDF**: Attach files to PDF documents
 - **Add Form Fields to PDF**: Add interactive form fields to PDF documents
 - **Add HTML Header Footer**: Add custom HTML headers and footers to PDFs
@@ -91,6 +98,8 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Extract Pages from PDF**: Extract pages with advanced options
 - **Fill PDF Form**: Fill interactive PDF forms with data
 - **Find and Replace Text**: Find and replace text in PDF documents
+- **Flatten PDF**: Convert interactive PDF elements into static, non-editable content
+- **Linearize PDF**: Optimize PDFs for web viewing with faster loading and progressive display
 - **Merge Multiple PDFs**: Combine multiple PDF files into one
 - **Overlay PDFs**: Overlay one PDF on top of another
 - **Protect Document**: Add password protection and encryption to PDFs
@@ -105,7 +114,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Unlock PDF**: Remove password protection from PDFs
 - **Update Hyperlinks Annotation**: Modify hyperlinks and annotations in PDFs
 
-### 2. Image Processing
+### 3. Image Processing
 - **Add Image Watermark to Image**: Add watermarks to images
 - **Add Text Watermark to Image**: Add text watermarks to images
 - **Compress Image**: Reduce image file sizes while maintaining quality
@@ -122,7 +131,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Rotate Image**: Rotate images by specific angles
 - **Rotate Image by EXIF Data**: Auto-rotate images based on EXIF orientation
 
-### 3. Document Conversion
+### 4. Document Conversion
 - **Convert to PDF**: Convert various document formats to PDF
 - **Convert HTML to PDF**: Convert HTML content to PDF
 - **Convert Image Format**: Convert images between different formats
@@ -132,14 +141,13 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **JSON to Excel**: Convert JSON data to Excel spreadsheets
 - **URL to PDF**: Convert web pages to PDF
 
-### 4. Barcode Operations
+### 5. Barcode Operations
 - **Barcode Generator**: Generate various types of barcodes (QR, Code 128, EAN, UPC, etc.)
 - **Read Barcode from Image**: Extract barcode data from images
 - **Read Barcode from PDF**: Extract barcode data from PDF documents
 - **Read Swiss QR Code**: Read Swiss QR codes from documents
 
-### 5. Document Analysis & Extraction
-- **Classify Document**: Automatically classify document types
+### 6. Document Analysis & Extraction
 - **Extract Attachment from PDF**: Extract attached files from PDFs
 - **Extract Form Data from PDF**: Extract form field data from PDFs
 - **Extract Pages from PDF**: Extract specific pages from PDFs
@@ -150,7 +158,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Get Document from PDF4ME**: Retrieve documents from PDF4ME storage
 - **Get PDF Metadata**: Extract metadata from PDF files
 
-### 6. Document Management & Generation
+### 7. Document Management & Generation
 - **Create PDF/A**: Create PDF/A compliant documents
 - **Create Swiss QR Bill**: Create Swiss QR Bills using all compliance standards for digital payment transactions
 - **Disable Tracking Changes in Word**: Remove tracking changes from Word documents
@@ -158,8 +166,9 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Generate Document Single**: Generate single documents from templates
 - **Generate Documents Multiple**: Generate multiple documents from templates
 - **Get Tracking Changes in Word**: Get tracking changes status from Word documents
+- **Upload File to PDF4ME**: Upload files to PDF4ME for further processing
 
-### 7. Advanced Features
+### 8. Advanced Features
 - **Create Images from PDF**: Extract and process images from PDF documents
 - **Document Processing**: Advanced document manipulation and processing
 
@@ -174,6 +183,13 @@ To use this node, you need a PDF4ME API key. Here's how to get started:
 ## Usage
 
 This node allows you to automate document processing tasks in your n8n workflows. Here are some common use cases:
+
+### AI-Powered Document Processing
+- Automatically extract invoice data for accounting systems
+- Process health cards for member management systems
+- Analyze contracts for legal document review
+- Classify documents for automated routing and processing
+- Parse structured data from various document types using templates
 
 ### Document Processing
 - Convert PDF documents to editable Word format with OCR support
@@ -253,15 +269,29 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 1.3.0
+- **Latest Version**: AI-powered document processing and enhanced features
+- Added AI-Invoice Parser for automated invoice data extraction
+- Added AI-Process HealthCard for health card data processing
+- Added AI-Process Contract for contract analysis
+- Added Classify Document for AI-powered document classification
+- Added Parse Document for template-based document parsing
+- Added Linearize PDF for web-optimized PDFs
+- Added Flatten PDF for converting interactive elements to static content
+- Enhanced error handling and response processing
+- Improved support for JSON responses in AI processing operations
+- Updated Node.js engine requirement to >=20.15
+- Enhanced build and validation scripts
+
 ### 1.1.1
-- **Latest Version**: Maintenance and dependency updates
+- **Previous Version**: Maintenance and dependency updates
 - Updated dependencies for improved compatibility and security
 - Minor bug fixes and codebase improvements
 - Improved build and validation scripts for publishing
 - **Note:** This version failed the n8n community package security scan due to an ESLint violation: use of restricted global 'setTimeout' is not allowed (see scan results for details).
 
 ### 1.1.0
-- **Latest Version**: Security and compliance updates
+- **Previous Version**: Security and compliance updates
 - Updated to address n8n community package security scan results
 - Added guidance for ESLint compliance and restricted imports
 - Updated dependencies in package.json
