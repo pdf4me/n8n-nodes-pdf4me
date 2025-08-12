@@ -23,7 +23,7 @@ export async function pdf4meApiRequest(
 		url.includes('/ClassifyDocument');
 
 	let options: IHttpRequestOptions = {
-		baseURL: 'https://apipdf4me.com',
+		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
 			'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export async function pdf4meAsyncRequest(
 		url.includes('/ClassifyDocument');
 
 	let options: IHttpRequestOptions = {
-		baseURL: 'https://apipdf4me.com',
+		baseURL: 'https://api.pdf4me.com',
 		url: url,
 		headers: {
 			'Content-Type': 'application/json',

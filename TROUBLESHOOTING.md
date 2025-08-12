@@ -311,7 +311,7 @@ The package can be installed in different locations:
 
 4. **Test API connectivity**:
    ```bash
-   curl -H "Authorization: Bearer YOUR_API_KEY" https://apipdf4me.com/health
+   curl -H "Authorization: Bearer YOUR_API_KEY" https://api.pdf4me.com/health
    ```
 
 #### 🔧 Performance Optimization

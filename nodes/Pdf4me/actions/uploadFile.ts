@@ -142,7 +142,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Make the API request using the new httpRequestWithAuthentication helper
 	const options = {
-		url: 'https://apipdf4me.com/api/v2/UploadFile',
+		url: 'https://api.pdf4me.com/api/v2/UploadFile',
 		method: 'POST' as const,
 		headers: {
 			'Content-Type': 'application/json',

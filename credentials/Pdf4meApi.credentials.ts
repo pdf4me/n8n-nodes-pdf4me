@@ -37,7 +37,7 @@ export class Pdf4meApi implements ICredentialType {
 	// The block below tells how this credential can be tested
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://apipdf4me.com',
+			baseURL: 'https://api.pdf4me.com',
 			url: '/api/v2/CreateBarcode',
 			method: 'POST',
 			headers: {
