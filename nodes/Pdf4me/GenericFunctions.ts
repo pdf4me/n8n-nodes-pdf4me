@@ -319,24 +319,12 @@ async function pollForCompletion(
 	locationUrl: string,
 	isJsonResponse: boolean,
 	maxRetries: number = 20,
-	initialDelay: number = 2000,
-	maxDelay: number = 10000,
 ): Promise<any> {
 	let retryCount = 0;
-	let delay = initialDelay;
 
 	while (retryCount < maxRetries) {
 		try {
-			// Wait before polling (except for the first attempt)
-			if (retryCount > 0) {
-				await new Promise(resolve => {
-					const timer = setInterval(() => {
-						clearInterval(timer);
-						resolve(undefined);
-					}, delay);
-				});
-			}
-
+			// No artificial delays - immediate polling for n8n compliance
 			// Make polling request
 			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 				url: locationUrl,
@@ -371,8 +359,6 @@ async function pollForCompletion(
 			} else if (pollResponse.statusCode === 202) {
 				// Still processing, continue polling
 				retryCount++;
-				// Exponential backoff with max delay
-				delay = Math.min(delay * 1.5, maxDelay);
 				continue;
 			} else if (pollResponse.statusCode === 404) {
 				// Job not found or expired
@@ -393,10 +379,9 @@ async function pollForCompletion(
 				throw new Error(errorMessage);
 			}
 		} catch (error) {
-			// If it's a network error, retry with exponential backoff
+			// If it's a network error, retry immediately
 			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
 				retryCount++;
-				delay = Math.min(delay * 1.5, maxDelay);
 				if (retryCount >= maxRetries) {
 					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
 				}

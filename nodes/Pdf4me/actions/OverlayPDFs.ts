@@ -9,7 +9,6 @@ import {
 // Make Buffer and other Node.js globals available
 // declare const URL: any;
 // declare const console: any;
-// declare const setTimeout: any;
 
 export const description: INodeProperties[] = [
 	{

@@ -1,14 +1,14 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "1.3.3",
-  "description": "n8n community node for PDF4ME API integration",
+  "version": "1.3.4",
+  "description": "n8n community node for PDF4me API integration",
   "keywords": [
     "n8n-community-node-package"
   ],
   "license": "MIT",
   "homepage": "https://dev.pdf4me.com",
   "author": {
-    "name": "PDF4ME",
+    "name": "PDF4me",
     "email": "support@pdf4me.com"
   },
   "repository": {
