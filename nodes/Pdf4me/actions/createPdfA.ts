@@ -303,9 +303,42 @@ const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl:
 			method: 'GET',
 			url: pdfUrl,
 			encoding: 'arraybuffer',
+			returnFullResponse: true,
 		});
 		
-		const buffer = Buffer.from(response.body);
+		// Check if response body exists and handle different formats
+		if (!response.body) {
+			throw new Error('No response body received from URL');
+		}
+
+		let buffer: Buffer;
+		
+		// Handle different response body formats
+		if (response.body instanceof Buffer) {
+			buffer = response.body;
+		} else if (typeof response.body === 'string') {
+			// If it's a string, convert to buffer
+			buffer = Buffer.from(response.body, 'utf8');
+		} else if (response.body instanceof ArrayBuffer) {
+			// If it's an ArrayBuffer, convert to Buffer
+			buffer = Buffer.from(response.body);
+		} else if (ArrayBuffer.isView(response.body)) {
+			// If it's a TypedArray or DataView
+			buffer = Buffer.from(response.body.buffer, response.body.byteOffset, response.body.byteLength);
+		} else {
+			// Try to convert using Buffer.from with default encoding
+			try {
+				buffer = Buffer.from(response.body as any);
+			} catch (error) {
+				throw new Error(`Unable to convert response body to buffer. Body type: ${typeof response.body}, Body: ${String(response.body).substring(0, 100)}`);
+			}
+		}
+
+		// Validate the buffer
+		if (!buffer || buffer.length === 0) {
+			throw new Error('Downloaded file is empty');
+		}
+
 		const base64Content = buffer.toString('base64');
 		
 		if (base64Content.length < 100) {

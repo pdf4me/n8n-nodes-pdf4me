@@ -50,7 +50,7 @@ export async function pdf4meApiRequest(
 			headers: options.headers,
 			body: options.body,
 			qs: options.qs,
-			encoding: 'arraybuffer' as const,
+			encoding: isJsonResponse ? undefined : 'arraybuffer' as const,
 			// SSL validation is handled by n8n's httpRequestWithAuthentication
 			returnFullResponse: options.returnFullResponse,
 			json: options.json,
@@ -58,19 +58,9 @@ export async function pdf4meApiRequest(
 
 		// Check if response is successful
 		if (response.statusCode === 200) {
-			// For JSON responses (AI processing), parse and return JSON
+			// For JSON responses (AI processing), return the parsed JSON directly
 			if (isJsonResponse) {
-				if (response.body instanceof Buffer) {
-					// Convert buffer to string and parse as JSON
-					const jsonString = response.body.toString('utf8');
-					return JSON.parse(jsonString);
-				} else if (typeof response.body === 'string') {
-					// Parse string as JSON
-					return JSON.parse(response.body);
-				} else {
-					// Already parsed JSON object
-					return response.body;
-				}
+				return response.body; // Already parsed when json: true is set
 			}
 			
 			// For binary responses, return binary content
@@ -150,7 +140,7 @@ export async function pdf4meAsyncRequest(
 			headers: options.headers,
 			body: options.body,
 			qs: options.qs,
-			encoding: 'arraybuffer' as const,
+			encoding: isJsonResponse ? undefined : 'arraybuffer' as const,
 			// SSL validation is handled by n8n's httpRequestWithAuthentication
 			returnFullResponse: options.returnFullResponse,
 			json: options.json,
@@ -160,7 +150,7 @@ export async function pdf4meAsyncRequest(
 		if (response.statusCode === 200) {
 			// Immediate success
 			if (isJsonResponse) {
-				return response.body;
+				return response.body; // Already parsed when json: true is set
 			} else {
 				// Handle binary response
 				if (response.body instanceof Buffer) {
@@ -179,23 +169,14 @@ export async function pdf4meAsyncRequest(
 				}
 			}
 		} else if (response.statusCode === 202) {
-			// Async processing - instruct user to use Wait node and workflow polling
+			// Async processing - start polling
 			const locationUrl = response.headers.location;
 			if (!locationUrl) {
 				throw new Error('No polling URL found in response');
 			}
-			// Return a special object to indicate polling is required
-			return {
-				status: 'processing',
-				message: 'Document is still being processed. Use the Wait node and poll the provided URL in your workflow.',
-				pollUrl: locationUrl,
-				context: {
-					// Add any additional context needed for polling
-					originalRequest: url,
-					method: 'GET',
-					isJsonResponse,
-				},
-			};
+
+			// Poll the location URL until completion
+			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
 		} else {
 			let errorMessage = `API Error: ${response.statusCode}`;
 			try {
@@ -332,3 +313,94 @@ export const ActionConstants = {
 	LinearizePdf: 'Linearize PDF',
 	FlattenPdf: 'Flatten PDF',
 };
+
+async function pollForCompletion(
+	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+	locationUrl: string,
+	isJsonResponse: boolean,
+	maxRetries: number = 20,
+	initialDelay: number = 2000,
+	maxDelay: number = 10000,
+): Promise<any> {
+	let retryCount = 0;
+	let delay = initialDelay;
+
+	while (retryCount < maxRetries) {
+		try {
+			// Wait before polling (except for the first attempt)
+			if (retryCount > 0) {
+				await new Promise(resolve => setTimeout(resolve, delay));
+			}
+
+			// Make polling request
+			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+				url: locationUrl,
+				method: 'GET',
+				encoding: isJsonResponse ? undefined : 'arraybuffer' as const,
+				returnFullResponse: true,
+				json: isJsonResponse,
+				ignoreHttpStatusErrors: true,
+			});
+
+			if (pollResponse.statusCode === 200) {
+				// Success - return the final result
+				if (isJsonResponse) {
+					return pollResponse.body; // Already parsed when json: true is set
+				} else {
+					// Handle binary response
+					if (pollResponse.body instanceof Buffer) {
+						return pollResponse.body;
+					} else if (typeof pollResponse.body === 'string') {
+						if (pollResponse.body.length < 100) {
+							throw new Error(`API returned error message: ${pollResponse.body}`);
+						}
+						try {
+							return Buffer.from(pollResponse.body, 'base64');
+						} catch {
+							throw new Error(`API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
+						}
+					} else {
+						return Buffer.from(pollResponse.body, 'binary');
+					}
+				}
+			} else if (pollResponse.statusCode === 202) {
+				// Still processing, continue polling
+				retryCount++;
+				// Exponential backoff with max delay
+				delay = Math.min(delay * 1.5, maxDelay);
+				continue;
+			} else if (pollResponse.statusCode === 404) {
+				// Job not found or expired
+				throw new Error('Processing job not found or expired. The document processing may have timed out.');
+			} else {
+				// Other error
+				let errorMessage = `Polling failed with status ${pollResponse.statusCode}`;
+				try {
+					if (typeof pollResponse.body === 'string') {
+						const errorJson = JSON.parse(pollResponse.body);
+						errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
+					} else {
+						errorMessage = `${errorMessage}: ${pollResponse.body}`;
+					}
+				} catch {
+					errorMessage = `${errorMessage}: ${pollResponse.body}`;
+				}
+				throw new Error(errorMessage);
+			}
+		} catch (error) {
+			// If it's a network error, retry with exponential backoff
+			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
+				retryCount++;
+				delay = Math.min(delay * 1.5, maxDelay);
+				if (retryCount >= maxRetries) {
+					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
+				}
+				continue;
+			}
+			// For other errors, throw immediately
+			throw error;
+		}
+	}
+
+	throw new Error(`Document processing timed out after ${maxRetries} polling attempts. The operation may still be processing on the server.`);
+}
