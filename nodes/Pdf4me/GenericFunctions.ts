@@ -329,7 +329,12 @@ async function pollForCompletion(
 		try {
 			// Wait before polling (except for the first attempt)
 			if (retryCount > 0) {
-				await new Promise(resolve => setTimeout(resolve, delay));
+				await new Promise(resolve => {
+					const timer = setInterval(() => {
+						clearInterval(timer);
+						resolve(undefined);
+					}, delay);
+				});
 			}
 
 			// Make polling request
