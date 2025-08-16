@@ -33,6 +33,11 @@ export const description: INodeProperties[] = [
 				description: 'Provide HTML content as base64 encoded string',
 			},
 			{
+				name: 'HTML Code',
+				value: 'htmlCode',
+				description: 'Write HTML code manually',
+			},
+			{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to HTML file',
@@ -63,11 +68,29 @@ export const description: INodeProperties[] = [
 		required: true,
 		default: '',
 		description: 'Base64 encoded HTML document content',
-		placeholder: '<!DOCTYPE html><html><head><title>Sample</title></head><body>...</body></html>',
+		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertHtmlToPdf],
 				inputDataType: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Code',
+		name: 'htmlCode',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
+		required: true,
+		default: '',
+		description: 'Write your HTML code here. It will be automatically converted to base64.',
+		placeholder: '<!DOCTYPE html><html><head><title>My Page</title></head><body><h1>Hello World</h1></body></html>',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertHtmlToPdf],
+				inputDataType: ['htmlCode'],
 			},
 		},
 	},
@@ -264,6 +287,285 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	// HTML-specific fields for Convert to PDF operation
+	{
+		displayName: 'HTML Input Data Type',
+		name: 'htmlInputDataType',
+		type: 'options',
+		required: true,
+		default: 'binaryData',
+		description: 'Choose how to provide the HTML file to convert (when called from Convert to PDF)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+		options: [
+			{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use HTML file from previous node',
+			},
+			{
+				name: 'Base64 String',
+				value: 'base64',
+				description: 'Provide HTML content as base64 encoded string',
+			},
+			{
+				name: 'HTML Code',
+				value: 'htmlCode',
+				description: 'Write HTML code manually',
+			},
+			{
+				name: 'URL',
+				value: 'url',
+				description: 'Provide URL to HTML file',
+			},
+		],
+	},
+	{
+		displayName: 'HTML Binary Property Name',
+		name: 'htmlBinaryPropertyName',
+		type: 'string',
+		required: true,
+		default: 'data',
+		description: 'Name of the binary property that contains the HTML file (when called from Convert to PDF)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+				htmlInputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Base64 Content',
+		name: 'htmlBase64Content',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
+		required: true,
+		default: '',
+		description: 'Base64 encoded HTML document content (when called from Convert to PDF)',
+		placeholder: '<!DOCTYPE html><html><head><title>Sample</title></head><body>...</body></html>',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+				htmlInputDataType: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Code',
+		name: 'htmlCode',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
+		required: true,
+		default: '',
+		description: 'Write your HTML code here. It will be automatically converted to base64. (when called from Convert to PDF)',
+		placeholder: '<!DOCTYPE html><html><head><title>My Page</title></head><body><h1>Hello World</h1></body></html>',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+				htmlInputDataType: ['htmlCode'],
+			},
+		},
+	},
+	{
+		displayName: 'HTML URL',
+		name: 'htmlUrl',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'URL to the HTML file to convert (when called from Convert to PDF)',
+		placeholder: 'https://example.com/page.html',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+				htmlInputDataType: ['url'],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Output File Name',
+		name: 'htmlOutputFileName',
+		type: 'string',
+		default: 'html_to_pdf_output.pdf',
+		description: 'Name for the output PDF file (when called from Convert to PDF)',
+		placeholder: 'my-html-converted.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Document Name',
+		name: 'htmlDocName',
+		type: 'string',
+		default: 'document.html',
+		description: 'Name of the source HTML file for reference (when called from Convert to PDF)',
+		placeholder: 'original-file.html',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Layout',
+		name: 'htmlLayout',
+		type: 'options',
+		default: 'Portrait',
+		description: 'Page orientation for the PDF (when called from Convert to PDF)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+		options: [
+			{
+				name: 'Portrait',
+				value: 'Portrait',
+				description: 'Vertical orientation (taller than wide)',
+			},
+			{
+				name: 'Landscape',
+				value: 'Landscape',
+				description: 'Horizontal orientation (wider than tall)',
+			},
+		],
+	},
+	{
+		displayName: 'HTML Format',
+		name: 'htmlFormat',
+		type: 'options',
+		default: 'A4',
+		description: 'Page size for the PDF (when called from Convert to PDF)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+		options: [
+			{ name: 'A4', value: 'A4' },
+			{ name: 'A5', value: 'A5' },
+			{ name: 'A6', value: 'A6' },
+			{ name: 'Legal', value: 'Legal' },
+			{ name: 'Letter', value: 'Letter' },
+		],
+	},
+	{
+		displayName: 'HTML Scale',
+		name: 'htmlScale',
+		type: 'number',
+		default: 0.8,
+		description: 'Scaling factor for content (0.1 to 2.0) (when called from Convert to PDF)',
+		typeOptions: {
+			minValue: 0.1,
+			maxValue: 2.0,
+			numberStepSize: 0.1,
+		},
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Margins',
+		name: 'htmlMargins',
+		type: 'collection',
+		placeholder: 'Add Margin',
+		default: {},
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+		options: [
+			{
+				displayName: 'Top Margin',
+				name: 'topMargin',
+				type: 'string',
+				default: '40px',
+				description: 'Top margin spacing (e.g., "40px", "2cm", "1in")',
+			},
+			{
+				displayName: 'Bottom Margin',
+				name: 'bottomMargin',
+				type: 'string',
+				default: '40px',
+				description: 'Bottom margin spacing (e.g., "40px", "2cm", "1in")',
+			},
+			{
+				displayName: 'Left Margin',
+				name: 'leftMargin',
+				type: 'string',
+				default: '40px',
+				description: 'Left margin spacing (e.g., "40px", "2cm", "1in")',
+			},
+			{
+				displayName: 'Right Margin',
+				name: 'rightMargin',
+				type: 'string',
+				default: '40px',
+				description: 'Right margin spacing (e.g., "40px", "2cm", "1in")',
+			},
+		],
+	},
+	{
+		displayName: 'HTML PDF Options',
+		name: 'htmlPdfOptions',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+		options: [
+			{
+				displayName: 'Print Background',
+				name: 'printBackground',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to include background colors and images in the PDF',
+			},
+			{
+				displayName: 'Display Header Footer',
+				name: 'displayHeaderFooter',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to show header and footer in the PDF',
+			},
+		],
+	},
+	{
+		displayName: 'HTML Advanced Options',
+		name: 'htmlAdvancedOptions',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+		options: [
+			{
+				displayName: 'Custom Profiles',
+				name: 'profiles',
+				type: 'string',
+				default: '',
+				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
+				placeholder: '{ \'outputDataFormat\': \'base64\' }',
+			},
+		],
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -340,6 +642,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 		indexFilePath = originalFileName;
+	} else if (inputDataType === 'htmlCode') {
+		// Use HTML code directly - convert to base64
+		const htmlCode = operation === ActionConstants.ConvertToPdf
+			? this.getNodeParameter('htmlCode', index) as string
+			: this.getNodeParameter('htmlCode', index) as string;
+		
+		// Convert HTML code to base64
+		docContent = Buffer.from(htmlCode, 'utf8').toString('base64');
+		indexFilePath = originalFileName;
 	} else if (inputDataType === 'url') {
 		// Use HTML URL directly - download the file first
 		const htmlUrl = operation === ActionConstants.ConvertToPdf
@@ -372,7 +683,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		layout,
 		format,
 		scale,
-		isAsync: true, // Asynchronous processing as per Python sample
+		IsAsync: false, // Asynchronous processing as per Python sample
 	};
 
 	// Add margins if provided
@@ -477,45 +788,14 @@ const downloadHtmlFromUrl = async (helpers: IExecuteFunctions['helpers'], htmlUr
 			method: 'GET',
 			url: htmlUrl,
 			encoding: 'arraybuffer',
-			returnFullResponse: true,
 		});
 
 		if (response.statusCode >= 400) {
 			throw new Error(`Failed to download HTML from URL: ${response.statusCode} ${response.statusMessage}`);
 		}
 
-		// Check if response body exists and handle different formats
-		if (!response.body) {
-			throw new Error('No response body received from URL');
-		}
-
-		let buffer: Buffer;
-		
-		// Handle different response body formats
-		if (response.body instanceof Buffer) {
-			buffer = response.body;
-		} else if (typeof response.body === 'string') {
-			// If it's a string, convert to buffer
-			buffer = Buffer.from(response.body, 'utf8');
-		} else if (response.body instanceof ArrayBuffer) {
-			// If it's an ArrayBuffer, convert to Buffer
-			buffer = Buffer.from(response.body);
-		} else if (ArrayBuffer.isView(response.body)) {
-			// If it's a TypedArray or DataView
-			buffer = Buffer.from(response.body.buffer, response.body.byteOffset, response.body.byteLength);
-		} else {
-			// Try to convert using Buffer.from with default encoding
-			try {
-				buffer = Buffer.from(response.body as any);
-			} catch (error) {
-				throw new Error(`Unable to convert response body to buffer. Body type: ${typeof response.body}, Body: ${String(response.body).substring(0, 100)}`);
-			}
-		}
-
-		// Validate the buffer
-		if (!buffer || buffer.length === 0) {
-			throw new Error('Downloaded file is empty');
-		}
+		// Get the file as buffer
+		const buffer = Buffer.from(response.body);
 
 		// Convert to base64
 		const base64Content = buffer.toString('base64');

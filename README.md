@@ -133,7 +133,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 
 ### 4. Document Conversion
 - **Convert to PDF**: Convert various document formats to PDF
-- **Convert HTML to PDF**: Convert HTML content to PDF
+- **Convert HTML to PDF**: Convert HTML content to PDF with multiple input options (Binary Data, Base64, HTML Code, URL)
 - **Convert Image Format**: Convert images between different formats
 - **Convert Markdown to PDF**: Convert Markdown files to PDF
 - **Convert Visio**: Convert Visio diagrams to PDF
@@ -213,8 +213,23 @@ This node allows you to automate document processing tasks in your n8n workflows
 ### Web Content Processing
 - Convert web pages to PDF for archiving
 - Automatically convert HTML reports to PDF
+- **Write HTML code directly and convert to PDF** - No need to save HTML files first
 - Capture web-based dashboards and reports
 - Convert protected web content with authentication
+
+### HTML to PDF Conversion Options
+The Convert HTML to PDF operation supports multiple input methods for maximum flexibility:
+- **Binary Data**: Use HTML files from previous workflow nodes
+- **Base64 String**: Provide HTML content as base64 encoded strings
+- **HTML Code**: Write HTML code directly in the interface (automatically converted to base64)
+- **URL**: Convert HTML content from web URLs
+
+**Example Use Cases for HTML Code Input:**
+- **Dynamic Reports**: Generate PDFs from HTML templates with real-time data
+- **Email Templates**: Convert HTML email content to PDF for archiving
+- **Custom Dashboards**: Create PDF versions of HTML dashboards
+- **Document Generation**: Build PDFs from HTML snippets without file management
+- **Rapid Prototyping**: Quickly test HTML layouts by converting to PDF
 
 ### Data Export and Reporting
 - Convert JSON data to Excel spreadsheets
@@ -269,8 +284,17 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 1.3.5
+- **Latest Version**: Enhanced HTML to PDF conversion with direct HTML code input
+- Added **HTML Code** input option for Convert HTML to PDF operation
+- Users can now write HTML code directly in the interface without saving files first
+- HTML code is automatically converted to base64 for API processing
+- Enhanced input flexibility with 4 input methods: Binary Data, Base64, HTML Code, and URL
+- Improved user experience for developers and content creators
+- Maintains backward compatibility with existing workflows
+
 ### 1.3.0
-- **Latest Version**: AI-powered document processing and enhanced features
+- **Previous Version**: AI-powered document processing and enhanced features
 - Added AI-Invoice Parser for automated invoice data extraction
 - Added AI-Process HealthCard for health card data processing
 - Added AI-Process Contract for contract analysis
