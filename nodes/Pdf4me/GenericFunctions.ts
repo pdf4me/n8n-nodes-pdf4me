@@ -318,7 +318,7 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 20,
+	maxRetries: number = 5,
 ): Promise<any> {
 	let retryCount = 0;
 
