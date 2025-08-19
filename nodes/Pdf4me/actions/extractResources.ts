@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
+	pdf4meApiRequest,
 	sanitizeProfiles,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -140,6 +141,14 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
+				displayName: 'Pages',
+				name: 'pages',
+				type: 'string',
+				default: 'all',
+				description: 'Specify pages to extract resources from. Use format: "1,2" for specific pages, "2-5" for page range, or "all" for all pages',
+				placeholder: 'all, 1,2, 2-5, 1-3,5,7',
+			},
+			{
 				displayName: 'Custom Profiles',
 				name: 'profiles',
 				type: 'string',
@@ -156,6 +165,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const extractionOptions = this.getNodeParameter('extractionOptions', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const pagesOption = advancedOptions?.pages as string || 'all';
 
 	let docContent: string;
 
@@ -189,12 +199,25 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Process pages option and filter PDF content if needed
+	if (pagesOption !== 'all') {
+		docContent = await filterPdfPages.call(this, docContent, pagesOption);
+	}
+
+	// Handle both extractImage and extractImages properties for compatibility
+	let extractImages = true;
+	if (extractionOptions?.extractImage !== undefined) {
+		extractImages = extractionOptions.extractImage as boolean;
+	} else if (extractionOptions?.extractImages !== undefined) {
+		extractImages = extractionOptions.extractImages as boolean;
+	}
+
 	// Prepare request body
 	const body: IDataObject = {
 		docContent,
 		docName,
 		extractText: extractionOptions?.extractText !== undefined ? extractionOptions.extractText : true,
-		extractImage: extractionOptions?.extractImage !== undefined ? extractionOptions.extractImage : true,
+		extractImages,
 		async: true, // Enable asynchronous processing
 	};
 
@@ -274,13 +297,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
 	try {
 		const options = {
-
 			method: 'GET' as const,
-
 			url: pdfUrl,
-
 			encoding: 'arraybuffer' as const,
-
 		};
 
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
@@ -289,5 +308,79 @@ async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Prom
 	} catch (error) {
 		throw new Error(`Failed to download PDF from URL: ${error.message}`);
 	}
+}
+
+/**
+ * Filter PDF content to include only specified pages using PDF4ME ExtractPages API
+ * @param base64Content - Base64 encoded PDF content
+ * @param pagesOption - Pages specification (e.g., "1,2", "2-5", "all")
+ * @returns Filtered base64 PDF content
+ */
+async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pagesOption: string): Promise<string> {
+	try {
+		// Parse pages option
+		const pageNumbers = parsePagesOption(pagesOption);
+		
+		if (pageNumbers.length === 0) {
+			throw new Error('Invalid pages specification. Please use format: "1,2", "2-5", or "all"');
+		}
+
+		// Use PDF4ME ExtractPages API to get filtered PDF
+		const extractPagesBody = {
+			docContent: base64Content,
+			docName: 'temp_filtered.pdf',
+			pageNumbers: pageNumbers.join(','),
+			async: false, // Synchronous for page extraction
+		};
+
+		// Make API call to ExtractPages endpoint using the existing pdf4meApiRequest function
+		const responseData = await pdf4meApiRequest.call(this, '/api/v2/Extract', extractPagesBody);
+
+		// Convert response to base64
+		if (responseData && responseData instanceof Buffer) {
+			return responseData.toString('base64');
+		} else if (typeof responseData === 'string') {
+			// If it's already a string, it might be base64
+			return responseData;
+		} else {
+			// Fallback: return original content if extraction fails
+			// Note: Page filtering failed, using original PDF content
+			return base64Content;
+		}
+	} catch (error) {
+		// Note: Failed to filter PDF pages, using original content
+		return base64Content;
+	}
+}
+
+/**
+ * Parse pages option string into array of page numbers
+ * @param pagesOption - Pages specification string
+ * @returns Array of page numbers (1-indexed)
+ */
+function parsePagesOption(pagesOption: string): number[] {
+	const pages: number[] = [];
+	const parts = pagesOption.split(',').map(part => part.trim());
+
+	for (const part of parts) {
+		if (part.includes('-')) {
+			// Handle range (e.g., "2-5")
+			const [start, end] = part.split('-').map(num => parseInt(num.trim()));
+			if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
+				for (let i = start; i <= end; i++) {
+					pages.push(i);
+				}
+			}
+		} else {
+			// Handle single page number
+			const pageNum = parseInt(part);
+			if (!isNaN(pageNum) && pageNum > 0) {
+				pages.push(pageNum);
+			}
+		}
+	}
+
+	// Remove duplicates and sort
+	return [...new Set(pages)].sort((a, b) => a - b);
 }
 
