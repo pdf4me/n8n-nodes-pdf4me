@@ -683,7 +683,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		layout,
 		format,
 		scale,
-		IsAsync: false, // Asynchronous processing as per Python sample
+		IsAsync: true, // Asynchronous processing as per Python sample
 	};
 
 	// Add margins if provided
