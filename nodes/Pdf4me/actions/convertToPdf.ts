@@ -222,7 +222,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Build the request body
 	const body: IDataObject = {
 		docContent,
-		docName: docName, // Use full filename with extension
+		docName: docName,
+		IsAsync: true, // Asynchronous processing
 	};
 
 	// Add profiles if provided
