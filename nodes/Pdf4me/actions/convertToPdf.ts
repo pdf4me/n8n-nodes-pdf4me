@@ -163,6 +163,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
 
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
+		}
+
 		if (!item[0].binary) {
 			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
 		}
