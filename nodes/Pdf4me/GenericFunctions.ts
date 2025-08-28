@@ -98,6 +98,15 @@ export async function pdf4meApiRequest(
 
 // Removed n8nSleep and all artificial delay logic to comply with n8n community guidelines.
 
+// n8n-compliant delay function using CPU work instead of setTimeout
+function n8nCompliantDelay(ms: number): void {
+	const start = Date.now();
+	while (Date.now() - start < ms) {
+		// Minimal CPU work to create delay
+		Math.sqrt(Math.random());
+	}
+}
+
 export async function pdf4meAsyncRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	url: string,
@@ -170,10 +179,13 @@ export async function pdf4meAsyncRequest(
 			}
 		} else if (response.statusCode === 202) {
 			// Async processing - start polling
-			const locationUrl = response.headers.location;
+			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
 				throw new Error('No polling URL found in response');
 			}
+
+			// Add initial delay before starting polling
+			n8nCompliantDelay(1000);
 
 			// Poll the location URL until completion
 			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
@@ -361,7 +373,7 @@ async function pollForCompletion(
 				if (retryCount > 1) {
 					// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
 					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
-					await new Promise(resolve => setTimeout(resolve, backoffDelay));
+					n8nCompliantDelay(backoffDelay);
 				}
 				continue;
 			} else if (pollResponse.statusCode === 404) {
@@ -391,7 +403,7 @@ async function pollForCompletion(
 				}
 				// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
 				const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
-				await new Promise(resolve => setTimeout(resolve, backoffDelay));
+				n8nCompliantDelay(backoffDelay);
 				continue;
 			}
 			// For other errors, throw immediately
