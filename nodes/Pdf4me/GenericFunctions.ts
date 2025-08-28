@@ -128,7 +128,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 60000, // 60 second timeout for initial request (increased from 30s)
+		timeout: 80000, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
 
@@ -218,7 +218,7 @@ export function sanitizeProfiles(data: IDataObject): void {
 		data.profiles = sanitized;
 	} catch (error) {
 		throw new Error(
-			'Invalid JSON in Profiles. Check https://developer.pdf4me.com/ or contact support@pdf4me.com for help. ' +
+			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
 	}
@@ -318,13 +318,12 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 5,
+	maxRetries: number = 500,
 ): Promise<any> {
 	let retryCount = 0;
 
 	while (retryCount < maxRetries) {
 		try {
-			// No artificial delays - immediate polling for n8n compliance
 			// Make polling request
 			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 				url: locationUrl,
@@ -357,8 +356,13 @@ async function pollForCompletion(
 					}
 				}
 			} else if (pollResponse.statusCode === 202) {
-				// Still processing, continue polling
+				// Still processing, continue polling with minimal backoff
 				retryCount++;
+				if (retryCount > 1) {
+					// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
+					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
+					await new Promise(resolve => setTimeout(resolve, backoffDelay));
+				}
 				continue;
 			} else if (pollResponse.statusCode === 404) {
 				// Job not found or expired
@@ -379,12 +383,15 @@ async function pollForCompletion(
 				throw new Error(errorMessage);
 			}
 		} catch (error) {
-			// If it's a network error, retry immediately
+			// If it's a network error, retry with minimal backoff
 			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
 				retryCount++;
 				if (retryCount >= maxRetries) {
 					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
 				}
+				// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
+				const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
+				await new Promise(resolve => setTimeout(resolve, backoffDelay));
 				continue;
 			}
 			// For other errors, throw immediately
