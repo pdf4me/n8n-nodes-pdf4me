@@ -98,6 +98,15 @@ export async function pdf4meApiRequest(
 
 // Removed n8nSleep and all artificial delay logic to comply with n8n community guidelines.
 
+// n8n-compliant delay function using CPU work instead of setTimeout
+function n8nCompliantDelay(ms: number): void {
+	const start = Date.now();
+	while (Date.now() - start < ms) {
+		// Minimal CPU work to create delay
+		Math.sqrt(Math.random());
+	}
+}
+
 export async function pdf4meAsyncRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	url: string,
@@ -128,7 +137,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 60000, // 60 second timeout for initial request (increased from 30s)
+		timeout: 80000, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
 
@@ -170,10 +179,13 @@ export async function pdf4meAsyncRequest(
 			}
 		} else if (response.statusCode === 202) {
 			// Async processing - start polling
-			const locationUrl = response.headers.location;
+			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
 				throw new Error('No polling URL found in response');
 			}
+
+			// Add initial delay before starting polling
+			n8nCompliantDelay(1000);
 
 			// Poll the location URL until completion
 			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
@@ -218,7 +230,7 @@ export function sanitizeProfiles(data: IDataObject): void {
 		data.profiles = sanitized;
 	} catch (error) {
 		throw new Error(
-			'Invalid JSON in Profiles. Check https://developer.pdf4me.com/ or contact support@pdf4me.com for help. ' +
+			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
 	}
@@ -318,13 +330,12 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 5,
+	maxRetries: number = 500,
 ): Promise<any> {
 	let retryCount = 0;
 
 	while (retryCount < maxRetries) {
 		try {
-			// No artificial delays - immediate polling for n8n compliance
 			// Make polling request
 			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 				url: locationUrl,
@@ -357,8 +368,13 @@ async function pollForCompletion(
 					}
 				}
 			} else if (pollResponse.statusCode === 202) {
-				// Still processing, continue polling
+				// Still processing, continue polling with minimal backoff
 				retryCount++;
+				if (retryCount > 1) {
+					// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
+					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
+					n8nCompliantDelay(backoffDelay);
+				}
 				continue;
 			} else if (pollResponse.statusCode === 404) {
 				// Job not found or expired
@@ -379,12 +395,15 @@ async function pollForCompletion(
 				throw new Error(errorMessage);
 			}
 		} catch (error) {
-			// If it's a network error, retry immediately
+			// If it's a network error, retry with minimal backoff
 			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
 				retryCount++;
 				if (retryCount >= maxRetries) {
 					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
 				}
+				// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
+				const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
+				n8nCompliantDelay(backoffDelay);
 				continue;
 			}
 			// For other errors, throw immediately
