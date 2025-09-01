@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	ActionConstants,
 	sanitizeProfiles,
@@ -152,13 +151,6 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing for large contracts',
-			},
-			{
 				displayName: 'Profiles',
 				name: 'profiles',
 				type: 'string',
@@ -176,7 +168,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index, 'processed_contract') as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	const useAsync = advancedOptions?.useAsync !== false; // Default to true
 	const profiles = advancedOptions?.profiles as string;
 
 	let docContent: string;
@@ -231,6 +222,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
+		IsAsync: true
 	};
 
 	// Add profiles if provided
@@ -246,13 +238,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Make the API request to process the contract
 	let result: any;
 	try {
-		if (useAsync) {
-			// Use the same pattern as other actions
-			result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessContract', body);
-		} else {
-			// Use the same pattern as other actions
-			result = await pdf4meApiRequest.call(this, '/api/v2/ProcessContract', body);
-		}
+		result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessContract', body);
 	} catch (error) {
 		// Handle connection and API errors with better debugging
 		
