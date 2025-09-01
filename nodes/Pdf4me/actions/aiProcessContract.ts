@@ -222,7 +222,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
-		IsAsync: true
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
