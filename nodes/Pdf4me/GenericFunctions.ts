@@ -115,8 +115,8 @@ export async function pdf4meAsyncRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
-	// Add async flag to body
-	const asyncBody = { ...body, async: true };
+	// Only add async flag if IsAsync is true in the body, otherwise use the body as-is
+	const asyncBody = body.IsAsync === true ? { ...body, async: true } : body;
 
 	// Determine if this is a JSON response operation (like CreateImages, AI processing)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
@@ -178,7 +178,11 @@ export async function pdf4meAsyncRequest(
 				}
 			}
 		} else if (response.statusCode === 202) {
-			// Async processing - start polling
+			// Async processing - start polling only if IsAsync was true
+			if (body.IsAsync !== true) {
+				throw new Error('Received 202 status but IsAsync was not set to true in the request');
+			}
+			
 			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
 				throw new Error('No polling URL found in response');
@@ -372,7 +376,7 @@ async function pollForCompletion(
 				retryCount++;
 				if (retryCount > 1) {
 					// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
-					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 10000);
+					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 100000);
 					n8nCompliantDelay(backoffDelay);
 				}
 				continue;
