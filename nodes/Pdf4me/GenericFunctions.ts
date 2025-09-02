@@ -115,8 +115,8 @@ export async function pdf4meAsyncRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
-	// Add async flag to body
-	const asyncBody = { ...body, async: true };
+	// Only add async flag if IsAsync is true in the body, otherwise use the body as-is
+	const asyncBody = body.IsAsync === true ? { ...body, async: true } : body;
 
 	// Determine if this is a JSON response operation (like CreateImages, AI processing)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
@@ -137,7 +137,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 80000, // 60 second timeout for initial request (increased from 30s)
+		timeout: 6000, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
 
@@ -178,7 +178,11 @@ export async function pdf4meAsyncRequest(
 				}
 			}
 		} else if (response.statusCode === 202) {
-			// Async processing - start polling
+			// Async processing - start polling only if IsAsync was true
+			if (body.IsAsync !== true) {
+				throw new Error('Received 202 status but IsAsync was not set to true in the request');
+			}
+			
 			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
 				throw new Error('No polling URL found in response');
@@ -278,7 +282,7 @@ export const ActionConstants = {
 	FlipImage: 'Flip Image',
 	GetImageMetadata: 'Get Image Metadata',
 	GetPdfMetadata: 'Get PDF Metadata',
-	GetDocumentFromPdf4me: 'getDocumentFromPdf4me',
+	GetDocumentFromPdf4me: 'Get Document From Pdf4me',
 	ImageExtractText: 'Image Extract Text',
 	JsonToExcel: 'Json To Excel',
 	MergeMultiplePDFs: 'Merge Multiple PDFs',
@@ -372,7 +376,7 @@ async function pollForCompletion(
 				retryCount++;
 				if (retryCount > 1) {
 					// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
-					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
+					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 100000);
 					n8nCompliantDelay(backoffDelay);
 				}
 				continue;

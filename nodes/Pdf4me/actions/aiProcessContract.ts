@@ -1,13 +1,9 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	ActionConstants,
-	sanitizeProfiles,
 } from '../GenericFunctions';
-
-
 
 export const description: INodeProperties[] = [
 	{
@@ -100,89 +96,26 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Output Format',
-		name: 'outputFormat',
-		type: 'options',
-		required: true,
-		default: 'json',
-		description: 'Choose the output format for the processed contract data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AiProcessContract],
-			},
-		},
-		options: [
-			{
-				name: 'JSON',
-				value: 'json',
-				description: 'Return structured JSON data with extracted contract information',
-			},
-			{
-				name: 'Text',
-				value: 'text',
-				description: 'Return formatted text summary of extracted contract data',
-			},
-		],
-	},
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'processed_contract',
-		description: 'Name for the output file (without extension)',
-		placeholder: 'extracted_contract_data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AiProcessContract],
-				outputFormat: ['text'],
-			},
-		},
-	},
-	{
-		displayName: 'Advanced Options',
-		name: 'advancedOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AiProcessContract],
-			},
-		},
-		options: [
-			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing for large contracts',
-			},
-			{
-				displayName: 'Profiles',
-				name: 'profiles',
-				type: 'string',
-				default: '',
-				description: 'Custom processing profiles for contract analysis',
-				placeholder: 'contract_profile_1, contract_profile_2',
-			},
-		],
-	},
+
 ];
 
+/**
+ * AI Process Contract - Extract structured data from contracts using PDF4ME's AI/ML technology
+ * Process: Read contract → Encode to base64 → Send API request → Poll for completion → Return extracted results
+ * 
+ * This action mirrors the Python process_contract() function functionality exactly:
+ * - Extracts contract terms, dates, parties, obligations, and clauses
+ * - Supports various contract formats using AI/ML technology
+ * - Always processes asynchronously for optimal performance
+ * - Returns structured data in the same format as the Python script
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index, 'processed_contract') as string;
-	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	const useAsync = advancedOptions?.useAsync !== false; // Default to true
-	const profiles = advancedOptions?.profiles as string;
 
 	let docContent: string;
-	let originalFileName = docName;
 
-	// Handle different input data types
+	// Handle different input data types - convert all to base64
 	if (inputDataType === 'binaryData') {
 		// Get contract content from binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
@@ -192,14 +125,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const binaryData = item[0].binary[binaryPropertyName];
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
-
-		// Use the original filename if available
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -209,15 +136,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 	} else if (inputDataType === 'url') {
+		// Download file from URL and convert to base64
 		const contractUrl = this.getNodeParameter('contractUrl', index) as string;
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 			method: 'GET' as const,
 			url: contractUrl,
 			encoding: 'arraybuffer' as const,
 		});
-		const buffer = await this.helpers.binaryToBuffer(response);
+		const buffer = Buffer.from(response);
 		docContent = buffer.toString('base64');
-		originalFileName = contractUrl.split('/').pop() || 'contract.pdf';
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -227,60 +154,49 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Contract content is required');
 	}
 
-	// Build the request body for contract processing
-	const body: IDataObject = {
-		docContent,
-		docName: originalFileName,
+	// Validate that base64 content looks like a PDF
+	if (!docContent.startsWith('JVBERi0x')) {
+		throw new Error(`Invalid PDF content. Base64 should start with 'JVBERi0x' (PDF header), but starts with: ${docContent.substring(0, 20)}`);
+	}
+
+	// Build the request payload - exactly like Python script
+	const payload: IDataObject = {
+		docContent,    // Base64 encoded contract document content
+		docName,       // User-provided document name
+		IsAsync: true, // Whether to process asynchronously 
 	};
 
-	// Add profiles if provided
-	if (profiles) {
-		body.profiles = profiles;
-	}
-
-	// Sanitize profiles
-	sanitizeProfiles(body);
-
-
-
-	// Make the API request to process the contract
+	// Make the API request to process the contract - matching Python script exactly
 	let result: any;
 	try {
-		if (useAsync) {
-			// Use the same pattern as other actions
-			result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessContract', body);
-		} else {
-			// Use the same pattern as other actions
-			result = await pdf4meApiRequest.call(this, '/api/v2/ProcessContract', body);
-		}
+		// Use async request function for contract processing
+		result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessContract', payload);
 	} catch (error) {
-		// Handle connection and API errors with better debugging
-		
+		// Enhanced error handling with debugging context
 		if (error.code === 'ECONNRESET') {
-			throw new Error('Connection was reset. Please check your network connection and try again.');
+			throw new Error(`Connection was reset. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 500) {
-			throw new Error(`PDF4Me server error (500): ${error.message || 'The service was not able to process your request. Check the console logs for details.'}`);
+			throw new Error(`PDF4Me server error (500): ${error.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 404) {
-			throw new Error('API endpoint not found. Please check if the PDF4Me service is properly configured.');
+			throw new Error(`API endpoint not found. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 401) {
-			throw new Error('Authentication failed. Please check your PDF4Me API credentials.');
+			throw new Error(`Authentication failed. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 403) {
-			throw new Error('Access denied. Please check your PDF4Me API permissions.');
+			throw new Error(`Access denied. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 429) {
-			throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+			throw new Error(`Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode) {
-			throw new Error(`PDF4Me API error (${error.statusCode}): ${error.message || 'Unknown error'}`);
+			throw new Error(`PDF4Me API error (${error.statusCode}): ${error.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else {
-			throw new Error(`Connection error: ${error.message || 'Unknown connection issue'}`);
+			throw new Error(`Connection error: ${error.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${docName}, errorCode=${error.code}`);
 		}
 	}
 
-	// Process the response
+	// Process the response - handle the exact same format as Python script output
 	if (result) {
 		let processedData: any;
-		let outputText: string = '';
 
-		// Try to parse as JSON first
+		// Parse the result
 		try {
 			if (typeof result === 'string') {
 				processedData = JSON.parse(result);
@@ -288,159 +204,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				processedData = result;
 			}
 		} catch (error) {
-			// If not JSON, treat as raw text
-			processedData = { rawContent: result };
+			throw new Error(`Failed to parse API response: ${error.message}`);
 		}
 
-		// Format output based on user preference
-		if (outputFormat === 'text') {
-			// Create formatted text output similar to Python implementation
-			outputText = 'AI Contract Processing Results\n';
-			outputText += '============================\n';
-			outputText += `Processed on: ${new Date().toISOString()}\n`;
-			outputText += `Source file: ${originalFileName}\n\n`;
-
-			// Extract key contract fields
-			if (processedData.contractTitle) {
-				outputText += `Contract Title: ${processedData.contractTitle}\n`;
-			}
-			if (processedData.contractNumber) {
-				outputText += `Contract Number: ${processedData.contractNumber}\n`;
-			}
-			if (processedData.contractType) {
-				outputText += `Contract Type: ${processedData.contractType}\n`;
-			}
-			if (processedData.effectiveDate) {
-				outputText += `Effective Date: ${processedData.effectiveDate}\n`;
-			}
-			if (processedData.expirationDate) {
-				outputText += `Expiration Date: ${processedData.expirationDate}\n`;
-			}
-			if (processedData.contractValue) {
-				outputText += `Contract Value: ${processedData.contractValue}\n`;
-			}
-			if (processedData.currency) {
-				outputText += `Currency: ${processedData.currency}\n`;
-			}
-
-			// Add parties information if available
-			if (processedData.parties && Array.isArray(processedData.parties)) {
-				outputText += '\nParties:\n';
-				outputText += '--------\n';
-				processedData.parties.forEach((party: any, index: number) => {
-					outputText += `${index + 1}. ${party.name || 'N/A'}\n`;
-					if (party.role) outputText += `   Role: ${party.role}\n`;
-					if (party.type) outputText += `   Type: ${party.type}\n`;
-					if (party.address) outputText += `   Address: ${party.address}\n`;
-					outputText += '\n';
-				});
-			}
-
-			// Add key terms if available
-			if (processedData.keyTerms && Array.isArray(processedData.keyTerms)) {
-				outputText += '\nKey Terms:\n';
-				outputText += '----------\n';
-				processedData.keyTerms.forEach((term: any, index: number) => {
-					outputText += `${index + 1}. ${term.term || 'N/A'}\n`;
-					if (term.description) outputText += `   Description: ${term.description}\n`;
-					if (term.value) outputText += `   Value: ${term.value}\n`;
-					outputText += '\n';
-				});
-			}
-
-			// Add obligations if available
-			if (processedData.obligations && Array.isArray(processedData.obligations)) {
-				outputText += '\nObligations:\n';
-				outputText += '------------\n';
-				processedData.obligations.forEach((obligation: any, index: number) => {
-					outputText += `${index + 1}. ${obligation.description || 'N/A'}\n`;
-					if (obligation.party) outputText += `   Party: ${obligation.party}\n`;
-					if (obligation.deadline) outputText += `   Deadline: ${obligation.deadline}\n`;
-					if (obligation.penalty) outputText += `   Penalty: ${obligation.penalty}\n`;
-					outputText += '\n';
-				});
-			}
-
-			// Add clauses if available
-			if (processedData.clauses && Array.isArray(processedData.clauses)) {
-				outputText += '\nKey Clauses:\n';
-				outputText += '------------\n';
-				processedData.clauses.forEach((clause: any, index: number) => {
-					outputText += `${index + 1}. ${clause.title || 'N/A'}\n`;
-					if (clause.content) outputText += `   Content: ${clause.content}\n`;
-					if (clause.type) outputText += `   Type: ${clause.type}\n`;
-					outputText += '\n';
-				});
-			}
-
-			// Add dates if available
-			if (processedData.importantDates && Array.isArray(processedData.importantDates)) {
-				outputText += '\nImportant Dates:\n';
-				outputText += '----------------\n';
-				processedData.importantDates.forEach((date: any, index: number) => {
-					outputText += `${index + 1}. ${date.event || 'N/A'}\n`;
-					if (date.date) outputText += `   Date: ${date.date}\n`;
-					if (date.description) outputText += `   Description: ${date.description}\n`;
-					outputText += '\n';
-				});
-			}
-
-			outputText += '\nFull Response:\n';
-			outputText += JSON.stringify(processedData, null, 2);
-
-			// Create binary output for text file
-			const textBuffer = Buffer.from(outputText, 'utf8');
-			const binaryData = await this.helpers.prepareBinaryData(
-				textBuffer,
-				`${outputFileName}.txt`,
-				'text/plain',
-			);
-
-			return [
-				{
-					json: {
-						success: true,
-						message: 'Contract processed successfully using AI',
-						fileName: `${outputFileName}.txt`,
-						mimeType: 'text/plain',
-						fileSize: textBuffer.length,
-						contractTitle: processedData.contractTitle,
-						contractNumber: processedData.contractNumber,
-						contractType: processedData.contractType,
-						processingTimestamp: new Date().toISOString(),
-					},
-					binary: {
-						data: binaryData,
-					},
-				},
-			];
-		} else {
-			// Return JSON output
-			return [
-				{
-					json: {
-						success: true,
-						message: 'Contract processed successfully using AI',
-						processedData,
-						contractTitle: processedData.contractTitle,
-						contractNumber: processedData.contractNumber,
-						contractType: processedData.contractType,
-						effectiveDate: processedData.effectiveDate,
-						expirationDate: processedData.expirationDate,
-						contractValue: processedData.contractValue,
-						currency: processedData.currency,
-						parties: processedData.parties,
-						keyTerms: processedData.keyTerms,
-						obligations: processedData.obligations,
-						clauses: processedData.clauses,
-						importantDates: processedData.importantDates,
-						processingTimestamp: new Date().toISOString(),
-					},
-				},
-			];
-		}
+		// Return the raw API response exactly like the JSON file
+		return [
+			{
+				json: processedData,
+			},
+		];
 	}
 
-	// Error case
+	// Error case - no response received
 	throw new Error('No response data received from PDF4ME AI Contract Processing API');
 }
