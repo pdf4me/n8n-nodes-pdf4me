@@ -124,12 +124,126 @@ export const description: INodeProperties[] = [
 			{ name: 'Code 93', value: 'code93' },
 			{ name: 'Codabar', value: 'codabar' },
 			{ name: 'Interleaved 2 of 5', value: 'code2Of5Interleaved' },
+			{ name: 'Code 11', value: 'code11' },
+			{ name: 'Code 2 of 5 Standard', value: 'code2Of5Standard' },
+			{ name: 'Code 2 of 5 IATA', value: 'code2Of5Iata' },
+			{ name: 'Code 2 of 5 Matrix', value: 'code2Of5Matrix' },
+			{ name: 'Code 2 of 5 Data Logic', value: 'code2Of5DataLogic' },
+			{ name: 'Code 2 of 5 Industry', value: 'code2Of5Industry' },
+			{ name: 'Code 39 Extended', value: 'code39Extended' },
+			{ name: 'EAN-8', value: 'ean8' },
+			{ name: 'EAN-8 with 2 Addon', value: 'ean8With2Addon' },
+			{ name: 'EAN-8 with 5 Addon', value: 'ean8With5Addon' },
+			{ name: 'EAN-13 with 2 Addon', value: 'ean13With2Addon' },
+			{ name: 'EAN-13 with 5 Addon', value: 'ean13With5Addon' },
+			{ name: 'EAN UCC 128', value: 'eanUcc128' },
+			{ name: 'UPC-12', value: 'upc12' },
+			{ name: 'Codabar 2', value: 'codabar2' },
+			{ name: 'Codabar 18', value: 'codabar18' },
+			{ name: 'Deutsche Post Leitcode', value: 'deutschePostLeitcode' },
+			{ name: 'Deutsche Post Identcode', value: 'deutschePostIdentcode' },
+			{ name: 'ISBN-13 with 5 Addon', value: 'isbn13With5Addon' },
+			{ name: 'ISMN', value: 'ismn' },
+			{ name: 'ISSN', value: 'issn' },
+			{ name: 'ISSN with 2 Addon', value: 'issnWith2Addon' },
+			{ name: 'Flattermarken', value: 'flattermarken' },
+			{ name: 'GS1 DataBar', value: 'gs1DataBar' },
+			{ name: 'GS1 DataBar Limited', value: 'gs1DataBarLimited' },
+			{ name: 'GS1 DataBar Expanded', value: 'gs1DataBarExpanded' },
+			{ name: 'Telepen Alpha', value: 'telepenAlpha' },
+			{ name: 'UCC-128', value: 'ucc128' },
+			{ name: 'UPC-A with 2 Addon', value: 'upcAWith2Addon' },
+			{ name: 'UPC-A with 5 Addon', value: 'upcAWith5Addon' },
+			{ name: 'UPC-E', value: 'upcE' },
+			{ name: 'UPC-E with 2 Addon', value: 'upcEWith2Addon' },
+			{ name: 'UPC-E with 5 Addon', value: 'upcEWith5Addon' },
+			{ name: 'USPS Postnet 5', value: 'uspsPostnet5' },
+			{ name: 'USPS Postnet 6', value: 'uspsPostnet6' },
+			{ name: 'USPS Postnet 9', value: 'uspsPostnet9' },
+			{ name: 'USPS Postnet 10', value: 'uspsPostnet10' },
+			{ name: 'USPS Postnet 11', value: 'uspsPostnet11' },
+			{ name: 'USPS Postnet 12', value: 'uspsPostnet12' },
+			{ name: 'Plessey', value: 'plessey' },
+			{ name: 'MSI', value: 'msi' },
+			{ name: 'SSCC-18', value: 'sscc18' },
+			{ name: 'FIM', value: 'fim' },
+			{ name: 'LOGMARS', value: 'logmars' },
+			{ name: 'Pharmacode One Track', value: 'pharmacodeOneTrack' },
+			{ name: 'PZN-7', value: 'pzn7' },
+			{ name: 'Pharmacode Two Track', value: 'pharmacodeTwoTrack' },
+			{ name: 'CEP Net', value: 'cepNet' },
+			{ name: 'PDF417 Truncated', value: 'pdf417Truncated' },
+			{ name: 'Maxicode', value: 'maxicode' },
+			{ name: 'Code 128 Subset A', value: 'code128SubsetA' },
+			{ name: 'Code 128 Subset B', value: 'code128SubsetB' },
+			{ name: 'Code 128 Subset C', value: 'code128SubsetC' },
+			{ name: 'Code 93 Extended', value: 'code93Extended' },
+			{ name: 'Australian Post Custom', value: 'australianPostCustom' },
+			{ name: 'Australian Post Custom 2', value: 'australianPostCustom2' },
+			{ name: 'Australian Post Custom 3', value: 'australianPostCustom3' },
+			{ name: 'Australian Post Reply Paid', value: 'australianPostReplyPaid' },
+			{ name: 'Australian Post Routing', value: 'australianPostRouting' },
+			{ name: 'Australian Post Redirection', value: 'australianPostRedirection' },
+			{ name: 'ISBN-13', value: 'isbn13' },
+			{ name: 'RM4SCC', value: 'rm4Scc' },
+			{ name: 'EAN-14', value: 'ean14' },
+			{ name: 'VIN', value: 'vin' },
+			{ name: 'Codablock F', value: 'codablockF' },
+			{ name: 'NVE-18', value: 'nve18' },
+			{ name: 'Japanese Postal', value: 'japanesePostal' },
+			{ name: 'Korean Postal Authority', value: 'koreanPostalAuthority' },
+			{ name: 'GS1 DataBar Truncated', value: 'gs1DataBarTruncated' },
+			{ name: 'GS1 DataBar Stacked', value: 'gs1DataBarStacked' },
+			{ name: 'GS1 DataBar Stacked Omnidirectional', value: 'gs1DataBarStackedOmnidirectional' },
+			{ name: 'GS1 DataBar Expanded Stacked', value: 'gs1DataBarExpandedStacked' },
+			{ name: 'Planet 12', value: 'planet12' },
+			{ name: 'Planet 14', value: 'planet14' },
+			{ name: 'Micro PDF417', value: 'microPdf417' },
+			{ name: 'USPS Intelligent Mail', value: 'uspsIntelligentMail' },
+			{ name: 'Plessey Bidirectional', value: 'plesseyBidirectional' },
+			{ name: 'Telepen', value: 'telepen' },
+			{ name: 'GS1-128', value: 'gs1_128' },
+			{ name: 'ITF-14', value: 'itf14' },
+			{ name: 'KIX', value: 'kix' },
+			{ name: 'Code 32', value: 'code32' },
+			{ name: 'Italian Postal 2 of 5', value: 'italianPostal2Of5' },
+			{ name: 'Italian Postal 3 of 9', value: 'italianPostal3Of9' },
+			{ name: 'DPD', value: 'dpd' },
+			{ name: 'Micro QR Code', value: 'microQRCode' },
+			{ name: 'HIBC LIC 128', value: 'hibcLic128' },
+			{ name: 'HIBC LIC 3OF9', value: 'hibcLic3OF9' },
+			{ name: 'HIBC PAS 128', value: 'hibcPas128' },
+			{ name: 'HIBC PAS 3OF9', value: 'hibcPas3OF9' },
+			{ name: 'HIBC LIC Data Matrix', value: 'hibcLicDataMatrix' },
+			{ name: 'HIBC PAS Data Matrix', value: 'hibcPasDataMatrix' },
+			{ name: 'HIBC LIC QR Code', value: 'hibcLicQRCode' },
+			{ name: 'HIBC PAS QR Code', value: 'hibcPasQRCode' },
+			{ name: 'HIBC LIC PDF417', value: 'hibcLicPDF417' },
+			{ name: 'HIBC PAS PDF417', value: 'hibcPasPDF417' },
+			{ name: 'HIBC LIC MPDF417', value: 'hibcLicMPDF417' },
+			{ name: 'HIBC PAS MPDF417', value: 'hibcPasMPDF417' },
+			{ name: 'HIBC LIC CODABLOCK_F', value: 'hibcLicCODABLOCK_F' },
+			{ name: 'HIBC PAS CODABLOCK_F', value: 'hibcPasCODABLOCK_F' },
+			{ name: 'QR Code 2005', value: 'qrcode2005' },
+			{ name: 'PZN-8', value: 'pzn8' },
+			{ name: 'Dot Code', value: 'dotCode' },
+			{ name: 'USPS IM Package', value: 'uSPSIMPackage' },
+			{ name: 'Swedish Postal Shipment ID', value: 'swedishPostalShipmentId' },
+			{ name: 'Mailmark 2D', value: 'mailmark_2D' },
+			{ name: 'UPU S10', value: 'upuS10' },
+			{ name: 'Mailmark 4state', value: 'mailmark_4state' },
+			{ name: 'HIBC LIC Aztec', value: 'hibcLicAztec' },
+			{ name: 'HIBC PAS Aztec', value: 'hibcPasAztec' },
+			{ name: 'PPN', value: 'ppn' },
+			{ name: 'NTIN', value: 'ntin' },
+			{ name: 'Swiss QR Code', value: 'swissQrCode' },
 		],
 	},
 	{
 		displayName: 'Pages',
 		name: 'pages',
 		type: 'string',
+		required: true,
 		default: '',
 		description: 'Page options: empty for all pages, "1", "1,3,5", "2-5", "1,3,7-10", "2-"',
 		placeholder: '1-3',
@@ -140,152 +254,225 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Positioning',
-		name: 'positioning',
-		type: 'collection',
-		placeholder: 'Add Positioning Option',
-		default: {},
+		displayName: 'Horizontal Alignment',
+		name: 'alignX',
+		type: 'options',
+		required: true,
+		default: 'Right',
+		description: 'Set the horizontal alignment of the Barcode',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
 		options: [
-			{
-				displayName: 'Horizontal Alignment',
-				name: 'alignX',
-				type: 'options',
-				default: 'Right',
-				options: [
-					{ name: 'Left', value: 'Left' },
-					{ name: 'Center', value: 'Center' },
-					{ name: 'Right', value: 'Right' },
-				],
-			},
-			{
-				displayName: 'Vertical Alignment',
-				name: 'alignY',
-				type: 'options',
-				default: 'Bottom',
-				options: [
-					{ name: 'Top', value: 'Top' },
-					{ name: 'Middle', value: 'Middle' },
-					{ name: 'Bottom', value: 'Bottom' },
-				],
-			},
-			{
-				displayName: 'Horizontal Margin (mm)',
-				name: 'marginXInMM',
-				type: 'string',
-				default: '20',
-				description: 'Horizontal margin in millimeters',
-			},
-			{
-				displayName: 'Vertical Margin (mm)',
-				name: 'marginYInMM',
-				type: 'string',
-				default: '20',
-				description: 'Vertical margin in millimeters',
-			},
+			{ name: 'Left', value: 'Left' },
+			{ name: 'Center', value: 'Center' },
+			{ name: 'Right', value: 'Right' },
 		],
 	},
 	{
-		displayName: 'Barcode Size',
-		name: 'barcodeSize',
-		type: 'collection',
-		placeholder: 'Add Size Option',
-		default: {},
+		displayName: 'Vertical Alignment',
+		name: 'alignY',
+		type: 'options',
+		required: true,
+		default: 'Bottom',
+		description: 'Set the vertical alignment of the Barcode',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
 		options: [
-			{
-				displayName: 'Height (mm)',
-				name: 'heightInMM',
-				type: 'string',
-				default: '40',
-				description: 'Height in millimeters (0 for auto-detect)',
-			},
-			{
-				displayName: 'Width (mm)',
-				name: 'widthInMM',
-				type: 'string',
-				default: '40',
-				description: 'Width in millimeters (0 for auto-detect)',
-			},
-			{
-				displayName: 'Height (points)',
-				name: 'heightInPt',
-				type: 'string',
-				default: '113',
-				description: 'Height in points (0 for auto-detect)',
-			},
-			{
-				displayName: 'Width (points)',
-				name: 'widthInPt',
-				type: 'string',
-				default: '113',
-				description: 'Width in points (0 for auto-detect)',
-			},
+			{ name: 'Top', value: 'Top' },
+			{ name: 'Middle', value: 'Middle' },
+			{ name: 'Bottom', value: 'Bottom' },
 		],
 	},
 	{
-		displayName: 'Appearance',
-		name: 'appearance',
-		type: 'collection',
-		placeholder: 'Add Appearance Option',
-		default: {},
+		displayName: 'Height in mm',
+		name: 'heightInMM',
+		type: 'string',
+		required: true,
+		default: '40',
+		description: 'Height of the barcode in millimeters or "0" for auto-detect',
+		placeholder: '40',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Width in mm',
+		name: 'widthInMM',
+		type: 'string',
+		required: true,
+		default: '40',
+		description: 'Width of the Barcode in millimeters. "0" for auto-detect',
+		placeholder: '40',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Margin Horizontal In mm',
+		name: 'marginXInMM',
+		type: 'string',
+		required: true,
+		default: '20',
+		description: 'Margin from left origin of the Barcode in millimeters',
+		placeholder: '20',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Margin Vertical In mm',
+		name: 'marginYInMM',
+		type: 'string',
+		required: true,
+		default: '20',
+		description: 'Margin from the top origin of the Barcode in millimeters',
+		placeholder: '20',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Height In Pt',
+		name: 'heightInPt',
+		type: 'string',
+		required: true,
+		default: '113',
+		description: 'Height of the barcode in points(pt). or "0" for auto-detect',
+		placeholder: '113',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Width In Pt',
+		name: 'widthInPt',
+		type: 'string',
+		required: true,
+		default: '113',
+		description: 'Width of the Barcode in points(pt). "0" for auto-detect',
+		placeholder: '113',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Margin X In Pt',
+		name: 'marginXInPt',
+		type: 'string',
+		required: true,
+		default: '10',
+		description: 'Margin from top origin of the Barcode in points(pt)',
+		placeholder: '10',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Margin Y In Pt',
+		name: 'marginYInPt',
+		type: 'string',
+		required: true,
+		default: '10',
+		description: 'Margin from left origin of the Barcode in points(pt)',
+		placeholder: '10',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Opacity',
+		name: 'opacity',
+		type: 'number',
+		required: true,
+		default: 100,
+		description: 'Give a value between 0 to 100 where "0" is completely transparent',
+		typeOptions: {
+			minValue: 0,
+			maxValue: 100,
+		},
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Display Text',
+		name: 'displayText',
+		type: 'options',
+		required: true,
+		default: 'below',
+		description: 'Text will be display of the barcode',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
 		options: [
-			{
-				displayName: 'Opacity',
-				name: 'opacity',
-				type: 'number',
-				default: 100,
-				description: 'Opacity (0-100): 0=transparent, 100=opaque',
-				typeOptions: {
-					minValue: 0,
-					maxValue: 100,
-				},
-			},
-			{
-				displayName: 'Display Text',
-				name: 'displayText',
-				type: 'options',
-				default: 'below',
-				options: [
-					{ name: 'Above', value: 'above' },
-					{ name: 'Below', value: 'below' },
-				],
-			},
-			{
-				displayName: 'Hide Text',
-				name: 'hideText',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to hide the barcode text',
-			},
-			{
-				displayName: 'Show Only in Print',
-				name: 'showOnlyInPrint',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to show barcode only when printing',
-			},
-			{
-				displayName: 'Text Above Barcode',
-				name: 'isTextAbove',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to position text above the barcode',
-			},
+			{ name: 'Above', value: 'above' },
+			{ name: 'Below', value: 'below' },
 		],
+	},
+	{
+		displayName: 'Hide Text',
+		name: 'hideText',
+		type: 'boolean',
+		required: true,
+		default: false,
+		description: 'Select "true" to hide the text of the Barcode and "false" to display it alongside the Barcode',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Show Only In Print',
+		name: 'showOnlyInPrint',
+		type: 'boolean',
+		required: true,
+		default: false,
+		description: 'If you want to Show Only In Print, Show only in print. You can choose these two options',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
+	{
+		displayName: 'Is Text Above',
+		name: 'isTextAbove',
+		type: 'boolean',
+		required: true,
+		default: false,
+		description: 'If you want to Is Text Above text. You can choose these two options',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
 	},
 	{
 		displayName: 'Output Options',
@@ -316,6 +503,7 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -323,63 +511,126 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const text = this.getNodeParameter('text', index) as string;
 	const barcodeType = this.getNodeParameter('barcodeType', index) as string;
 	const pages = this.getNodeParameter('pages', index) as string;
+	const alignX = this.getNodeParameter('alignX', index) as string;
+	const alignY = this.getNodeParameter('alignY', index) as string;
+	const heightInMM = this.getNodeParameter('heightInMM', index) as string;
+	const widthInMM = this.getNodeParameter('widthInMM', index) as string;
+	const marginXInMM = this.getNodeParameter('marginXInMM', index) as string;
+	const marginYInMM = this.getNodeParameter('marginYInMM', index) as string;
+	const heightInPt = this.getNodeParameter('heightInPt', index) as string;
+	const widthInPt = this.getNodeParameter('widthInPt', index) as string;
+	const marginXInPt = this.getNodeParameter('marginXInPt', index) as string;
+	const marginYInPt = this.getNodeParameter('marginYInPt', index) as string;
+	const opacity = this.getNodeParameter('opacity', index) as number;
+	const displayText = this.getNodeParameter('displayText', index) as string;
+	const hideText = this.getNodeParameter('hideText', index) as boolean;
+	const showOnlyInPrint = this.getNodeParameter('showOnlyInPrint', index) as boolean;
+	const isTextAbove = this.getNodeParameter('isTextAbove', index) as boolean;
 
-	const positioning = this.getNodeParameter('positioning', index) as IDataObject;
-	const barcodeSize = this.getNodeParameter('barcodeSize', index) as IDataObject;
-	const appearance = this.getNodeParameter('appearance', index) as IDataObject;
 	const outputOptions = this.getNodeParameter('outputOptions', index) as IDataObject;
 
-	// Prepare the request body
-	const body: IDataObject = {
-		text,
-		barcodeType,
-		async: true, // Enable async processing
-	};
-
-	// Add pages if specified
-	if (pages) {
-		body.pages = pages;
-	}
-
-	// Add positioning options
-	if (positioning.alignX) body.alignX = positioning.alignX;
-	if (positioning.alignY) body.alignY = positioning.alignY;
-	if (positioning.marginXInMM) body.marginXInMM = positioning.marginXInMM;
-	if (positioning.marginYInMM) body.marginYInMM = positioning.marginYInMM;
-
-	// Add barcode size options
-	if (barcodeSize.heightInMM) body.heightInMM = barcodeSize.heightInMM;
-	if (barcodeSize.widthInMM) body.widthInMM = barcodeSize.widthInMM;
-	if (barcodeSize.heightInPt) body.heightInPt = barcodeSize.heightInPt;
-	if (barcodeSize.widthInPt) body.widthInPt = barcodeSize.widthInPt;
-
-	// Add appearance options
-	if (appearance.opacity !== undefined) body.opacity = appearance.opacity;
-	if (appearance.displayText) body.displayText = appearance.displayText;
-	if (appearance.hideText !== undefined) body.hideText = appearance.hideText;
-	if (appearance.showOnlyInPrint !== undefined) body.showOnlyInPrint = appearance.showOnlyInPrint;
-	if (appearance.isTextAbove !== undefined) body.isTextAbove = appearance.isTextAbove;
-
-	// Add output options
-	if (outputOptions.outputFileName) body.docName = outputOptions.outputFileName;
-
 	// Handle input data based on type
+	let docContent: string;
+	let docName: string = (outputOptions.outputFileName as string) || 'output_with_barcode.pdf';
+
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+		
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
 		}
+		
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.'
+			);
+		}
+		
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		const base64Content = buffer.toString('base64');
-		body.docContent = base64Content;
+		docContent = buffer.toString('base64');
+		
+		// Only use input filename if no output filename is specified
+		if (!outputOptions.outputFileName) {
+			const binaryData = item[0].binary[binaryPropertyName];
+			if (binaryData.fileName) {
+				docName = binaryData.fileName.replace(/\.[^/.]+$/, '') + '_with_barcode.pdf';
+			}
+		}
 	} else if (inputDataType === 'base64') {
-		const base64Content = this.getNodeParameter('base64Content', index) as string;
-		body.docContent = base64Content;
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		// Only use default filename if no output filename is specified
+		if (!outputOptions.outputFileName) {
+			docName = 'document_with_barcode.pdf';
+		}
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		body.docUrl = pdfUrl;
+		// Download PDF from URL and convert to base64
+		try {
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+				method: 'GET' as const,
+				url: pdfUrl,
+				encoding: 'arraybuffer' as const,
+			});
+			const buffer = Buffer.from(response as Buffer);
+			docContent = buffer.toString('base64');
+			// Only use URL filename if no output filename is specified
+			if (!outputOptions.outputFileName) {
+				const urlFileName = pdfUrl.split('/').pop() || 'document.pdf';
+				docName = urlFileName.replace(/\.[^/.]+$/, '') + '_with_barcode.pdf';
+			}
+		} catch (error) {
+			throw new Error(`Failed to download PDF from URL: ${error.message}`);
+		}
+	} else {
+		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
+
+	// Validate PDF content before sending request
+	if (!docContent || docContent.trim() === '') {
+		throw new Error('PDF content is empty or invalid');
+	}
+
+	// Basic validation for base64 content
+	try {
+		const buffer = Buffer.from(docContent, 'base64');
+		if (buffer.length === 0) {
+			throw new Error('PDF content is empty after base64 decoding');
+		}
+		// Check if it starts with PDF signature (%PDF)
+		const pdfSignature = buffer.toString('ascii', 0, 4);
+		if (pdfSignature !== '%PDF') {
+			// Warning: Content does not start with PDF signature (%PDF). This might not be a valid PDF file.
+		}
+	} catch (error) {
+		throw new Error(`Invalid base64 encoded PDF content: ${error.message}`);
+	}
+
+	// Prepare the request body with all required parameters
+	const body: IDataObject = {
+		docContent,
+		docName,
+		text,
+		barcodeType,
+		pages,
+		alignX,
+		alignY,
+		heightInMM,
+		widthInMM,
+		marginXInMM,
+		marginYInMM,
+		heightInPt,
+		widthInPt,
+		marginXInPt,
+		marginYInPt,
+		opacity,
+		displayText,
+		hideText,
+		showOnlyInPrint,
+		isTextAbove,
+	};
 
 	// Add custom profiles if specified
 	const profiles = outputOptions?.profiles as string | undefined;
@@ -388,28 +639,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		sanitizeProfiles(body);
 	}
 
-	// Make the API request
+	// Make the API request using async endpoint (always async)
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/addbarcode', body);
 
 	// Handle the response
 	if (responseData) {
-		// Check if it's a processing status response
-		if (typeof responseData === 'object' && responseData.status === 'processing') {
-			return [
-				{
-					json: {
-						status: 'processing',
-						message: responseData.message,
-						pollUrl: responseData.pollUrl,
-						context: responseData.context,
-					},
-				},
-			];
-		}
-
 		// Handle successful binary response
 		if (responseData instanceof Buffer) {
-			const fileName = outputOptions?.outputFileName as string || 'output_with_barcode.pdf';
+			const fileName = docName;
 
 			const binaryData = await this.helpers.prepareBinaryData(
 				responseData,
