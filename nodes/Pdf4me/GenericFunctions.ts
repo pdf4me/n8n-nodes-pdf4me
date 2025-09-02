@@ -137,7 +137,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 6000, // 60 second timeout for initial request (increased from 30s)
+		timeout: 60023, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
 
@@ -334,7 +334,7 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 500,
+	maxRetries: number = 230,
 ): Promise<any> {
 	let retryCount = 0;
 
