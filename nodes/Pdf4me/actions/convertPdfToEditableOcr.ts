@@ -242,7 +242,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
 	const mergeAllSheets = this.getNodeParameter('mergeAllSheets', index) as boolean;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Build the request body
 	const body: IDataObject = {
@@ -252,7 +251,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		ocrWhenNeeded,
 		outputFormat,
 		mergeAllSheets,
-		isAsync: useAsync,
+		IsAsync: true,
 	};
 
 	// Add language only if it's not empty

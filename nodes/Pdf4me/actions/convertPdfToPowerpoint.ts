@@ -308,7 +308,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		ocrWhenNeeded: 'true', // String as in Python code
 		outputFormat: advancedOptions.outputFormat !== false, // Preserve original formatting
 		mergeAllSheets: advancedOptions.mergeAllSheets !== false, // Combine content appropriately
-		async: true, // Always use async for large files
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
