@@ -273,7 +273,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		language: this.getNodeParameter('language', index) as string,
 		outputFormat: this.getNodeParameter('outputFormat', index) as boolean,
 		ocrWhenNeeded: this.getNodeParameter('ocrWhenNeeded', index) as boolean,
-		async: true,									// Enable asynchronous processing
+		IsAsync: true,									// Enable asynchronous processing
 	};
 
 

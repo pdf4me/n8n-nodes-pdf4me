@@ -321,7 +321,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		mergeAllSheets: true, // Always merge sheets as in C#
 		outputFormat: 'xyz', // Example value, adjust as needed
 		ocrWhenNeeded: 'true', // String as in C#
-		async: true, // Always use async for large files
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
