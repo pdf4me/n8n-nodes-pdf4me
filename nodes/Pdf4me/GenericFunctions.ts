@@ -98,13 +98,23 @@ export async function pdf4meApiRequest(
 
 // Removed n8nSleep and all artificial delay logic to comply with n8n community guidelines.
 
-// n8n-compliant delay function using CPU work instead of setTimeout
-function n8nCompliantDelay(ms: number): void {
-	const start = Date.now();
-	while (Date.now() - start < ms) {
-		// Minimal CPU work to create delay
-		Math.sqrt(Math.random());
-	}
+// Delay function using PDF4ME's DelayAsync endpoint
+async function delayAsync(
+	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+): Promise<void> {
+	const startTime = Date.now();
+	console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
+	
+	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+		url: 'https://api.pdf4me.com/api/v2/AddDelay',
+		method: 'GET',
+		returnFullResponse: true,
+		ignoreHttpStatusErrors: true,
+	});
+	
+	const endTime = Date.now();
+	const actualDelay = endTime - startTime;
+	console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
 }
 
 export async function pdf4meAsyncRequest(
@@ -115,8 +125,8 @@ export async function pdf4meAsyncRequest(
 	qs: IDataObject = {},
 	option: IDataObject = {},
 ): Promise<any> {
-	// Only add async flag if IsAsync is true in the body, otherwise use the body as-is
-	const asyncBody = body.IsAsync === true ? { ...body, async: true } : body;
+	// Use the body as-is without modifying it
+	const asyncBody = body;
 
 	// Determine if this is a JSON response operation (like CreateImages, AI processing)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
@@ -137,7 +147,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 60023, // 60 second timeout for initial request (increased from 30s)
+		timeout: 100023, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
 
@@ -178,19 +188,13 @@ export async function pdf4meAsyncRequest(
 				}
 			}
 		} else if (response.statusCode === 202) {
-			// Async processing - start polling only if IsAsync was true
-			if (body.IsAsync !== true) {
-				throw new Error('Received 202 status but IsAsync was not set to true in the request');
-			}
-			
+			// Async processing - always start polling when API returns 202
 			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
 				throw new Error('No polling URL found in response');
 			}
 
-			// Add initial delay before starting polling
-			n8nCompliantDelay(1000);
-
+			// Start polling immediately when API returns 202
 			// Poll the location URL until completion
 			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
 		} else {
@@ -263,14 +267,12 @@ export const ActionConstants = {
 	ClassifyDocument: 'Classify Document',
 	CompressImage: 'Compress Image',
 	CompressPdf: 'Compress PDF',
-	ConvertFromPDF: 'Convert From PDF',
 	ConvertToPdf: 'Convert To PDF',
 	ConvertImageFormat: 'Convert Image Format',
 	CreateImagesFromPdf: 'Create Images From PDF',
 	CropImage: 'Crop Image',
 	DeleteBlankPagesFromPdf: 'Delete Blank Pages From PDF',
 	DeleteUnwantedPagesFromPdf: 'Delete Unwanted Pages From PDF',
-	ExtractPages: 'Extract Pages',
 	ExtractPagesFromPdf: 'Extract Pages From PDF',
 	ExtractAttachmentFromPdf: 'Extract Attachment From PDF',
 	ExtractTextByExpression: 'Extract Text By Expression',
@@ -334,7 +336,7 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 230,
+	maxRetries: number = 60,
 ): Promise<any> {
 	let retryCount = 0;
 
@@ -372,13 +374,10 @@ async function pollForCompletion(
 					}
 				}
 			} else if (pollResponse.statusCode === 202) {
-				// Still processing, continue polling with minimal backoff
+				// Still processing, continue polling with 10 second backoff
 				retryCount++;
-				if (retryCount > 1) {
-					// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
-					const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 100000);
-					n8nCompliantDelay(backoffDelay);
-				}
+				// Use PDF4ME's DelayAsync endpoint for 10 second delay
+				await delayAsync.call(this);
 				continue;
 			} else if (pollResponse.statusCode === 404) {
 				// Job not found or expired
@@ -405,9 +404,8 @@ async function pollForCompletion(
 				if (retryCount >= maxRetries) {
 					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
 				}
-				// Use minimal exponential backoff: 100ms, 200ms, 400ms, max 1000ms
-				const backoffDelay = Math.min(100 * Math.pow(2, retryCount - 2), 1000);
-				n8nCompliantDelay(backoffDelay);
+				// Use PDF4ME's DelayAsync endpoint for 10 second delay on network errors
+				await delayAsync.call(this);
 				continue;
 			}
 			// For other errors, throw immediately

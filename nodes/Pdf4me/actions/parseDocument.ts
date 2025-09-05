@@ -92,9 +92,38 @@ export const description: INodeProperties[] = [
 		displayName: 'Document Name',
 		name: 'docName',
 		type: 'string',
+		required: true,
 		default: 'document.pdf',
 		description: 'Name of the source document file for reference',
 		placeholder: 'original-document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ParseDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Template ID',
+		name: 'templateId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'GUID of the template to use for parsing the document',
+		placeholder: '12345678-1234-1234-1234-123456789abc',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ParseDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Parse ID',
+		name: 'parseId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'GUID of the parse configuration to use',
+		placeholder: '87654321-4321-4321-4321-cba987654321',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ParseDocument],
@@ -180,8 +209,9 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const templateId = this.getNodeParameter('templateId', index) as string;
+	const parseId = this.getNodeParameter('parseId', index) as string;
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const useAsync = advancedOptions?.useAsync !== false; // Default to true
 
@@ -233,11 +263,22 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Document content is required');
 	}
 
-	// Build the request body
+	// Validate required parameters
+	if (!templateId || templateId.trim() === '') {
+		throw new Error('Template ID is required');
+	}
+	if (!parseId || parseId.trim() === '') {
+		throw new Error('Parse ID is required');
+	}
+
+	// Build the request body according to API specification
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
+		TemplateId: templateId,
+		ParseId: parseId,
 	};
+
 
 	// Add profiles if provided
 	const profiles = advancedOptions?.profiles as string | undefined;
@@ -272,12 +313,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Format output based on user preference
 		if (outputFormat === 'text') {
+			// Get outputFileName only when needed
+			const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+			
 			// Create formatted text output similar to Python implementation
 			outputText = 'Document Parsing Results\n';
 			outputText += '========================\n';
 			outputText += `Parsed on: ${new Date().toISOString()}\n\n`;
 
 			// Extract key fields
+			if (parsedData.traceId) {
+				outputText += `Trace ID: ${parsedData.traceId}\n`;
+			}
 			if (parsedData.documentType) {
 				outputText += `Document Type: ${parsedData.documentType}\n`;
 			}
@@ -304,6 +351,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						fileName: outputFileName,
 						mimeType: 'text/plain',
 						fileSize: textBuffer.length,
+						traceId: parsedData.traceId,
 						documentType: parsedData.documentType,
 						pageCount: parsedData.pageCount,
 					},
@@ -320,6 +368,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						message: 'Document parsed successfully',
 						parsedData,
+						traceId: parsedData.traceId,
 						documentType: parsedData.documentType,
 						pageCount: parsedData.pageCount,
 						timestamp: new Date().toISOString(),

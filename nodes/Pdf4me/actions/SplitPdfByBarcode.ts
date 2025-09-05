@@ -233,6 +233,29 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'File Naming',
+		name: 'fileNaming',
+		type: 'options',
+		required: true,
+		default: 'NameAsPerOrder',
+		description: 'File naming convention for split files',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfByBarcode],
+			},
+		},
+		options: [
+			{
+				name: 'Name As Per Order',
+				value: 'NameAsPerOrder',
+			},
+			{
+				name: 'Name As Per Page',
+				value: 'NameAsPerPage',
+			},
+		],
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -264,6 +287,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const splitBarcodePage = this.getNodeParameter('splitBarcodePage', index) as string;
 	const combinePagesWithSameConsecutiveBarcodes = this.getNodeParameter('combinePagesWithSameConsecutiveBarcodes', index) as boolean;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
+	const fileNaming = this.getNodeParameter('fileNaming', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let pdfContentBase64: string;
@@ -311,6 +335,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		splitBarcodePage,
 		combinePagesWithSameConsecutiveBarcodes,
 		pdfRenderDpi,
+		fileNaming,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;
@@ -459,8 +484,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			totalFiles = 1;
 			responseType = 'Single PDF (legacy)';
 		} else {
-			// Unexpected response: debug logging removed due to n8n restrictions
-			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API.');
+			// Unexpected response: save for debugging
+			// Debug logging removed due to n8n restrictions
+			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API. Raw response saved to /tmp/pdf4me_split_barcode_raw_response.json');
 		}
 	}
 

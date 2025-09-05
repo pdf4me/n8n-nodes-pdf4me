@@ -153,6 +153,19 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'Output File Name',
+		name: 'outputFileName',
+		type: 'string',
+		required: true,
+		default: 'SwissQR.pdf',
+		description: 'Name for the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfBySwissQR],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -178,12 +191,14 @@ export const description: INodeProperties[] = [
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const splitQRPage = this.getNodeParameter('splitQRPage', index) as string;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
 	const combinePagesWithSameBarcodes = this.getNodeParameter('combinePagesWithSameBarcodes', index) as boolean;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let pdfContentBase64: string;
+	let docName: string = outputFileName.endsWith('.pdf') ? outputFileName : `${outputFileName}.pdf`;
 
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
@@ -193,6 +208,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		pdfContentBase64 = buffer.toString('base64');
+		// Use the original filename if available
+		if (item[0].binary[binaryPropertyName].fileName) {
+			docName = item[0].binary[binaryPropertyName].fileName as string;
+		}
 	} else if (inputDataType === 'base64') {
 		pdfContentBase64 = this.getNodeParameter('base64Content', index) as string;
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
@@ -220,16 +239,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} catch (error) {
 			throw new Error(`Failed to download PDF from URL: ${error.message}`);
 		}
+		// Extract filename from URL
+		docName = pdfUrl.split('/').pop() || docName;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
 	const body: IDataObject = {
 		docContent: pdfContentBase64,
-		docName: 'SwissQR.pdf',
-		splitQRPage,
+		docName,
+		splitBarcodePage: splitQRPage,
+		combinePagesWithSameConsecutiveBarcodes: combinePagesWithSameBarcodes,
 		pdfRenderDpi,
-		combinePagesWithSameBarcodes,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;
@@ -238,7 +259,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	// Call the PDF4me SplitPdfBySwissQR endpoint
-	const response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfBySwissQR', body);
+	const response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfSwissQR', body);
 
 	// --- BEGIN: Buffer/String Response Parsing ---
 	let parsedResponse = response;
@@ -298,7 +319,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let totalFiles = 0;
 	let outputDirectory = '';
 	let folderName = '';
-	const sourcePdf = 'SwissQR.pdf';
+	const sourcePdf = docName;
 	let responseType = '';
 
 	// If response is a ZIP (Buffer or base64 string)

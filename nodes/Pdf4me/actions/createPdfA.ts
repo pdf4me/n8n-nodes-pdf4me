@@ -99,6 +99,19 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Binary Output Property Name',
+		name: 'binaryOutputPropertyName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF/A file',
+		placeholder: 'data',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreatePdfA],
+			},
+		},
+	},
+	{
 		displayName: 'Document Name',
 		name: 'docName',
 		type: 'string',
@@ -115,7 +128,7 @@ export const description: INodeProperties[] = [
 		displayName: 'PDF/A Compliance',
 		name: 'compliance',
 		type: 'options',
-		default: 'PDF/A-1b',
+		default: 'PdfA1b',
 		description: 'PDF/A compliance level for long-term archiving',
 		displayOptions: {
 			show: {
@@ -124,34 +137,44 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'PDF/A-1a',
-				value: 'PDF/A-1a',
-				description: 'Full compliance with accessibility features',
+				name: 'PDF/A-1b (Level B Basic)',
+				value: 'PdfA1b',
+				description: 'Basic conformance for reliable reproduction of document visual appearance',
 			},
 			{
-				name: 'PDF/A-1b',
-				value: 'PDF/A-1b',
-				description: 'Basic compliance for long-term preservation',
+				name: 'PDF/A-1a (Level A Accessible)',
+				value: 'PdfA1a',
+				description: 'Includes PDF/A-1b conformance with accessibility features, document structure, and tagging',
 			},
 			{
-				name: 'PDF/A-2a',
-				value: 'PDF/A-2a',
-				description: 'Full enhanced compliance with accessibility',
+				name: 'PDF/A-2b (Basic Compliance)',
+				value: 'PdfA2b',
+				description: 'Part 2 standard supporting new features, image compression, transparency, and digital signatures',
 			},
 			{
-				name: 'PDF/A-2b',
-				value: 'PDF/A-2b',
-				description: 'Enhanced compliance with newer features',
+				name: 'PDF/A-2u (Basic with Unicode)',
+				value: 'PdfA2u',
+				description: 'PDF/A-2b level with all text as unicode mapped',
 			},
 			{
-				name: 'PDF/A-3a',
-				value: 'PDF/A-3a',
-				description: 'Latest full compliance with accessibility',
+				name: 'PDF/A-2a (Accessible Compliance)',
+				value: 'PdfA2a',
+				description: 'PDF/A-2b level with accessibility features same as PDF/A-1a',
 			},
 			{
-				name: 'PDF/A-3b',
-				value: 'PDF/A-3b',
-				description: 'Latest compliance with embedded files support',
+				name: 'PDF/A-3b (Basic Compliance)',
+				value: 'PdfA3b',
+				description: 'Part 3 standard allowing embedding of files (XML, CSV, CAD, Word) along with Part 2 features',
+			},
+			{
+				name: 'PDF/A-3u (Basic with Unicode)',
+				value: 'PdfA3u',
+				description: 'PDF/A-3b level with all text as unicode mapped',
+			},
+			{
+				name: 'PDF/A-3a (Accessible Compliance)',
+				value: 'PdfA3a',
+				description: 'PDF/A-3b level with accessibility features same as PDF/A-1a',
 			},
 		],
 	},
@@ -196,6 +219,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryOutputPropertyName = this.getNodeParameter('binaryOutputPropertyName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const compliance = this.getNodeParameter('compliance', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
@@ -289,7 +313,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'PDF converted to PDF/A successfully',
 				},
 				binary: {
-					data: binaryData,
+					[binaryOutputPropertyName]: binaryData,
 				},
 			},
 		];

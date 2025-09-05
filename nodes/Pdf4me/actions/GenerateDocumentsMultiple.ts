@@ -21,6 +21,11 @@ export const description: INodeProperties[] = [
 				description: 'Provide base64 encoded template file',
 			},
 			{
+				name: 'HTML Code',
+				value: 'htmlCode',
+				description: 'Write raw HTML code manually (only available for HTML template type)',
+			},
+			{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the template file',
@@ -85,7 +90,7 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentsMultiple],
-				templateInputDataType: ['base64', 'url'],
+				templateInputDataType: ['base64', 'url', 'htmlCode'],
 			},
 		},
 	},
@@ -101,6 +106,25 @@ export const description: INodeProperties[] = [
 			show: {
 				operation: [ActionConstants.GenerateDocumentsMultiple],
 				templateInputDataType: ['url'],
+			},
+		},
+	},
+	{
+		displayName: 'HTML Code',
+		name: 'templateHtmlCode',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
+		default: '',
+		required: true,
+		description: 'Write your HTML template code here. It will be automatically converted to base64.',
+		placeholder: '<!DOCTYPE html><html><head><title>{{title}}</title></head><body><h1>{{heading}}</h1><p>{{content}}</p></body></html>',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentsMultiple],
+				templateInputDataType: ['htmlCode'],
+				templateFileType: ['HTML'],
 			},
 		},
 	},
@@ -179,6 +203,7 @@ export const description: INodeProperties[] = [
 		name: 'documentDataText',
 		type: 'string',
 		default: '',
+		required: true,
 		description: 'Manual data entry for the template in JSON or XML format (required if documentDataFile is not provided)',
 		displayOptions: {
 			show: {
@@ -259,50 +284,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'File Meta Data',
-		name: 'fileMetaData',
-		type: 'string',
-		default: '',
-		description: 'Any additional metadata for fields in JSON format',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentsMultiple],
-			},
-		},
-	},
-	{
-		displayName: 'Output Type',
-		name: 'outputType',
-		type: 'options',
-		default: 'Docx',
-		required: true,
-		description: 'The file format of the Generated Document',
-		options: [
-			{ name: 'PDF', value: 'PDF' },
-			{ name: 'Word', value: 'Docx' },
-			{ name: 'Excel', value: 'Excel' },
-			{ name: 'HTML', value: 'HTML' },
-		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentsMultiple],
-			},
-		},
-	},
-	{
-		displayName: 'Meta Data Json',
-		name: 'metaDataJson',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Metadata in JSON format',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentsMultiple],
-			},
-		},
-	},
+
 	{
 		displayName: 'Output File Name',
 		name: 'outputFileName',
@@ -323,10 +305,20 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const templateFileType = this.getNodeParameter('templateFileType', index) as string;
 	const documentInputDataType = this.getNodeParameter('documentInputDataType', index) as string;
 	const documentDataType = this.getNodeParameter('documentDataType', index) as string;
-	const fileMetaData = this.getNodeParameter('fileMetaData', index) as string;
-	const outputType = this.getNodeParameter('outputType', index) as string;
-	const metaDataJson = this.getNodeParameter('metaDataJson', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	
+	// Auto-set output type based on template file type
+	let outputType: string;
+	if (templateFileType === 'HTML') {
+		outputType = 'HTML';
+	} else if (templateFileType === 'PDF') {
+		outputType = 'PDF';
+	} else if (templateFileType === 'Docx') {
+		outputType = 'Docx';
+	} else {
+		// Fallback to user selection if template type is not one of the auto-mapped types
+		outputType = this.getNodeParameter('outputType', index) as string;
+	}
 
 	let templateFileData: string;
 	let templateFileName: string;
@@ -350,6 +342,40 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (templateInputDataType === 'base64') {
 		templateFileData = this.getNodeParameter('templateBase64Content', index) as string;
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
+	} else if (templateInputDataType === 'htmlCode') {
+		// Validate that template file type is HTML
+		if (templateFileType !== 'HTML') {
+			throw new Error('HTML Code input type is only available when Template File Type is set to HTML');
+		}
+		
+		let htmlCode = this.getNodeParameter('templateHtmlCode', index) as string;
+		
+		// Validate HTML code
+		if (!htmlCode || htmlCode.trim().length === 0) {
+			throw new Error('HTML code cannot be empty');
+		}
+		
+		// Ensure HTML has basic structure
+		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
+			console.log('Warning: HTML code may not have proper HTML structure');
+			// Try to wrap the content in basic HTML structure if it's missing
+			if (!htmlCode.includes('<html')) {
+				htmlCode = `<!DOCTYPE html><html><head><title>Template</title></head><body>${htmlCode}</body></html>`;
+				console.log('Wrapped HTML content in basic HTML structure');
+			}
+		}
+		
+		// Convert HTML to base64
+		try {
+			templateFileData = Buffer.from(htmlCode, 'utf8').toString('base64');
+		} catch (error) {
+			console.log('Error converting HTML to base64:', error);
+			// Fallback: try with different encoding
+			templateFileData = Buffer.from(htmlCode, 'latin1').toString('base64');
+		}
+		
+		// Set default filename for HTML template
+		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string || 'template.html';
 	} else if (templateInputDataType === 'url') {
 		const templateFileUrl = this.getNodeParameter('templateFileUrl', index) as string;
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
@@ -415,9 +441,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		outputType,
 		documentDataFile,
 		documentDataText,
-		fileMetaData,
-		metaDataJson,
-		async: false,
+
 	};
 
 	const responseData = await pdf4meApiRequest.call(this, '/api/v2/GenerateDocumentMultiple', payload);

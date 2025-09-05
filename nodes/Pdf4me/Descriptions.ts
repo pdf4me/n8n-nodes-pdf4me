@@ -18,7 +18,6 @@ import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
 import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
-import * as extractPages from './actions/extractPages';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
 import * as overlayPDFs from './actions/OverlayPDFs';
@@ -210,12 +209,6 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Convert PDF documents to Word format with OCR support',
 					value: ActionConstants.ConvertPdfToWord,
 					action: ActionConstants.ConvertPdfToWord,
-				},
-				{
-					name: 'Convert From PDF',
-					description: 'Convert PDF documents to Word, Excel, or other formats with OCR support',
-					value: ActionConstants.ConvertFromPDF,
-					action: ActionConstants.ConvertFromPDF,
 				},
 				{
 					name: 'URL to PDF',
@@ -521,12 +514,6 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.DeleteUnwantedPagesFromPdf,
 				},
 				{
-					name: 'Extract Pages',
-					description: 'Extract specific pages from PDF documents to create shorter versions or digital booklets',
-					value: ActionConstants.ExtractPages,
-					action: ActionConstants.ExtractPages,
-				},
-				{
 					name: 'Extract Pages From PDF',
 					description: 'Extract specific pages from PDF documents',
 					value: ActionConstants.ExtractPagesFromPdf,
@@ -637,7 +624,6 @@ export const descriptions: INodeTypeDescription = {
 		...cropImage.description,
 		...deleteBlankPagesFromPdf.description,
 		...deleteUnwantedPagesFromPdf.description,
-		...extractPages.description,
 		...jsonToExcel.description,
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,

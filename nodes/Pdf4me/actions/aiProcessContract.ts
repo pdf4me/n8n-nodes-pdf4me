@@ -163,7 +163,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const payload: IDataObject = {
 		docContent,    // Base64 encoded contract document content
 		docName,       // User-provided document name
-		IsAsync: true, // Whether to process asynchronously 
 	};
 
 	// Make the API request to process the contract - matching Python script exactly

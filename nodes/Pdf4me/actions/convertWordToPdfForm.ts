@@ -6,8 +6,6 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
-
-
 export const description: INodeProperties[] = [
 	{
 		displayName: 'Input Data Type',
@@ -15,7 +13,7 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'Choose how to provide the Word document to convert',
+		description: 'How to provide the input Word document',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertWordToPdfForm],
@@ -30,7 +28,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Base64 String',
 				value: 'base64',
-				description: 'Provide Word content as base64 encoded string',
+				description: 'Provide Word document content as base64 encoded string',
 			},
 			{
 				name: 'URL',
@@ -40,12 +38,12 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Input Binary Field',
+		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: true,
 		default: 'data',
-		description: 'Name of the binary property that contains the Word document',
+		required: true,
+		description: 'Name of the binary property containing the Word document',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertWordToPdfForm],
@@ -54,16 +52,30 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Base64 Word Content',
+		displayName: 'Input File Name',
+		name: 'inputFileName',
+		type: 'string',
+		default: '',
+		description: 'Name of the input Word file (including extension). If not provided, will use the filename from binary data.',
+		placeholder: 'document.docx',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertWordToPdfForm],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Content',
 		name: 'base64Content',
 		type: 'string',
 		typeOptions: {
 			alwaysOpenEditWindow: true,
 		},
-		required: true,
 		default: '',
-		description: 'Base64 encoded Word document content (.docx, .doc)',
-		placeholder: 'UEsDBBQAAAAIAA...',
+		required: true,
+		description: 'Base64 encoded content of the Word document',
+		placeholder: 'UEsDBBQAAAAIAA==...',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertWordToPdfForm],
@@ -72,12 +84,27 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Word URL',
-		name: 'wordUrl',
+		displayName: 'Input File Name',
+		name: 'inputFileNameRequired',
 		type: 'string',
-		required: true,
 		default: '',
-		description: 'URL to the Word document to convert',
+		required: true,
+		description: 'Name of the input Word file (including extension)',
+		placeholder: 'document.docx',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertWordToPdfForm],
+				inputDataType: ['base64', 'url'],
+			},
+		},
+	},
+	{
+		displayName: 'File URL',
+		name: 'fileUrl',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'URL of the Word document to convert to PDF form',
 		placeholder: 'https://example.com/document.docx',
 		displayOptions: {
 			show: {
@@ -92,20 +119,7 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: 'word_to_pdf_form_output.pdf',
 		description: 'Name for the output PDF form file',
-		placeholder: 'my-word-form.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertWordToPdfForm],
-			},
-		},
-	},
-	{
-		displayName: 'Document Name',
-		name: 'docName',
-		type: 'string',
-		default: 'output.pdf',
-		description: 'Name for the output PDF file (used by API)',
-		placeholder: 'output.pdf',
+		placeholder: 'converted_form.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertWordToPdfForm],
@@ -136,81 +150,87 @@ export const description: INodeProperties[] = [
 	},
 ];
 
+/**
+ * Convert a Word document to PDF form using PDF4Me API
+ * Process: Read Word file → Encode to base64 → Send API request → Handle response → Save PDF form
+ * This converts Word documents into PDF forms with fillable fields
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
-	// Check if this is called from Convert to PDF or standalone
-	const operation = this.getNodeParameter('operation', index) as string;
-
-	let inputDataType: string;
-	let outputFileName: string;
-	let docName: string;
-	let advancedOptions: IDataObject;
-
-	if (operation === ActionConstants.ConvertToPdf) {
-		// Use the parameters from the Convert to PDF action
-		inputDataType = this.getNodeParameter('wordFormInputDataType', index) as string;
-		outputFileName = this.getNodeParameter('wordFormOutputFileName', index) as string;
-		docName = this.getNodeParameter('wordFormDocName', index) as string;
-		advancedOptions = this.getNodeParameter('wordFormAdvancedOptions', index) as IDataObject;
-	} else {
-		// Use the original parameters (for backward compatibility)
-		inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		docName = this.getNodeParameter('docName', index) as string;
-		advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	}
+	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
-	let originalFileName = docName;
+	let docName: string;
 
-	// Handle different input data types
+	// Handle different input types
 	if (inputDataType === 'binaryData') {
-		// Get Word content from binary data
-		const binaryPropertyName = operation === ActionConstants.ConvertToPdf
-			? this.getNodeParameter('wordFormBinaryPropertyName', index) as string
-			: this.getNodeParameter('binaryPropertyName', index) as string;
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
 
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
 		}
 
-		const binaryData = item[0].binary[binaryPropertyName];
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
+		}
+
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
 
-		// Use the original filename if available
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
+		// Use provided input filename or extract from binary data
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = inputFileName || binaryData.fileName || 'document.docx';
 	} else if (inputDataType === 'base64') {
-		// Use base64 content directly
-		docContent = operation === ActionConstants.ConvertToPdf
-			? this.getNodeParameter('wordFormBase64Content', index) as string
-			: this.getNodeParameter('base64Content', index) as string;
+		// Base64 input
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		docName = this.getNodeParameter('inputFileNameRequired', index) as string;
 
-		// Remove data URL prefix if present (e.g., "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,")
+		if (!docName) {
+			throw new Error('Input file name is required for base64 input type.');
+		}
+
+		// Handle data URLs
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
 	} else if (inputDataType === 'url') {
-		// Use Word URL directly - download the file first
-		const wordUrl = operation === ActionConstants.ConvertToPdf
-			? this.getNodeParameter('wordFormUrl', index) as string
-			: this.getNodeParameter('wordUrl', index) as string;
+		// URL input
+		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
+		docName = this.getNodeParameter('inputFileNameRequired', index) as string;
 
-		// Validate URL format
-		try {
-			new URL(wordUrl);
-		} catch (error) {
-			throw new Error('Invalid URL format. Please provide a valid URL to the Word document.');
+		if (!docName) {
+			throw new Error('Input file name is required for URL input type.');
 		}
 
-		docContent = await downloadWordFromUrl(wordUrl);
+		// Download the file from URL and convert to base64
+		try {
+			const options = {
+				method: 'GET' as const,
+				url: fileUrl,
+				encoding: 'arraybuffer' as const,
+			};
+
+			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
+			docContent = Buffer.from(response).toString('base64');
+		} catch (error) {
+			throw new Error(`Failed to download file from URL: ${fileUrl}. Error: ${error}`);
+		}
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate base64 content
 	if (!docContent || docContent.trim() === '') {
 		throw new Error('Word document content is required');
 	}
@@ -218,54 +238,64 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Build the request body
 	const body: IDataObject = {
 		docContent,
-		docName: originalFileName,
-		async: true, // Asynchronous processing as per Python sample
+		docName: docName,		
 	};
 
 	// Add profiles if provided
 	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) body.profiles = profiles;
+	if (profiles) {
+		body.profiles = profiles;
+	}
 
 	sanitizeProfiles(body);
 
-	// Use the standard pdf4meAsyncRequest function
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertWordToPdfForm', body);
+	// Make the API request using the shared function
+	let responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertWordToPdfForm', body);
 
-	// Handle the binary response (converted PDF form data)
+	// Handle the binary response (PDF form data)
 	if (responseData) {
+		// Validate that we received valid PDF data
+		if (!Buffer.isBuffer(responseData)) {
+			throw new Error('Invalid response format: Expected Buffer but received ' + typeof responseData);
+		}
+
+		// Check if the response looks like a PDF (should start with %PDF)
+		const responseString = responseData.toString('utf8', 0, 10);
+		if (!responseString.startsWith('%PDF')) {
+			// If it doesn't look like a PDF, it might be an error message or base64 encoded
+			const errorText = responseData.toString('utf8', 0, 200);
+			if (errorText.includes('error') || errorText.includes('Error')) {
+				throw new Error(`API returned error: ${errorText}`);
+			}
+			// Try to decode as base64 if it doesn't look like a PDF
+			try {
+				const decodedBuffer = Buffer.from(responseData.toString('utf8'), 'base64');
+				const decodedString = decodedBuffer.toString('utf8', 0, 10);
+				if (decodedString.startsWith('%PDF')) {
+					// It was base64 encoded, use the decoded version
+					responseData = decodedBuffer;
+				} else {
+					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+				}
+			} catch (decodeError) {
+				throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+			}
+		}
+
 		// Generate filename if not provided
 		let fileName = outputFileName;
-		if (!fileName || fileName.trim() === '') {
-			// Extract name from original filename if available, otherwise use default
-			const baseName = originalFileName ? originalFileName.replace(/\.[^.]*$/, '') : 'word_to_pdf_form_output';
-			fileName = `${baseName}.pdf`;
+		if (!fileName) {
+			fileName = `word_to_pdf_form_${Date.now()}.pdf`;
 		}
 
-		// Ensure proper extension
-		if (!fileName.includes('.')) {
-			fileName = `${fileName}.pdf`;
+		// Ensure the filename has .pdf extension
+		if (!fileName.toLowerCase().endsWith('.pdf')) {
+			fileName = fileName.replace(/\.[^.]*$/, '') + '.pdf';
 		}
 
-		// Ensure responseData is a Buffer
-		let pdfBuffer: any;
-		if (Buffer.isBuffer(responseData)) {
-			pdfBuffer = responseData;
-		} else if (typeof responseData === 'string') {
-			// If it's a base64 string, convert to buffer
-			pdfBuffer = Buffer.from(responseData, 'base64');
-		} else {
-			// If it's already binary data, convert to buffer
-			pdfBuffer = Buffer.from(responseData as any);
-		}
-
-		// Validate the PDF buffer
-		if (!pdfBuffer || pdfBuffer.length < 100) {
-			throw new Error('Invalid PDF response from API. The converted PDF form appears to be too small or corrupted.');
-		}
-
-		// Create binary data for output using n8n's helper
+		// responseData is already binary data (Buffer)
 		const binaryData = await this.helpers.prepareBinaryData(
-			pdfBuffer,
+			responseData,
 			fileName,
 			'application/pdf',
 		);
@@ -275,13 +305,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				json: {
 					fileName,
 					mimeType: 'application/pdf',
-					fileSize: pdfBuffer.length,
+					fileSize: responseData.length,
 					success: true,
-					originalFileName,
-					message: 'Word document converted to PDF form successfully',
+					inputDataType,
+					sourceFileName: docName,
+					operation: 'ConvertWordToPdfForm',
+					message: 'Word document successfully converted to PDF form',
 				},
 				binary: {
-					data: binaryData, // Use 'data' as the key for consistency with other nodes
+					data: binaryData,
 				},
 			},
 		];
@@ -289,49 +321,4 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case
 	throw new Error('No response data received from PDF4ME API');
-}
-
-async function downloadWordFromUrl(wordUrl: string): Promise<string> {
-	/**
-	 * Download Word document from URL and convert to base64
-	 * Process: Download file → Convert to base64 → Validate content
-	 *
-	 * Args:
-	 *   wordUrl (str): URL to the Word document
-	 *
-	 * Returns:
-	 *   str: Base64 encoded Word content
-	 *
-	 * Raises:
-	 *   Error: For download or encoding errors
-	 */
-	try {
-		// Download the Word document
-		const response = await fetch(wordUrl);
-
-		if (!response.ok) {
-			throw new Error(`Failed to download Word document from URL: ${response.status} ${response.statusText}`);
-		}
-
-		// Get the file as array buffer
-		const arrayBuffer = await response.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
-
-		// Convert to base64
-		const base64Content = buffer.toString('base64');
-
-		// Validate the content
-		if (base64Content.length < 100) {
-			throw new Error('Downloaded file appears to be too small. Please ensure the URL points to a valid Word document.');
-		}
-
-		return base64Content;
-
-	} catch (error) {
-		if (error.message.includes('Failed to fetch')) {
-			throw new Error('Failed to fetch the Word document from the provided URL. Please check the URL and your network connection.');
-		}
-		throw error;
-	}
-	return '';
 }
