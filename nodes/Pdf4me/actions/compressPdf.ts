@@ -166,7 +166,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName,
 		optimizeProfile,
-		IsAsync: true,
 	};
 
 	// Make the API request

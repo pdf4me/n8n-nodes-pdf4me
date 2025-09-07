@@ -228,7 +228,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: docName,
-		IsAsync: true, // Asynchronous processing
 	};
 
 	// Add profiles if provided
