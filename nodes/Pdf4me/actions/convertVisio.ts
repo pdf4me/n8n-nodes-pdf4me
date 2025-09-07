@@ -286,7 +286,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const saveForegroundPage = this.getNodeParameter('saveForegroundPage', index) as boolean;
 	const saveToolBar = this.getNodeParameter('saveToolBar', index) as boolean;
 	const autoFit = this.getNodeParameter('autoFit', index) as boolean;
-	const async = this.getNodeParameter('async', index) as boolean;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -366,6 +365,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		SaveForegroundPage: saveForegroundPage,
 		SaveToolBar: saveToolBar,
 		AutoFit: autoFit,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
@@ -440,7 +440,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						isPdfCompliant: isPdfCompliant,
 						saveToolBar: saveToolBar,
 						autoFit: autoFit,
-						async: async,
 					},
 				},
 				binary: {

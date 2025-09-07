@@ -261,6 +261,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		marginRight,
 		marginTop,
 		marginBottom,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided

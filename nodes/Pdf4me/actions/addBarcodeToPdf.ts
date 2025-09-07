@@ -630,6 +630,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		hideText,
 		showOnlyInPrint,
 		isTextAbove,
+		IsAsync: true,
+
 	};
 
 	// Add custom profiles if specified

@@ -218,6 +218,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		text: textToSearch,
 		splitTextPage,
 		fileNaming,
+		IsAsync: true,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;

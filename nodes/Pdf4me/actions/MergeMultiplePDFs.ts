@@ -236,6 +236,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
 			docContent: pdfContentsBase64,
 			docName,
+			IsAsync: true,
 		};
 
 		// Add profiles if provided

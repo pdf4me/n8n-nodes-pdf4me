@@ -218,6 +218,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			baseDocName: 'base.pdf',
 			layerDocContent: layerPdfBase64,
 			layerDocName: 'layer.pdf',
+			IsAsync: true,
 		};
 
 		// Add profiles if provided

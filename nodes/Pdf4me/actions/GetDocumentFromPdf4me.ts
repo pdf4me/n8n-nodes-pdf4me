@@ -44,6 +44,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		CallBackUrl: callBackUrl,
 		docName: docName,
+		IsAsync: true,
 	};
 
 	// Make the API request to the webhook subscription endpoint

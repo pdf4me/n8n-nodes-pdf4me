@@ -231,7 +231,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		RemoveComments: extractionOptions?.removeComments !== undefined ? extractionOptions.removeComments : true,
 		RemoveHeaderFooter: extractionOptions?.removeHeaderFooter !== undefined ? extractionOptions.removeHeaderFooter : true,
 		AcceptChanges: extractionOptions?.acceptChanges !== undefined ? extractionOptions.acceptChanges : true,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided

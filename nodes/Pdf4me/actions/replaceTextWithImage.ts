@@ -307,7 +307,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const imageHeight = this.getNodeParameter('imageHeight', index) as number;
 	const imageWidth = this.getNodeParameter('imageWidth', index) as number;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Build the request body
 	const body: IDataObject = {
@@ -318,7 +317,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		imageContent,
 		imageHeight,
 		imageWidth,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

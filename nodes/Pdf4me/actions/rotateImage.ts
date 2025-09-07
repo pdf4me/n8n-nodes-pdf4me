@@ -153,7 +153,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const backgroundColor = this.getNodeParameter('backgroundColor', index) as string;
 	const proportionateResize = this.getNodeParameter('proportionateResize', index) as boolean;
 	const rotationAngle = this.getNodeParameter('rotationAngle', index) as number;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Main image content
 	let docContent: string;
@@ -195,7 +194,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		Backgroundcolor: backgroundColor,
 		ProportionateResize: proportionateResize,
 		RotationAngle: rotationAngle,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

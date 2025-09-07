@@ -163,6 +163,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const payload: IDataObject = {
 		docContent,    // Base64 encoded invoice document content
 		docName,       // User-provided document name
+		IsAsync: true,
 	};
 
 	// Make the API request to process the invoice - matching Python script exactly

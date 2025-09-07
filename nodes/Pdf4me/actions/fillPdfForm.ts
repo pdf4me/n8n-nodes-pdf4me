@@ -273,7 +273,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const metaData = this.getNodeParameter('metaData', index) as string;
 	const metaDataJson = this.getNodeParameter('metaDataJson', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Handle form data based on data type
 	let dataArray: string;
@@ -332,7 +331,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		metaData: metaData || '',
 		metaDataJson: metaDataJson || '',
 		InputFormData: inputFormData,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

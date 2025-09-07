@@ -195,7 +195,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		expression,
 		pageSequence,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided

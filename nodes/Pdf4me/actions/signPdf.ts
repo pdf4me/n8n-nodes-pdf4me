@@ -567,6 +567,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		opacity,
 		showOnlyInPrint,
 		isBackground,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided

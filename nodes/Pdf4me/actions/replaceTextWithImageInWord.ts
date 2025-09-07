@@ -316,7 +316,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		IsFirstPageSkip: isFirstPageSkip,
 		PageNumbers: pageNumbers,
 		SearchText: searchText,
-		async: true,
+		IsAsync: true,
 	};
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ReplaceTextWithImageInWord', payload);
 	if (responseData) {

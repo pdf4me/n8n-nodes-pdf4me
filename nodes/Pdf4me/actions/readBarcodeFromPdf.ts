@@ -176,7 +176,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const barcodeType = this.getNodeParameter('barcodeType', index) as string;
 	const pages = this.getNodeParameter('pages', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Main PDF content
 	let docContent: string;
@@ -215,7 +214,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		barcodeType: [barcodeType],
 		pages: pages || 'all',
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

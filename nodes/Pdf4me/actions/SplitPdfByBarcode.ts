@@ -336,6 +336,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		combinePagesWithSameConsecutiveBarcodes,
 		pdfRenderDpi,
 		fileNaming,
+		IsAsync: true,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;

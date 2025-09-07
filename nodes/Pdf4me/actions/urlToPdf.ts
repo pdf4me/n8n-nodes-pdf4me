@@ -238,6 +238,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		bottomMargin: advancedOptions?.bottomMargin || '20px',
 		printBackground: advancedOptions?.printBackground !== undefined ? advancedOptions.printBackground : true,
 		displayHeaderFooter: advancedOptions?.displayHeaderFooter !== undefined ? advancedOptions.displayHeaderFooter : false,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided

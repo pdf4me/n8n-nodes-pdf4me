@@ -262,7 +262,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const pages = this.getNodeParameter('pages', index) as string;
 	const formFieldType = this.getNodeParameter('formFieldType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Build the request body
 	const body: IDataObject = {
@@ -275,7 +274,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		Size: size, // Note: API expects "Size" with capital S
 		pages,
 		formFieldType,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

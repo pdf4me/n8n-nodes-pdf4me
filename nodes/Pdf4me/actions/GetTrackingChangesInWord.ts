@@ -155,7 +155,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const payload = {
 		docName,
 		docContent,
-		async: true,
+		IsAsync: true,
 	};
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/GetTrackingChangesInWord', payload);
 	if (responseData) {

@@ -333,6 +333,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		isBold,
 		isItalic,
 		skipFirstPage,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided

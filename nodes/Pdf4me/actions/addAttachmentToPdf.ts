@@ -1,7 +1,6 @@
 ﻿import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
@@ -22,7 +21,6 @@ import {
  *	   "docContent": "base64_content" // Required: Base64 encoded attachment content
  *	 }
  *   ],
- *   "async": true					  // Optional: Use async processing for large files
  * }
  *
  * Response Handling:
@@ -275,13 +273,6 @@ export const description: INodeProperties[] = [
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
 				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
-			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing. Recommended for big files and high call volumes to reduce server load.',
-			},
 		],
 	},
 	{
@@ -355,7 +346,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const attachments = this.getNodeParameter('attachments', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const debugOptions = this.getNodeParameter('debugOptions', index) as IDataObject;
-	const useAsync = advancedOptions?.useAsync !== false; // Default to true
 
 	// Initialize debug logger
 	const debugConfig: DebugConfig = {
@@ -367,7 +357,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	logger.log('info', 'Starting Add Attachment to PDF operation', {
 		inputDataType,
 		outputFileName,
-		useAsync,
 		debugEnabled: debugConfig.enabled,
 	});
 
@@ -581,7 +570,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docName: body.docName,
 			contentLength: docContent.length,
 			attachmentCount: attachmentArray.length,
-			async: useAsync,
+			IsAsync: true,
 			bodyKeys: Object.keys(body),
 		});
 
@@ -604,7 +593,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContentType: typeof body.docContent,
 			hasAttachments: !!body.attachments,
 			attachmentCount: Array.isArray(body.attachments) ? body.attachments.length : 0,
-			asyncFlag: useAsync,
 			allKeys: Object.keys(body),
 		});
 
@@ -624,15 +612,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Make the API request (following C# example pattern)
 		let result: any;
-		logger.log('debug', 'Making API request', { useAsync, endpoint: '/api/v2/AddAttachmentToPdf' });
+		logger.log('debug', 'Making API request', { endpoint: '/api/v2/AddAttachmentToPdf' });
 
-		// Use the appropriate request method based on async setting
-		// For big files and too many calls async is recommended to reduce the server load
-		if (useAsync) {
-			result = await pdf4meAsyncRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
-		} else {
-			result = await pdf4meApiRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
-		}
+		// Use async request method for better performance with large files
+		result = await pdf4meAsyncRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
 
 		logger.log('debug', 'API request completed successfully', {
 			resultType: typeof result,

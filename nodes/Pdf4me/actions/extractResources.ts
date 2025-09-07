@@ -218,7 +218,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		extractText: extractionOptions?.extractText !== undefined ? extractionOptions.extractText : true,
 		extractImages,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided
@@ -330,7 +330,7 @@ async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pa
 			docContent: base64Content,
 			docName: 'temp_filtered.pdf',
 			pageNumbers: pageNumbers.join(','),
-			async: false, // Synchronous for page extraction
+			IsAsync: true,
 		};
 
 		// Make API call to ExtractPages endpoint using the existing pdf4meApiRequest function

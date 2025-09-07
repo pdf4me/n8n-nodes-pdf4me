@@ -579,7 +579,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		referenceType,						   // Reference type (NON = No reference) (Required)
 		languageType,							// Language for the QR bill (Required)
 		seperatorLine,						   // Separator line style (Required)
-		async: true,							 // Asynchronous processing as requested
+		IsAsync: true,							 // Asynchronous processing as requested
 	};
 
 	// Add optional parameters from advanced options if provided

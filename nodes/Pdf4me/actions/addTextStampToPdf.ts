@@ -327,7 +327,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const opacity = this.getNodeParameter('opacity', index) as number;
 	const isBackground = this.getNodeParameter('isBackground', index) as boolean;
 	const rotation = this.getNodeParameter('rotation', index) as number;
-	const async = this.getNodeParameter('async', index) as boolean;
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
@@ -388,7 +387,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		opacity,
 		isBackground,
 		rotation,
-		async,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided

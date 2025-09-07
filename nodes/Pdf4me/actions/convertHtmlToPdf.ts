@@ -421,6 +421,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		rightMargin,
 		printBackground,
 		displayHeaderFooter,
+		IsAsync: true,
 		// Note: async flag is automatically added by pdf4meAsyncRequest function
 	};
 

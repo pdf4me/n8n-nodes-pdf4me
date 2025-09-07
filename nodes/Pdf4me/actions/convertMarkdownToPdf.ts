@@ -216,7 +216,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
-		async: true, // Asynchronous processing as per Python sample
+		IsAsync: true, // Asynchronous processing as per Python sample
 	};
 
 	// Add profiles if provided

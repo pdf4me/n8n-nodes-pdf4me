@@ -262,7 +262,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docName,
 		splitAction,
 		fileNaming,
-		async: true,
+		IsAsync: true,
 	};
 
 	if (splitAction === 'SplitAfterPage' || splitAction === 'RecurringSplitAfterPage') {

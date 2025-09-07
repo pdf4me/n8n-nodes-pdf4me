@@ -326,6 +326,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			ignoreNullValues: advancedOptions?.ignoreNullValues !== undefined ? advancedOptions.ignoreNullValues : false,
 			firstRow: advancedOptions?.firstRow !== undefined ? advancedOptions.firstRow : 1,
 			firstColumn: advancedOptions?.firstColumn !== undefined ? advancedOptions.firstColumn : 1,
+			IsAsync: true,
 		};
 
 		// Add profiles if provided

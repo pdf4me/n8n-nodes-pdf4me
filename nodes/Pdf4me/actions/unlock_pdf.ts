@@ -109,7 +109,6 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const password = this.getNodeParameter('password', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Main PDF content
 	let docContent: string;
@@ -144,7 +143,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docName,
 		docContent,
 		password,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

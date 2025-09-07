@@ -184,7 +184,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const resizeType = this.getNodeParameter('resizeType', index) as string;
 	const maintainAspectRatio = this.getNodeParameter('maintainAspectRatio', index) as boolean;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Main image content
 	let docContent: string;
@@ -225,7 +224,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		ImageResizeType: resizeType,
 		MaintainAspectRatio: maintainAspectRatio,
-		async: useAsync,
+		IsAsync: true,
 	};
 	if (resizeType === 'Percentage') {
 		const resizePercentage = this.getNodeParameter('resizePercentage', index);

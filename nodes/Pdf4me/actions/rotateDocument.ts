@@ -194,7 +194,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName,
 		rotationType,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided

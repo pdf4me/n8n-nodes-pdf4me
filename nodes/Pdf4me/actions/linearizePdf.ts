@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
@@ -193,13 +192,6 @@ export const description: INodeProperties[] = [
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
 				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
-			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing. Recommended for large files.',
-			},
 		],
 	},
 ];
@@ -217,7 +209,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const optimizeProfile = this.getNodeParameter('optimizeProfile', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	const useAsync = advancedOptions?.useAsync !== false; // Default to true
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -278,6 +269,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName: originalFileName,
 		optimizeProfile,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
@@ -288,11 +280,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Make the API request
 	let result: any;
-	if (useAsync) {
-		result = await pdf4meAsyncRequest.call(this, '/api/v2/LinearizePdf', body);
-	} else {
-		result = await pdf4meApiRequest.call(this, '/api/v2/LinearizePdf', body);
-	}
+	result = await pdf4meAsyncRequest.call(this, '/api/v2/LinearizePdf', body);
 
 	// Handle the response
 	if (result) {

@@ -95,7 +95,6 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Main document content
 	let docContent: string;
@@ -134,7 +133,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const body: IDataObject = {
 		docName,
 		docContent,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request

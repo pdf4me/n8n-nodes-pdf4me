@@ -375,7 +375,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			WidthPixel: widthPixel.toString(),
 			ImageExtension: imageExtension,
 		},
-		async: true,
+		IsAsync: true,
 	};
 
 	// Add page selection if specified

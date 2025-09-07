@@ -251,6 +251,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		splitBarcodePage: splitQRPage,
 		combinePagesWithSameConsecutiveBarcodes: combinePagesWithSameBarcodes,
 		pdfRenderDpi,
+		IsAsync: true,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;

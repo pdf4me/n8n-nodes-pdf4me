@@ -216,13 +216,6 @@ export const description: INodeProperties[] = [
 				default: 15,
 				description: 'Base seconds to wait between polling attempts (actual delay increases exponentially)',
 			},
-			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing for better handling of large files',
-			},
 		],
 	},
 ];

@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -137,18 +136,6 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Use Async Processing',
-		name: 'useAsync',
-		type: 'boolean',
-		default: true,
-		description: 'Whether to use asynchronous processing for large files',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ConvertImageFormat],
-			},
-		},
-	},
 ];
 
 // Helper function to download image from URL and convert to base64
@@ -160,7 +147,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const currentImageFormat = this.getNodeParameter('currentImageFormat', index) as string;
 	const newImageFormat = this.getNodeParameter('newImageFormat', index) as string;
-	const useAsync = this.getNodeParameter('useAsync', index) as boolean;
 
 	// Main image content
 	let docContent: string;
@@ -205,15 +191,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		currentImageFormat,
 		newImageFormat,
+		IsAsync: true,
 	};
 
 	// Make the API request
 	let result: any;
-	if (useAsync) {
-		result = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertImageFormat', body);
-	} else {
-		result = await pdf4meApiRequest.call(this, '/api/v2/ConvertImageFormat', body);
-	}
+	result = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertImageFormat', body);
 
 	// Return the result as binary data
 	let mimeType = 'image/png';

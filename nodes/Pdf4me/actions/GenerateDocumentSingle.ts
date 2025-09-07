@@ -467,7 +467,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		outputType,
 		documentDataFile: documentDataFile || undefined,
 		documentDataText: documentDataText || undefined,
-
+		IsAsync: true,
 	};
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/GenerateDocumentSingle', payload);

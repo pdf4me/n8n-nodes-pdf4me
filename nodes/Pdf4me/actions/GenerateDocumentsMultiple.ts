@@ -441,7 +441,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		outputType,
 		documentDataFile,
 		documentDataText,
-
+		IsAsync: true,
 	};
 
 	const responseData = await pdf4meApiRequest.call(this, '/api/v2/GenerateDocumentMultiple', payload);

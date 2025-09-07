@@ -517,6 +517,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		outputFileName,
 		alignX,
 		alignY,
+		IsAsync: true,
 	});
 
 	try {
@@ -659,6 +660,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			isBackground,
 			// Default: true
 			showOnlyInPrint,
+			IsAsync: true,
 		};
 
 		logger.log('debug', 'Request body prepared', {

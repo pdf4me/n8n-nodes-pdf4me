@@ -188,7 +188,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const newText = this.getNodeParameter('newText', index) as string;
 	const pageSequence = this.getNodeParameter('pageSequence', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Build the request body
 	const body: IDataObject = {
@@ -196,7 +195,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		oldText,
 		newText,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Add pageSequence only if it's not empty

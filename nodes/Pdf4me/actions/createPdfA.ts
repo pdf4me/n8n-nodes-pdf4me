@@ -266,7 +266,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		compliance,
 		allowUpgrade: advancedOptions?.allowUpgrade !== undefined ? advancedOptions.allowUpgrade : true,
 		allowDowngrade: advancedOptions?.allowDowngrade !== undefined ? advancedOptions.allowDowngrade : true,
-		async: true,
+		IsAsync: true,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;
