@@ -520,7 +520,7 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.ExtractPagesFromPdf,
 				},
 				{
-					name: 'Rotate Page',
+					name: 'Rotate PDF Page',
 					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
 					value: ActionConstants.RotatePage,
 					action: ActionConstants.RotatePage,
@@ -559,7 +559,7 @@ export const descriptions: INodeTypeDescription = {
 				},
 				// Security
 				{
-					name: 'Protect Document',
+					name: 'Protect PDF',
 					description: 'Protect PDF documents with encryption, passwords, and permissions',
 					value: ActionConstants.ProtectDocument,
 					action: ActionConstants.ProtectDocument,
