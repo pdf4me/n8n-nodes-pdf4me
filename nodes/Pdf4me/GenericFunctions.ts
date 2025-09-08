@@ -8,6 +8,7 @@ import type {
 	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
+import config from '../../config/config';
 
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
@@ -23,7 +24,7 @@ export async function pdf4meApiRequest(
 		url.includes('/ClassifyDocument');
 
 	let options: IHttpRequestOptions = {
-		baseURL: 'https://api.pdf4me.com',
+		baseURL: config.baseUrl,
 		url: url,
 		headers: {
 			'Content-Type': 'application/json',
@@ -62,7 +63,7 @@ export async function pdf4meApiRequest(
 			if (isJsonResponse) {
 				return response.body; // Already parsed when json: true is set
 			}
-			
+
 			// For binary responses, return binary content
 			if (response.body instanceof Buffer) {
 				return response.body;
@@ -104,9 +105,9 @@ async function delayAsync(
 ): Promise<void> {
 	const startTime = Date.now();
 	console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
-	
+
 	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-		url: 'https://api.pdf4me.com/api/v2/AddDelay',
+		url: config.baseUrl + '/api/v2/AddDelay',
 		method: 'GET',
 		returnFullResponse: true,
 		ignoreHttpStatusErrors: true,
@@ -135,7 +136,7 @@ export async function pdf4meAsyncRequest(
 		url.includes('/ClassifyDocument');
 
 	let options: IHttpRequestOptions = {
-		baseURL: 'https://api.pdf4me.com',
+		baseURL: config.baseUrl,
 		url: url,
 		headers: {
 			'Content-Type': 'application/json',

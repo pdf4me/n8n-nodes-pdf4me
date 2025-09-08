@@ -4,11 +4,12 @@ import {
 	ICredentialType,
 	INodeProperties,
 } from 'n8n-workflow';
+import config from '../config/config';
 
 export class Pdf4meApi implements ICredentialType {
 	name = 'pdf4meApi';
-	displayName = 'PDF4ME API';
-	documentationUrl = 'https://dev.pdf4me.com/apiv2/documentation/';
+	displayName = config.displayName;
+	documentationUrl = config.documentationUrl;
 	properties: INodeProperties[] = [
 		{
 			displayName: 'PDF4ME API Key',
@@ -37,7 +38,7 @@ export class Pdf4meApi implements ICredentialType {
 	// The block below tells how this credential can be tested
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://api.pdf4me.com',
+			baseURL: config.baseUrl,
 			url: '/api/v2/CreateBarcode',
 			method: 'POST',
 			headers: {

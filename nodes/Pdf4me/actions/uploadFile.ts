@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	ActionConstants,
 } from '../GenericFunctions';
+import config from '../../../config/config';
 
 
 export const description: INodeProperties[] = [
@@ -143,7 +144,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Make the API request using the new httpRequestWithAuthentication helper
 	const options = {
-		url: 'https://api.pdf4me.com/api/v2/UploadFile',
+		url: config.baseUrl+'/api/v2/UploadFile',
 		method: 'POST' as const,
 		headers: {
 			'Content-Type': 'application/json',
@@ -151,22 +152,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body: body,
 		json: true, // Parse response as JSON
 	};
-	
 	const result: any = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
 	// Extract document URL from response
 	let documentUrl;
-	
 	if (result.documents && result.documents.length > 0) {
 		documentUrl = result.documents[0].documentUrl;
 	} else if (result.documentUrl) {
 		documentUrl = result.documentUrl;
 	}
-	
 	if (!documentUrl) {
 		throw new Error('No document URL found in response');
 	}
-	
 	return [
 		{
 			json: {
