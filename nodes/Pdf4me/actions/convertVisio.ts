@@ -395,33 +395,69 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the binary response (PDF data)
 	if (responseData) {
-		// Validate that we received valid PDF data
-		if (!Buffer.isBuffer(responseData)) {
-			throw new Error('Invalid response format: Expected Buffer but received ' + typeof responseData);
+		let pdfBuffer: Buffer;
+
+		// Handle different response formats
+		if (Buffer.isBuffer(responseData)) {
+			pdfBuffer = responseData;
+		} else if (typeof responseData === 'string') {
+			// If it's a string, it might be base64 encoded
+			try {
+				pdfBuffer = Buffer.from(responseData, 'base64');
+			} catch (error) {
+				// If base64 decoding fails, treat as raw string
+				pdfBuffer = Buffer.from(responseData, 'utf8');
+			}
+		} else {
+			// Convert other types to string first, then to buffer
+			pdfBuffer = Buffer.from(String(responseData), 'utf8');
 		}
 
 		// Check if the response looks like a PDF (should start with %PDF)
-		const responseString = responseData.toString('utf8', 0, 10);
+		const responseString = pdfBuffer.toString('utf8', 0, 10);
 		if (!responseString.startsWith('%PDF')) {
 			// If it doesn't look like a PDF, it might be an error message or base64 encoded
-			const errorText = responseData.toString('utf8', 0, 200);
-			if (errorText.includes('error') || errorText.includes('Error')) {
+			const errorText = pdfBuffer.toString('utf8', 0, 200);
+			
+			// Check if it's an error message
+			if (errorText.includes('error') || errorText.includes('Error') || errorText.includes('exception')) {
 				throw new Error(`API returned error: ${errorText}`);
 			}
+			
 			// Try to decode as base64 if it doesn't look like a PDF
 			try {
-				const decodedBuffer = Buffer.from(responseData.toString('utf8'), 'base64');
+				const decodedBuffer = Buffer.from(pdfBuffer.toString('utf8'), 'base64');
 				const decodedString = decodedBuffer.toString('utf8', 0, 10);
 				if (decodedString.startsWith('%PDF')) {
 					// It was base64 encoded, use the decoded version
-					responseData = decodedBuffer;
+					pdfBuffer = decodedBuffer;
 				} else {
-					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+					// If still not a PDF, check if it's a JSON error response
+					try {
+						const jsonResponse = JSON.parse(pdfBuffer.toString('utf8'));
+						if (jsonResponse.error || jsonResponse.message) {
+							throw new Error(`API returned error: ${jsonResponse.error || jsonResponse.message}`);
+						}
+					} catch (jsonError) {
+						// Not JSON, so it's likely invalid data
+						throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+					}
 				}
 			} catch (decodeError) {
-				throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+				// If base64 decoding fails, check if it's a JSON error
+				try {
+					const jsonResponse = JSON.parse(pdfBuffer.toString('utf8'));
+					if (jsonResponse.error || jsonResponse.message) {
+						throw new Error(`API returned error: ${jsonResponse.error || jsonResponse.message}`);
+					}
+				} catch (jsonError) {
+					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+				}
 			}
 		}
+
+		// Use the validated PDF buffer
+		responseData = pdfBuffer;
 
 		// Generate filename if not provided
 		let fileName = outputFileName;

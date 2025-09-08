@@ -128,11 +128,15 @@ export async function pdf4meAsyncRequest(
 	// Use the body as-is without modifying it
 	const asyncBody = body;
 
-	// Determine if this is a JSON response operation (like CreateImages, AI processing)
+	// Determine if this is a JSON response operation (like CreateImages, AI processing, metadata extraction)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
 		url.includes('/ProcessInvoice') || url.includes('/ProcessHealthCard') ||
 		url.includes('/ProcessContract') || url.includes('/ParseDocument') ||
-		url.includes('/ClassifyDocument');
+		url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
+		url.includes('/ExtractResources') || url.includes('/ExtractPdfFormData') ||
+		url.includes('/GetPdfMetadata') || url.includes('/ExtractTextByExpression') ||
+		url.includes('/ExtractAttachmentFromPdf') || url.includes('/GetImageMetadata') ||
+		url.includes('/ExtractTableFromPdf');
 
 	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',

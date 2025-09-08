@@ -102,26 +102,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Template ID',
-		name: 'templateId',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'GUID of the template to use for parsing the document',
-		placeholder: '12345678-1234-1234-1234-123456789abc',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ParseDocument],
-			},
-		},
-	},
-	{
 		displayName: 'Parse ID',
 		name: 'parseId',
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'GUID of the parse configuration to use',
+		description: 'GUID of the parse configuration to use (will also be used as Template ID)',
 		placeholder: '87654321-4321-4321-4321-cba987654321',
 		displayOptions: {
 			show: {
@@ -199,7 +185,6 @@ export const description: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ParseDocument],
-				outputFormat: ['text'],
 			},
 		},
 	},
@@ -215,7 +200,6 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const templateId = this.getNodeParameter('templateId', index) as string;
 	const parseId = this.getNodeParameter('parseId', index) as string;
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
@@ -270,9 +254,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Validate required parameters
-	if (!templateId || templateId.trim() === '') {
-		throw new Error('Template ID is required');
-	}
 	if (!parseId || parseId.trim() === '') {
 		throw new Error('Parse ID is required');
 	}
@@ -281,7 +262,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
-		TemplateId: templateId,
+		TemplateId: parseId, // Use parseId as TemplateId
 		ParseId: parseId,
 		IsAsync: true,
 	};
@@ -296,23 +277,42 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Make the API request
 	let result: any;
 	result = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
+	
+	// Debug: Log the result to understand what we're getting
+	console.log('ParseDocument API result type:', typeof result);
+	console.log('ParseDocument API result:', JSON.stringify(result, null, 2));
 
 	// Process the response
 	if (result) {
 		let parsedData: any;
 		let outputText: string = '';
 
-		// Try to parse as JSON first
-		try {
-			if (typeof result === 'string') {
+		// The pdf4meAsyncRequest already parses JSON responses for ParseDocument endpoint
+		// So result should already be a parsed object
+		if (typeof result === 'object' && result !== null) {
+			// Already parsed JSON object from pdf4meAsyncRequest
+			parsedData = result;
+		} else if (typeof result === 'string') {
+			// Fallback: try to parse as JSON if it's still a string
+			try {
 				parsedData = JSON.parse(result);
-			} else {
-				parsedData = result;
+			} catch (error) {
+				// If not valid JSON, treat as raw text
+				parsedData = { 
+					rawContent: result,
+					contentType: 'text/plain'
+				};
 			}
-		} catch (error) {
-			// If not JSON, treat as raw text
-			parsedData = { rawContent: result };
+		} else {
+			// Fallback for other types
+			parsedData = { 
+				rawContent: result,
+				contentType: typeof result
+			};
 		}
+
+		// Debug: Log the parsed data
+		console.log('ParseDocument parsed data:', JSON.stringify(parsedData, null, 2));
 
 		// Format output based on user preference
 		if (outputFormat === 'text') {
@@ -364,18 +364,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				},
 			];
 		} else {
-			// Return JSON output
+			// Return JSON output - return the parsed data directly
+			// Ensure we have valid data
+			if (!parsedData || (typeof parsedData === 'object' && Object.keys(parsedData).length === 0)) {
+				throw new Error('No parsed data received from PDF4ME API');
+			}
+			
 			return [
 				{
-					json: {
-						success: true,
-						message: 'Document parsed successfully',
-						parsedData,
-						traceId: parsedData.traceId,
-						documentType: parsedData.documentType,
-						pageCount: parsedData.pageCount,
-						timestamp: new Date().toISOString(),
-					},
+					json: parsedData, // Return the actual parsed data from API directly
 				},
 			];
 		}

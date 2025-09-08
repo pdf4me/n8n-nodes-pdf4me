@@ -100,18 +100,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Output Binary Field Name',
-		name: 'binaryDataName',
-		type: 'string',
-		default: 'data',
-		description: 'Name of the binary property to store the output file',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ExtractTableFromPdf],
-			},
-		},
-	},
-	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -135,11 +123,20 @@ export const description: INodeProperties[] = [
 	},
 ];
 
+/**
+ * Extract Table from PDF - Extract table data from PDF documents using PDF4ME
+ * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return table data
+ * 
+ * This action extracts table data from PDF documents:
+ * - Returns structured JSON data with all extracted table information
+ * - Supports various PDF document formats
+ * - Always processes asynchronously for optimal performance
+ * - Returns the raw API response data directly
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -192,52 +189,24 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the response (table extraction results)
 	if (responseData) {
-		let jsonString: string;
-		if (Buffer.isBuffer(responseData)) {
-			jsonString = responseData.toString('utf8');
-		} else if (typeof responseData === 'string') {
-			// If it's base64, decode it
-			jsonString = Buffer.from(responseData, 'base64').toString('utf8');
-		} else if (typeof responseData === 'object') {
-			// Already JSON
-			jsonString = JSON.stringify(responseData, null, 2);
-		} else {
-			throw new Error('Unexpected response type');
-		}
-
-		// Try to parse as JSON
-		let parsedJson: any;
-		try {
-			parsedJson = JSON.parse(jsonString);
-		} catch (err) {
-			throw new Error('Response is not valid JSON');
-		}
-
-		// Save as JSON file
-		const fileName = `table_extraction_results_${Date.now()}.json`;
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(JSON.stringify(parsedJson, null, 2), 'utf8'),
-			fileName,
-			'application/json',
-		);
+		// Return both raw data and metadata
 		return [
 			{
 				json: {
-					fileName,
-					mimeType: 'application/json',
-					fileSize: Buffer.byteLength(JSON.stringify(parsedJson, null, 2)),
-					success: true,
-					message: 'Table extraction completed successfully',
-					docName,
-				},
-				binary: {
-					[binaryDataName || 'data']: binaryData,
+					...responseData, // Raw API response data
+					_metadata: {
+						success: true,
+						message: 'Table data extracted successfully',
+						processingTimestamp: new Date().toISOString(),
+						sourceFileName: docName,
+						operation: 'extractTableFromPdf',
+					},
 				},
 			},
 		];
 	}
 
-	// Error case
+	// Error case - no response received
 	throw new Error('No table extraction results received from PDF4ME API');
 }
 

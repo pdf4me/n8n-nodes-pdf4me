@@ -126,26 +126,22 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Binary Data Output Name',
-		name: 'binaryDataName',
-		type: 'string',
-		default: 'data',
-		description: 'Custom name for the binary data in n8n output',
-		placeholder: 'image-metadata',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GetImageMetadata],
-			},
-		},
-	},
 ];
 
+/**
+ * Get Image Metadata - Extract metadata information from image files using PDF4ME
+ * Process: Read image file → Encode to base64 → Send API request → Poll for completion → Return metadata
+ * 
+ * This action extracts metadata from image files:
+ * - Returns structured JSON data with image metadata (dimensions, format, etc.)
+ * - Supports various image formats
+ * - Always processes asynchronously for optimal performance
+ * - Returns the raw API response data directly
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const imageType = this.getNodeParameter('imageType', index) as string;
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -190,26 +186,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/GetImageMetadata', body);
 
-	// Return the result as binary data (JSON)
-	const mimeType = 'application/json';
-	const binaryData = await this.helpers.prepareBinaryData(
-		result,
-		outputFileName,
-		mimeType,
-	);
-
+	// Return both raw data and metadata
 	return [
 		{
 			json: {
-				success: true,
-				message: 'Image metadata extracted successfully',
-				fileName: outputFileName,
-				mimeType,
-				fileSize: result.length,
-				imageType,
-			},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
+				...result, // Raw API response data
+				_metadata: {
+					success: true,
+					message: 'Image metadata extracted successfully',
+					processingTimestamp: new Date().toISOString(),
+					sourceFileName: docName,
+					operation: 'getImageMetadata',
+					imageType: imageType,
+				},
 			},
 		},
 	];
