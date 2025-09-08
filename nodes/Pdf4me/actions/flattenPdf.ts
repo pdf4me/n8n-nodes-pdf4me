@@ -184,6 +184,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'flattened-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.FlattenPdf],
+			},
+		},
+	},
 ];
 
 /**
@@ -199,6 +212,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const flatteningOptions = this.getNodeParameter('flatteningOptions', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -363,7 +377,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					description: 'All interactive elements have been converted to static content',
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

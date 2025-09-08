@@ -187,12 +187,26 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'split-pdfs',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfBySwissQR],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const splitQRPage = this.getNodeParameter('splitQRPage', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
 	const combinePagesWithSameBarcodes = this.getNodeParameter('combinePagesWithSameBarcodes', index) as boolean;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
@@ -351,7 +365,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			for (const doc of parsedResponse) {
 				if (doc.docContent && doc.docName) {
 					const buffer = Buffer.from(doc.docContent, 'base64');
-					const binaryKey = `file_${idx}`;
+					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
 					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.docName, 'application/pdf');
 					filesSummary.push({
 						fileName: doc.docName,

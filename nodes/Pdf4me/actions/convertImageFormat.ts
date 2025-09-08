@@ -136,6 +136,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertImageFormat],
+			},
+		},
+	},
 ];
 
 // Helper function to download image from URL and convert to base64
@@ -147,6 +160,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const currentImageFormat = this.getNodeParameter('currentImageFormat', index) as string;
 	const newImageFormat = this.getNodeParameter('newImageFormat', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -213,6 +227,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		mimeType,
 	);
 
+	// Determine the binary data name
+	const binaryDataKey = binaryDataName || 'data';
+
 	return [
 		{
 			json: {
@@ -225,7 +242,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				newImageFormat,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataKey]: binaryData,
 			},
 		},
 	];

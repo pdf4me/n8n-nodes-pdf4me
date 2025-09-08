@@ -188,6 +188,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-excel',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertPdfToExcel],
+			},
+		},
+	},
 ];
 
 /**
@@ -207,6 +220,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -318,7 +332,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 		);
 
-
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
 
 		return [
 			{
@@ -334,7 +349,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'PDF converted to Excel successfully',
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataKey]: binaryData,
 				},
 			},
 		];

@@ -503,7 +503,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
-
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-barcode',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddBarcodeToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -526,6 +538,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const hideText = this.getNodeParameter('hideText', index) as boolean;
 	const showOnlyInPrint = this.getNodeParameter('showOnlyInPrint', index) as boolean;
 	const isTextAbove = this.getNodeParameter('isTextAbove', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	const outputOptions = this.getNodeParameter('outputOptions', index) as IDataObject;
 
@@ -666,7 +679,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						message: 'Barcode added to PDF successfully',
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];

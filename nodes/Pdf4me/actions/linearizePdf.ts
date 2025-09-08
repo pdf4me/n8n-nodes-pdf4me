@@ -194,6 +194,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'linearized-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.LinearizePdf],
+			},
+		},
+	},
 ];
 
 /**
@@ -209,6 +222,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const optimizeProfile = this.getNodeParameter('optimizeProfile', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -348,9 +362,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					originalFileName,
 					description: 'PDF is now optimized for web viewing and faster loading',
 				},
-				binary: {
-					data: binaryData,
-				},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 			},
 		];
 	}

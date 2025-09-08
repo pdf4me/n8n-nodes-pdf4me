@@ -90,11 +90,25 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'word-document',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.EnableTrackingChangesInWord],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main document content
 	let docContent: string;
@@ -140,10 +154,11 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/EnableTrackingChangesInWord', body);
 
 	// Return the result as binary data
+	const binaryDataKey = binaryDataName || 'data';
 	return [
 		{
 			binary: {
-				data: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+				[binaryDataKey]: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
 			},
 			json: {},
 		},

@@ -211,7 +211,7 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.ConvertPdfToWord,
 				},
 				{
-					name: 'URL to PDF',
+					name: 'Convert URL to PDF',
 					description: 'Convert web pages to PDF while preserving layout, styling, and content',
 					value: ActionConstants.UrlToPdf,
 					action: ActionConstants.UrlToPdf,

@@ -255,11 +255,25 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-page-numbers',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddPageNumberToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const alignX = this.getNodeParameter('alignX', index) as string;
 	const alignY = this.getNodeParameter('alignY', index) as string;
@@ -375,9 +389,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'Page numbers added successfully',
 				},
-				binary: {
-					data: binaryData,
-				},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 			},
 		];
 	}

@@ -113,6 +113,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertMarkdownToPdf],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -143,6 +155,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let inputDataType: string;
 	let outputFileName: string;
 	let advancedOptions: IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	if (operation === ActionConstants.ConvertToPdf) {
 		// Use the parameters from the Convert to PDF action
@@ -278,7 +291,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'Markdown converted to PDF successfully',
 				},
 				binary: {
-					data: binaryData, // Use 'data' as the key for consistency with other nodes
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

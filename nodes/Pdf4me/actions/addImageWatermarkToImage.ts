@@ -278,6 +278,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'watermarked-image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddImageWatermarkToImage],
+			},
+		},
+	},
 ];
 
 // Add a helper function to download image from URL and convert to base64
@@ -295,6 +308,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const positionX = this.getNodeParameter('positionX', index, 0.0) as number;
 	const positionY = this.getNodeParameter('positionY', index, 0.0) as number;
 	const rotation = this.getNodeParameter('rotation', index) as number;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -391,7 +405,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				opacity,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

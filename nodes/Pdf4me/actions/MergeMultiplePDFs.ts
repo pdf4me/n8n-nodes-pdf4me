@@ -215,12 +215,26 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'merged-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.MergeMultiplePDFs],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	try {
 		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
@@ -278,9 +292,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						inputFileCount: pdfContentsBase64.length,
 					},
-					binary: {
-						data: binaryData,
-					},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 				},
 			];
 		}

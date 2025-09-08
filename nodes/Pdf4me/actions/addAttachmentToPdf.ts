@@ -324,6 +324,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-attachments',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddAttachmentToPdf],
+			},
+		},
+	},
 ];
 
 /**
@@ -346,6 +359,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const attachments = this.getNodeParameter('attachments', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const debugOptions = this.getNodeParameter('debugOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Initialize debug logger
 	const debugConfig: DebugConfig = {
@@ -650,7 +664,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				attachmentCount: attachmentArray.length,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		};
 

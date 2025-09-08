@@ -146,6 +146,18 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfByText],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -175,6 +187,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const splitTextPage = this.getNodeParameter('splitTextPage', index) as string;
 	const fileNaming = this.getNodeParameter('fileNaming', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let pdfContentBase64: string;
 
@@ -318,7 +331,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			for (const doc of parsedResponse) {
 				if (doc.docContent && doc.docName) {
 					const buffer = Buffer.from(doc.docContent, 'base64');
-					const binaryKey = `file_${idx}`;
+					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
 					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.docName, 'application/pdf');
 					filesSummary.push({
 						fileName: doc.docName,
@@ -338,7 +351,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			for (const doc of parsedResponse.splitedDocuments) {
 				if (doc.streamFile && doc.fileName) {
 					const buffer = Buffer.from(doc.streamFile, 'base64');
-					const binaryKey = `file_${idx}`;
+					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
 					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.fileName, 'application/pdf');
 					filesSummary.push({
 						fileName: doc.fileName,
@@ -355,7 +368,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			responseType = 'Multiple PDFs (splitedDocuments)';
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
 			const buffer = Buffer.from(parsedResponse.docContent, 'base64');
-			binaryData['file_1'] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
+			binaryData[`${binaryDataName || 'data'}_1`] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
 			filesSummary.push({
 				fileName: parsedResponse.docName,
 				pageIndex: 1,

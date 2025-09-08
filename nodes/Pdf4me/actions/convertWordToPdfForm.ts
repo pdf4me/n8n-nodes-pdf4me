@@ -148,6 +148,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-form',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertWordToPdfForm],
+			},
+		},
+	},
 ];
 
 /**
@@ -158,6 +171,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -313,9 +327,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					operation: 'ConvertWordToPdfForm',
 					message: 'Word document successfully converted to PDF form',
 				},
-				binary: {
-					data: binaryData,
-				},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 			},
 		];
 	}

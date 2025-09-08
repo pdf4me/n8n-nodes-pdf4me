@@ -146,6 +146,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.RotatePage],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -175,6 +187,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const rotationType = this.getNodeParameter('rotationType', index) as string;
 	const page = this.getNodeParameter('page', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -243,7 +256,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					page,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

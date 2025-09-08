@@ -299,7 +299,7 @@ export const ActionConstants = {
 	RotateImageByExifData: 'Rotate Image By Exif Data',
 	RotatePage: 'Rotate PDF Page',
 	SignPdf: 'Sign PDF',
-	UrlToPdf: 'URL to PDF',
+	UrlToPdf: 'Convert URL to PDF',
 	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
 	ProtectDocument: 'Protect PDF',
 	UnlockPdf: 'Unlock PDF',

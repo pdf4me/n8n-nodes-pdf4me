@@ -300,6 +300,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'generated-document',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentSingle],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -307,6 +320,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const templateFileType = this.getNodeParameter('templateFileType', index) as string;
 	const documentInputDataType = this.getNodeParameter('documentInputDataType', index) as string;
 	const documentDataType = this.getNodeParameter('documentDataType', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	
 	// Auto-set output type based on template file type
 	let outputType: string;
@@ -494,7 +508,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

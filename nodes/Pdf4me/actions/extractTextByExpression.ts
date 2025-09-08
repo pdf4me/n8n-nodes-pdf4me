@@ -127,6 +127,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractTextByExpression],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -156,6 +168,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const expression = this.getNodeParameter('expression', index) as string;
 	const pageSequence = this.getNodeParameter('pageSequence', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -251,7 +264,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					pageSequence,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

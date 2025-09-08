@@ -177,6 +177,19 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'barcode-output',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.BarcodeGenerator],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -211,6 +224,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const text = this.getNodeParameter('text', index) as string;
 	const barcodeType = this.getNodeParameter('barcodeType', index) as string;
 	const hideText = this.getNodeParameter('hideText', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
@@ -243,6 +257,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'image/png',
 		);
 
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
+
 		return [
 			{
 				json: {
@@ -252,7 +269,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataKey]: binaryData,
 				},
 			},
 		];

@@ -160,6 +160,20 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'health-card-data',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AiProcessHealthCard],
+				outputFormat: ['text'],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -169,6 +183,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index, 'processed_health_card') as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const profiles = advancedOptions?.profiles as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -370,9 +385,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						policyNumber: processedData.policyNumber,
 						processingTimestamp: new Date().toISOString(),
 					},
-					binary: {
-						data: binaryData,
-					},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 				},
 			];
 		} else {

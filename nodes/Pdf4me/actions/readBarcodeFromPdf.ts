@@ -169,6 +169,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'barcode-data',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ReadBarcodeFromPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -176,6 +189,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const barcodeType = this.getNodeParameter('barcodeType', index) as string;
 	const pages = this.getNodeParameter('pages', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main PDF content
 	let docContent: string;
@@ -240,7 +254,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				pages,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

@@ -327,6 +327,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-header-footer',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddHtmlHeaderFooter],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -351,6 +364,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const marginBottom = this.getNodeParameter('marginBottom', index) as number;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		logger.log('info', `Input data type: ${inputDataType}`);
 		logger.log('info', `Location: ${location}`);
 		logger.log('info', `Pages: ${pages}`);
@@ -433,12 +447,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		logger.log('info', `API request successful, received ${result.length} bytes`);
 
+		// Create binary data using n8n's helper for proper UI formatting
+		const binaryData = await this.helpers.prepareBinaryData(
+			result,
+			outputFileName,
+			'application/pdf',
+		);
+
 		// Create output item
 		const outputItem = {
 			json: {
 				success: true,
 				message: 'HTML header/footer added successfully',
-				outputFileName,
+				fileName: outputFileName,
+				mimeType: 'application/pdf',
+				fileSize: result.length,
 				originalDocName: actualDocName,
 				location,
 				pages,
@@ -449,14 +472,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					top: marginTop,
 					bottom: marginBottom,
 				},
-				fileSize: result.length,
 			},
 			binary: {
-				[outputFileName]: {
-					data: result.toString('base64'),
-					fileName: outputFileName,
-					mimeType: 'application/pdf',
-				},
+				[binaryDataName || 'data']: binaryData,
 			},
 		};
 

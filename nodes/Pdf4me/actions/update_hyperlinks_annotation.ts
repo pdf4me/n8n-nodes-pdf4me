@@ -174,11 +174,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Async',
-		name: 'async',
-		type: 'boolean',
-		default: true,
-		description: 'Process asynchronously',
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'updated-pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.UpdateHyperlinksAnnotation],
@@ -190,6 +191,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main PDF content
 	let docContent: string;
@@ -241,10 +243,11 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/UpdateHyperlinkAnnotation', body);
 
 	// Return the result as binary data
+	const binaryDataKey = binaryDataName || 'data';
 	return [
 		{
 			binary: {
-				data: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/pdf'),
+				[binaryDataKey]: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/pdf'),
 			},
 			json: {},
 		},

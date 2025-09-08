@@ -438,11 +438,25 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'signed-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const signatureImageInputType = this.getNodeParameter('signatureImageInputType', index) as string;
 	const imageName = this.getNodeParameter('imageName', index) as string;
@@ -609,9 +623,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'PDF signed successfully',
 				},
-				binary: {
-					data: binaryData,
-				},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 			},
 		];
 	}

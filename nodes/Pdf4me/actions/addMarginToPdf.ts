@@ -199,11 +199,25 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-margins',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddMarginToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const marginLeft = this.getNodeParameter('marginLeft', index) as number;
 	const marginRight = this.getNodeParameter('marginRight', index) as number;
@@ -303,9 +317,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'Margins added successfully',
 				},
-				binary: {
-					data: binaryData,
-				},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 			},
 		];
 	}

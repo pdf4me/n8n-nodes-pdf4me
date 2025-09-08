@@ -229,6 +229,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'filled-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.FillPdfForm],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -273,6 +286,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const metaData = this.getNodeParameter('metaData', index) as string;
 	const metaDataJson = this.getNodeParameter('metaDataJson', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Handle form data based on data type
 	let dataArray: string;
@@ -361,7 +375,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					formFields: inputFormData.length,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];
@@ -395,7 +409,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						totalDocuments: result.length,
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				});
 			}
@@ -422,7 +436,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						formFields: inputFormData.length,
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];

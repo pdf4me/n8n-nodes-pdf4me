@@ -158,6 +158,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'extracted-resources',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractResources],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -166,6 +179,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const extractionOptions = this.getNodeParameter('extractionOptions', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const pagesOption = advancedOptions?.pages as string || 'all';
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -283,7 +297,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					docName,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 					...binary, // All images as separate binary properties
 				},
 			},

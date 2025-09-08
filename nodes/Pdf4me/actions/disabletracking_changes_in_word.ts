@@ -90,11 +90,25 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'word-document',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.DisableTrackingChangesInWord],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main document content
 	let docContent: string;
@@ -138,7 +152,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	return [
 		{
 			binary: {
-				data: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+				[binaryDataName || 'data']: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
 			},
 			json: {},
 		},

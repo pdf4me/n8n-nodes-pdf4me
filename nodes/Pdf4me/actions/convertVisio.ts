@@ -273,11 +273,25 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-visio',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
 	const isPdfCompliant = this.getNodeParameter('isPdfCompliant', index) as boolean;
 	const pageIndex = this.getNodeParameter('pageIndex', index) as number;
@@ -442,9 +456,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						autoFit: autoFit,
 					},
 				},
-				binary: {
-					data: binaryData,
-				},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 			},
 		];
 	}

@@ -110,11 +110,25 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'rotated-image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.RotateImageByExifData],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -171,7 +185,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				fileSize: result.length,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

@@ -259,6 +259,18 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output image file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CropImage],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -287,6 +299,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const cropType = this.getNodeParameter('cropType', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Only get the relevant options based on crop type
 	let borderOptions: IDataObject = {};
@@ -445,7 +458,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'Image cropped successfully',
 				},
 				binary: {
-					data: binaryData, // Use 'data' as the key for consistency with other nodes
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

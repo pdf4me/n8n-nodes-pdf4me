@@ -267,7 +267,7 @@ export const description: INodeProperties[] = [
 		name: 'printBackground',
 		type: 'boolean',
 		required: true,
-		default: true,
+		default: false,
 		description: 'Select true to PrintBackground in PDF and select false for PrintBackground will not display in PDF',
 		displayOptions: {
 			show: {
@@ -280,7 +280,7 @@ export const description: INodeProperties[] = [
 		name: 'displayHeaderFooter',
 		type: 'boolean',
 		required: true,
-		default: true,
+		default: false,
 		description: 'Select true to DisplayHeaderFooter in PDF and select false for DisplayHeaderFooter will not display in PDF',
 		displayOptions: {
 			show: {
@@ -301,11 +301,25 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'html-pdf-output',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertHtmlToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const indexFilePath = this.getNodeParameter('indexFilePath', index) as string;
 	const layout = this.getNodeParameter('layout', index) as string;
 	const format = this.getNodeParameter('format', index) as string;
@@ -487,6 +501,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'application/pdf',
 		);
 
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
+
 		return [
 			{
 				json: {
@@ -497,7 +514,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'HTML converted to PDF successfully',
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataKey]: binaryData,
 				},
 			},
 		];

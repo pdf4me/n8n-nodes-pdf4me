@@ -235,6 +235,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'updated-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ReplaceTextWithImage],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -307,6 +320,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const imageHeight = this.getNodeParameter('imageHeight', index) as number;
 	const imageWidth = this.getNodeParameter('imageWidth', index) as number;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Build the request body
 	const body: IDataObject = {
@@ -341,7 +355,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				fileSize: result.length,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

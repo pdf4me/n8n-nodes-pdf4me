@@ -189,6 +189,20 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'parsed-data',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ParseDocument],
+				outputFormat: ['text'],
+			},
+		},
+	},
 ];
 
 /**
@@ -205,6 +219,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const parseId = this.getNodeParameter('parseId', index) as string;
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -343,9 +358,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						documentType: parsedData.documentType,
 						pageCount: parsedData.pageCount,
 					},
-					binary: {
-						data: binaryData,
-					},
+			binary: {
+				[binaryDataName || 'data']: binaryData,
+			},
 				},
 			];
 		} else {
