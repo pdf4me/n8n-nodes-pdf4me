@@ -220,7 +220,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const baseInputType = this.getNodeParameter('baseInputType', index) as string;
 		const layerInputType = this.getNodeParameter('layerInputType', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 		// Get PDF contents based on input data types
@@ -272,9 +272,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						inputFileCount: 2,
 					},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+					binary: {
+						[binaryDataName || 'data']: binaryData,
+					},
 				},
 			];
 		}

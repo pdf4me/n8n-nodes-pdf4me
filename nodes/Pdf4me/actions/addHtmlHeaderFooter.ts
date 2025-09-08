@@ -439,11 +439,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		});
 
 		// Make API request
-		let result: any;
 		const apiUrl = '/api/v2/AddHtmlHeaderFooter';
 
 		logger.log('info', 'Making async API request');
-		result = await pdf4meAsyncRequest.call(this, apiUrl, payload);
+		const result: any = await pdf4meAsyncRequest.call(this, apiUrl, payload);
 
 		logger.log('info', `API request successful, received ${result.length} bytes`);
 

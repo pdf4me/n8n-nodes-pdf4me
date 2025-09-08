@@ -389,9 +389,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'Page numbers added successfully',
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}

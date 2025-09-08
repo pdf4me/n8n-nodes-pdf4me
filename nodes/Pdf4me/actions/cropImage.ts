@@ -366,7 +366,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName: originalFileName,
 		CropType: cropType,
-		IsAsync: true
+		IsAsync: true,
 	};
 
 	// Add crop-specific parameters

@@ -317,9 +317,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'Margins added successfully',
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}

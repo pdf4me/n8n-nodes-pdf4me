@@ -492,9 +492,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						autoFit: autoFit,
 					},
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}

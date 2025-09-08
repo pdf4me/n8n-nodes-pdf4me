@@ -275,12 +275,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	// Make the API request
-	let result: any;
-	result = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
 	
 	// Debug: Log the result to understand what we're getting
-	console.log('ParseDocument API result type:', typeof result);
-	console.log('ParseDocument API result:', JSON.stringify(result, null, 2));
+	// console.log('ParseDocument API result type:', typeof result);
+	// console.log('ParseDocument API result:', JSON.stringify(result, null, 2));
 
 	// Process the response
 	if (result) {
@@ -300,19 +299,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				// If not valid JSON, treat as raw text
 				parsedData = { 
 					rawContent: result,
-					contentType: 'text/plain'
+					contentType: 'text/plain',
 				};
 			}
 		} else {
 			// Fallback for other types
 			parsedData = { 
 				rawContent: result,
-				contentType: typeof result
+				contentType: typeof result,
 			};
 		}
 
 		// Debug: Log the parsed data
-		console.log('ParseDocument parsed data:', JSON.stringify(parsedData, null, 2));
+		// console.log('ParseDocument parsed data:', JSON.stringify(parsedData, null, 2));
 
 		// Format output based on user preference
 		if (outputFormat === 'text') {
@@ -358,9 +357,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						documentType: parsedData.documentType,
 						pageCount: parsedData.pageCount,
 					},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+					binary: {
+						[binaryDataName || 'data']: binaryData,
+					},
 				},
 			];
 		} else {

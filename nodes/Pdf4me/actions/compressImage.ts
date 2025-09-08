@@ -196,8 +196,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	};
 
 	// Make the API request
-	let result: any;
-	result = await pdf4meAsyncRequest.call(this, '/api/v2/CompressImage', body);
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/CompressImage', body);
 
 	// Return the result as binary data
 	const mimeType = imageType === 'PNG' ? 'image/png' : 'image/jpeg';

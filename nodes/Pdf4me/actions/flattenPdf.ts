@@ -299,8 +299,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	// Make the API request
-	let result: any;
-	result = await pdf4meAsyncRequest.call(this, '/api/v2/FlattenPdf', body);
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/FlattenPdf', body);
 
 	// Handle the response
 	if (result) {

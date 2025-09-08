@@ -102,8 +102,8 @@ export async function pdf4meApiRequest(
 async function delayAsync(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 ): Promise<void> {
-	const startTime = Date.now();
-	console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
+	// const startTime = Date.now();
+	// console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
 	
 	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 		url: 'https://api.pdf4me.com/api/v2/AddDelay',
@@ -112,9 +112,9 @@ async function delayAsync(
 		ignoreHttpStatusErrors: true,
 	});
 	
-	const endTime = Date.now();
-	const actualDelay = endTime - startTime;
-	console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
+	// const endTime = Date.now();
+	// const actualDelay = endTime - startTime;
+	// console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
 }
 
 export async function pdf4meAsyncRequest(

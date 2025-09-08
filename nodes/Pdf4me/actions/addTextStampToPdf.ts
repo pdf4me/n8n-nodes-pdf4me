@@ -443,9 +443,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'Text stamp added successfully',
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}

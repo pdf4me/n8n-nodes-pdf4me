@@ -623,9 +623,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 					message: 'PDF signed successfully',
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}
