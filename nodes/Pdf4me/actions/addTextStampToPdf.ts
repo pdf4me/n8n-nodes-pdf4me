@@ -310,6 +310,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-stamp',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddTextStampToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -327,9 +340,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const opacity = this.getNodeParameter('opacity', index) as number;
 	const isBackground = this.getNodeParameter('isBackground', index) as boolean;
 	const rotation = this.getNodeParameter('rotation', index) as number;
-	const async = this.getNodeParameter('async', index) as boolean;
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -388,7 +401,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		opacity,
 		isBackground,
 		rotation,
-		async,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
@@ -431,7 +444,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'Text stamp added successfully',
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

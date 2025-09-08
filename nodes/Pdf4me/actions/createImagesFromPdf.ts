@@ -252,6 +252,18 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output image files',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreateImagesFromPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -262,6 +274,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const pageNumbers = this.getNodeParameter('pageNumbers', index) as string;
 	const outputFileNamePrefix = this.getNodeParameter('outputFileNamePrefix', index) as string;
 	const imageSettings = this.getNodeParameter('imageSettings', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -375,7 +388,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			WidthPixel: widthPixel.toString(),
 			ImageExtension: imageExtension,
 		},
-		async: true,
+		IsAsync: true,
 	};
 
 	// Add page selection if specified
@@ -487,7 +500,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 							inputType: inputDataType,
 						},
 						binary: {
-							[fileName]: binaryData,
+							[`${binaryDataName || 'data'}_${i + 1}`]: binaryData,
 						},
 					});
 
@@ -529,7 +542,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 							inputType: inputDataType,
 						},
 						binary: {
-							[fileName]: binaryData,
+							[`${binaryDataName || 'data'}_${i + 1}`]: binaryData,
 						},
 					});
 

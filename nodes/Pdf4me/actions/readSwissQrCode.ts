@@ -114,7 +114,6 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
 
 	// Main PDF content
 	let docContent: string;
@@ -151,32 +150,35 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ReadSwissQrBill', body);
 
-	// Return the result as binary data (JSON)
-	const mimeType = 'application/json';
-	const binaryData = await this.helpers.prepareBinaryData(
-		result,
-		outputFileName,
-		mimeType,
-	);
+	// Parse the JSON response
+	let parsedResult = result;
+	if (Buffer.isBuffer(result)) {
+		try {
+			parsedResult = JSON.parse(result.toString('utf8'));
+		} catch (e) {
+			parsedResult = result;
+		}
+	} else if (typeof result === 'string') {
+		try {
+			parsedResult = JSON.parse(result);
+		} catch {
+			parsedResult = result;
+		}
+	}
 
 	return [
 		{
 			json: {
-				fileName: outputFileName,
-				mimeType,
-				fileSize: Buffer.isBuffer(result) ? result.length : Buffer.byteLength(JSON.stringify(result)),
 				success: true,
 				message: 'SwissQR code reading completed successfully',
 				docName,
-			},
-			binary: {
-				data: binaryData,
+				swissQrData: parsedResult,
 			},
 		},
 	];

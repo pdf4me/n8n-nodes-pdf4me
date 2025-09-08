@@ -131,6 +131,19 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-output',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.UrlToPdf],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -215,6 +228,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const webUrl = this.getNodeParameter('webUrl', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const authType = this.getNodeParameter('authType', index) as string;
 	const layout = this.getNodeParameter('layout', index) as string;
 	const format = this.getNodeParameter('format', index) as string;
@@ -238,6 +252,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		bottomMargin: advancedOptions?.bottomMargin || '20px',
 		printBackground: advancedOptions?.printBackground !== undefined ? advancedOptions.printBackground : true,
 		displayHeaderFooter: advancedOptions?.displayHeaderFooter !== undefined ? advancedOptions.displayHeaderFooter : false,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
@@ -265,6 +280,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'application/pdf',
 		);
 
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
+
 		return [
 			{
 				json: {
@@ -277,7 +295,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					format,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataKey]: binaryData,
 				},
 			},
 		];

@@ -150,6 +150,16 @@ export const description: INodeProperties[] = [
 	},
 ];
 
+/**
+ * Extract Text by Expression - Extract text from PDF documents using custom expressions using PDF4ME
+ * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return extracted text
+ * 
+ * This action extracts text from PDF documents using custom expressions:
+ * - Returns structured JSON data with extracted text based on expressions
+ * - Supports various PDF document formats
+ * - Always processes asynchronously for optimal performance
+ * - Returns the raw API response data directly
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
@@ -195,7 +205,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		expression,
 		pageSequence,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided
@@ -210,54 +220,26 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the response (text extraction results)
 	if (responseData) {
-		let jsonString: string;
-		if (Buffer.isBuffer(responseData)) {
-			jsonString = responseData.toString('utf8');
-		} else if (typeof responseData === 'string') {
-			// If it's base64, decode it
-			jsonString = Buffer.from(responseData, 'base64').toString('utf8');
-		} else if (typeof responseData === 'object') {
-			// Already JSON
-			jsonString = JSON.stringify(responseData, null, 2);
-		} else {
-			throw new Error('Unexpected response type');
-		}
-
-		// Try to parse as JSON
-		let parsedJson: any;
-		try {
-			parsedJson = JSON.parse(jsonString);
-		} catch (err) {
-			throw new Error('Response is not valid JSON');
-		}
-
-		// Save as JSON file
-		const fileName = `text_extraction_results_${Date.now()}.json`;
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(JSON.stringify(parsedJson, null, 2), 'utf8'),
-			fileName,
-			'application/json',
-		);
+		// Return both raw data and metadata
 		return [
 			{
 				json: {
-					fileName,
-					mimeType: 'application/json',
-					fileSize: Buffer.byteLength(JSON.stringify(parsedJson, null, 2)),
-					success: true,
-					message: 'Text extraction by expression completed successfully',
-					docName,
-					expression,
-					pageSequence,
-				},
-				binary: {
-					data: binaryData,
+					...responseData, // Raw API response data
+					_metadata: {
+						success: true,
+						message: 'Text extracted successfully by expression',
+						processingTimestamp: new Date().toISOString(),
+						sourceFileName: docName,
+						operation: 'extractTextByExpression',
+						expression: expression,
+						pageSequence: pageSequence,
+					},
 				},
 			},
 		];
 	}
 
-	// Error case
+	// Error case - no response received
 	throw new Error('No text extraction results received from PDF4ME API');
 }
 

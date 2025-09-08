@@ -29,7 +29,6 @@ import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
 import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
 import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
-import * as extractPages from './actions/extractPages';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as convertPdfToWord from './actions/convertPdfToWord';
 import * as convertToPdf from './actions/convertToPdf';
@@ -87,6 +86,7 @@ import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
+import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -121,8 +121,6 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await classifyDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.UrlToPdf) {
 					operationResult.push(...(await urlToPdf.execute.call(this, i)));
-				} else if (action === ActionConstants.ConvertFromPDF) {
-					operationResult.push(...(await convertPdfToWord.execute.call(this, i)));
 				} else if (action === ActionConstants.ConvertToPdf) {
 					operationResult.push(...(await convertToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.JsonToExcel) {
@@ -141,8 +139,6 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await rotateDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.RotatePage) {
 					operationResult.push(...(await rotatePage.execute.call(this, i)));
-				} else if (action === ActionConstants.ExtractPages) {
-					operationResult.push(...(await extractPages.execute.call(this, i)));
 				} else if (action === ActionConstants.AddAttachmentToPdf) {
 					operationResult.push(...(await addAttachmentToPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.AddBarcodeToPdf) {
@@ -261,6 +257,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await convertPdfToWord.execute.call(this, i)));
 				} else if (action === ActionConstants.ConvertVisio) {
 					operationResult.push(...(await convertVisio.execute.call(this, i)));
+				} else if (action === ActionConstants.ConvertWordToPdfForm) {
+					operationResult.push(...(await convertWordToPdfForm.execute.call(this, i)));
 				} else if (action === ActionConstants.UploadFile) {
 					operationResult.push(...(await uploadFile.execute.call(this, i)));
 				} else if (action === ActionConstants.ParseDocument) {

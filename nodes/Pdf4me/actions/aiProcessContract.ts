@@ -163,7 +163,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const payload: IDataObject = {
 		docContent,    // Base64 encoded contract document content
 		docName,       // User-provided document name
-		IsAsync: true, // Whether to process asynchronously 
+		IsAsync: true,
 	};
 
 	// Make the API request to process the contract - matching Python script exactly
@@ -207,10 +207,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`Failed to parse API response: ${error.message}`);
 		}
 
-		// Return the raw API response exactly like the JSON file
+		// Return both raw data and metadata
 		return [
 			{
-				json: processedData,
+				json: {
+					...processedData, // Raw API response data
+					_metadata: {
+						success: true,
+						message: 'Contract processed successfully using AI',
+						processingTimestamp: new Date().toISOString(),
+						sourceFileName: docName,
+						operation: 'aiProcessContract',
+					},
+				},
 			},
 		];
 	}

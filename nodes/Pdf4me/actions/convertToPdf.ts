@@ -147,11 +147,25 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -228,7 +242,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName: docName,
-		IsAsync: true, // Asynchronous processing
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
@@ -284,6 +298,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'application/pdf',
 		);
 
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
+
 		return [
 			{
 				json: {
@@ -295,7 +312,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					sourceFileName: docName,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataKey]: binaryData,
 				},
 			},
 		];

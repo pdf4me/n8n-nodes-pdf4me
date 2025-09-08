@@ -200,6 +200,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'overlayed-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.OverlayPDFs],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -207,6 +220,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const baseInputType = this.getNodeParameter('baseInputType', index) as string;
 		const layerInputType = this.getNodeParameter('layerInputType', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 		// Get PDF contents based on input data types
@@ -218,6 +232,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			baseDocName: 'base.pdf',
 			layerDocContent: layerPdfBase64,
 			layerDocName: 'layer.pdf',
+			IsAsync: true,
 		};
 
 		// Add profiles if provided
@@ -258,7 +273,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						inputFileCount: 2,
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];

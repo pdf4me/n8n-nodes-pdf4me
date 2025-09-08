@@ -215,6 +215,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-form-fields',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddFormFieldsToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -262,7 +275,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const pages = this.getNodeParameter('pages', index) as string;
 	const formFieldType = this.getNodeParameter('formFieldType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Build the request body
 	const body: IDataObject = {
@@ -275,7 +288,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		Size: size, // Note: API expects "Size" with capital S
 		pages,
 		formFieldType,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request
@@ -305,7 +318,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				pages,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

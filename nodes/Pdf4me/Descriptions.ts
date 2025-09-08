@@ -18,7 +18,6 @@ import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
 import * as deleteUnwantedPagesFromPdf from './actions/deleteUnwantedPagesFromPdf';
-import * as extractPages from './actions/extractPages';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
 import * as overlayPDFs from './actions/OverlayPDFs';
@@ -107,6 +106,25 @@ export const descriptions: INodeTypeDescription = {
 			type: 'options',
 			noDataExpression: true,
 			options: [
+				// AI Actions (keeping these as they don't fit the main categories)
+				{
+					name: 'AI-Invoice Parser',
+					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
+					value: ActionConstants.AiInvoiceParser,
+					action: ActionConstants.AiInvoiceParser,
+				},
+				{
+					name: 'AI-Process HealthCard',
+					description: 'Extract structured data from health cards using AI/ML technology for member management',
+					value: ActionConstants.AiProcessHealthCard,
+					action: ActionConstants.AiProcessHealthCard,
+				},
+				{
+					name: 'AI-Process Contract',
+					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
+					value: ActionConstants.AiProcessContract,
+					action: ActionConstants.AiProcessContract,
+				},
 				// Barcode
 				{
 					name: 'Add Barcode To PDF',
@@ -212,13 +230,7 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.ConvertPdfToWord,
 				},
 				{
-					name: 'Convert From PDF',
-					description: 'Convert PDF documents to Word, Excel, or other formats with OCR support',
-					value: ActionConstants.ConvertFromPDF,
-					action: ActionConstants.ConvertFromPDF,
-				},
-				{
-					name: 'URL to PDF',
+					name: 'Convert URL to PDF',
 					description: 'Convert web pages to PDF while preserving layout, styling, and content',
 					value: ActionConstants.UrlToPdf,
 					action: ActionConstants.UrlToPdf,
@@ -521,19 +533,13 @@ export const descriptions: INodeTypeDescription = {
 					action: ActionConstants.DeleteUnwantedPagesFromPdf,
 				},
 				{
-					name: 'Extract Pages',
-					description: 'Extract specific pages from PDF documents to create shorter versions or digital booklets',
-					value: ActionConstants.ExtractPages,
-					action: ActionConstants.ExtractPages,
-				},
-				{
 					name: 'Extract Pages From PDF',
 					description: 'Extract specific pages from PDF documents',
 					value: ActionConstants.ExtractPagesFromPdf,
 					action: ActionConstants.ExtractPagesFromPdf,
 				},
 				{
-					name: 'Rotate Page',
+					name: 'Rotate PDF Page',
 					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
 					value: ActionConstants.RotatePage,
 					action: ActionConstants.RotatePage,
@@ -572,7 +578,7 @@ export const descriptions: INodeTypeDescription = {
 				},
 				// Security
 				{
-					name: 'Protect Document',
+					name: 'Protect PDF',
 					description: 'Protect PDF documents with encryption, passwords, and permissions',
 					value: ActionConstants.ProtectDocument,
 					action: ActionConstants.ProtectDocument,
@@ -597,25 +603,7 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.UploadFile,
 					action: ActionConstants.UploadFile,
 				},
-				// AI Actions (keeping these as they don't fit the main categories)
-				{
-					name: 'AI-Invoice Parser',
-					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
-					value: ActionConstants.AiInvoiceParser,
-					action: ActionConstants.AiInvoiceParser,
-				},
-				{
-					name: 'AI-Process HealthCard',
-					description: 'Extract structured data from health cards using AI/ML technology for member management',
-					value: ActionConstants.AiProcessHealthCard,
-					action: ActionConstants.AiProcessHealthCard,
-				},
-				{
-					name: 'AI-Process Contract',
-					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
-					value: ActionConstants.AiProcessContract,
-					action: ActionConstants.AiProcessContract,
-				},
+				
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
@@ -637,7 +625,6 @@ export const descriptions: INodeTypeDescription = {
 		...cropImage.description,
 		...deleteBlankPagesFromPdf.description,
 		...deleteUnwantedPagesFromPdf.description,
-		...extractPages.description,
 		...jsonToExcel.description,
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,

@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -138,11 +137,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Use Async Processing',
-		name: 'useAsync',
-		type: 'boolean',
-		default: true,
-		description: 'Whether to use asynchronous processing for large files',
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-image',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertImageFormat],
@@ -160,7 +160,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const currentImageFormat = this.getNodeParameter('currentImageFormat', index) as string;
 	const newImageFormat = this.getNodeParameter('newImageFormat', index) as string;
-	const useAsync = this.getNodeParameter('useAsync', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -205,15 +205,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docName,
 		currentImageFormat,
 		newImageFormat,
+		IsAsync: true,
 	};
 
 	// Make the API request
-	let result: any;
-	if (useAsync) {
-		result = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertImageFormat', body);
-	} else {
-		result = await pdf4meApiRequest.call(this, '/api/v2/ConvertImageFormat', body);
-	}
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertImageFormat', body);
 
 	// Return the result as binary data
 	let mimeType = 'image/png';
@@ -230,6 +226,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		mimeType,
 	);
 
+	// Determine the binary data name
+	const binaryDataKey = binaryDataName || 'data';
+
 	return [
 		{
 			json: {
@@ -242,7 +241,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				newImageFormat,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataKey]: binaryData,
 			},
 		},
 	];

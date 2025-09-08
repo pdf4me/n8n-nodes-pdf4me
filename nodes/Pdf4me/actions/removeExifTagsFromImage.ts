@@ -126,13 +126,26 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'cleaned-image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.RemoveExifTagsFromImage],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const imageType = this.getNodeParameter('imageType', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -167,7 +180,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName,
 		imageType,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request
@@ -192,7 +205,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				imageType,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

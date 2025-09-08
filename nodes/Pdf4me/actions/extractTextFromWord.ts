@@ -159,6 +159,18 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractTextFromWord],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -188,6 +200,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const startPageNumber = this.getNodeParameter('startPageNumber', index) as number;
 	const endPageNumber = this.getNodeParameter('endPageNumber', index) as number;
 	const extractionOptions = this.getNodeParameter('extractionOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -231,7 +244,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		RemoveComments: extractionOptions?.removeComments !== undefined ? extractionOptions.removeComments : true,
 		RemoveHeaderFooter: extractionOptions?.removeHeaderFooter !== undefined ? extractionOptions.removeHeaderFooter : true,
 		AcceptChanges: extractionOptions?.acceptChanges !== undefined ? extractionOptions.acceptChanges : true,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided
@@ -287,7 +300,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					endPage: endPageNumber,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

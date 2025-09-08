@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
@@ -92,9 +91,24 @@ export const description: INodeProperties[] = [
 		displayName: 'Document Name',
 		name: 'docName',
 		type: 'string',
+		required: true,
 		default: 'document.pdf',
 		description: 'Name of the source document file for reference',
 		placeholder: 'original-document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ParseDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Parse ID',
+		name: 'parseId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'GUID of the parse configuration to use (will also be used as Template ID)',
+		placeholder: '87654321-4321-4321-4321-cba987654321',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ParseDocument],
@@ -159,14 +173,20 @@ export const description: INodeProperties[] = [
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://developer.pdf4me.com/api/profiles/index.html to set extra options for API calls.',
 				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
-			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing. Recommended for large files.',
-			},
 		],
+	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'parsed-data',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ParseDocument],
+			},
+		},
 	},
 ];
 
@@ -180,10 +200,10 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const parseId = this.getNodeParameter('parseId', index) as string;
 	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	const useAsync = advancedOptions?.useAsync !== false; // Default to true
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -233,11 +253,20 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Document content is required');
 	}
 
-	// Build the request body
+	// Validate required parameters
+	if (!parseId || parseId.trim() === '') {
+		throw new Error('Parse ID is required');
+	}
+
+	// Build the request body according to API specification
 	const body: IDataObject = {
 		docContent,
 		docName: originalFileName,
+		TemplateId: parseId, // Use parseId as TemplateId
+		ParseId: parseId,
+		IsAsync: true,
 	};
+
 
 	// Add profiles if provided
 	const profiles = advancedOptions?.profiles as string | undefined;
@@ -246,38 +275,58 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	// Make the API request
-	let result: any;
-	if (useAsync) {
-		result = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
-	} else {
-		result = await pdf4meApiRequest.call(this, '/api/v2/ParseDocument', body);
-	}
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
+	
+	// Debug: Log the result to understand what we're getting
+	// console.log('ParseDocument API result type:', typeof result);
+	// console.log('ParseDocument API result:', JSON.stringify(result, null, 2));
 
 	// Process the response
 	if (result) {
 		let parsedData: any;
 		let outputText: string = '';
 
-		// Try to parse as JSON first
-		try {
-			if (typeof result === 'string') {
+		// The pdf4meAsyncRequest already parses JSON responses for ParseDocument endpoint
+		// So result should already be a parsed object
+		if (typeof result === 'object' && result !== null) {
+			// Already parsed JSON object from pdf4meAsyncRequest
+			parsedData = result;
+		} else if (typeof result === 'string') {
+			// Fallback: try to parse as JSON if it's still a string
+			try {
 				parsedData = JSON.parse(result);
-			} else {
-				parsedData = result;
+			} catch (error) {
+				// If not valid JSON, treat as raw text
+				parsedData = { 
+					rawContent: result,
+					contentType: 'text/plain',
+				};
 			}
-		} catch (error) {
-			// If not JSON, treat as raw text
-			parsedData = { rawContent: result };
+		} else {
+			// Fallback for other types
+			parsedData = { 
+				rawContent: result,
+				contentType: typeof result,
+			};
 		}
+
+		// Debug: Log the parsed data
+		// console.log('ParseDocument parsed data:', JSON.stringify(parsedData, null, 2));
 
 		// Format output based on user preference
 		if (outputFormat === 'text') {
+			// Get outputFileName only when needed
+			const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+			
 			// Create formatted text output similar to Python implementation
 			outputText = 'Document Parsing Results\n';
 			outputText += '========================\n';
 			outputText += `Parsed on: ${new Date().toISOString()}\n\n`;
 
 			// Extract key fields
+			if (parsedData.traceId) {
+				outputText += `Trace ID: ${parsedData.traceId}\n`;
+			}
 			if (parsedData.documentType) {
 				outputText += `Document Type: ${parsedData.documentType}\n`;
 			}
@@ -304,26 +353,25 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						fileName: outputFileName,
 						mimeType: 'text/plain',
 						fileSize: textBuffer.length,
+						traceId: parsedData.traceId,
 						documentType: parsedData.documentType,
 						pageCount: parsedData.pageCount,
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];
 		} else {
-			// Return JSON output
+			// Return JSON output - return the parsed data directly
+			// Ensure we have valid data
+			if (!parsedData || (typeof parsedData === 'object' && Object.keys(parsedData).length === 0)) {
+				throw new Error('No parsed data received from PDF4ME API');
+			}
+			
 			return [
 				{
-					json: {
-						success: true,
-						message: 'Document parsed successfully',
-						parsedData,
-						documentType: parsedData.documentType,
-						pageCount: parsedData.pageCount,
-						timestamp: new Date().toISOString(),
-					},
+					json: parsedData, // Return the actual parsed data from API directly
 				},
 			];
 		}

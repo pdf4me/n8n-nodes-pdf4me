@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -261,11 +260,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Use Async Processing',
-		name: 'useAsync',
-		type: 'boolean',
-		default: true,
-		description: 'Whether to use asynchronous processing for large files',
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'watermarked-image',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddTextWatermarkToImage],
@@ -293,7 +293,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const rotationAngle = this.getNodeParameter('rotationAngle', index) as number;
 	const positionX = this.getNodeParameter('positionX', index, 0.0) as number;
 	const positionY = this.getNodeParameter('positionY', index, 0.0) as number;
-	const useAsync = this.getNodeParameter('useAsync', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -344,15 +344,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		RotationAngle: rotationAngle,
 		PositionX: textPosition === 'custom' ? positionX : 0.0,
 		PositionY: textPosition === 'custom' ? positionY : 0.0,
+		IsAsync: true,
 	};
 
 	// Make the API request
-	let result: any;
-	if (useAsync) {
-		result = await pdf4meAsyncRequest.call(this, '/api/v2/AddTextWatermarkToImage', body);
-	} else {
-		result = await pdf4meApiRequest.call(this, '/api/v2/AddTextWatermarkToImage', body);
-	}
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/AddTextWatermarkToImage', body);
 
 	// Return the result as binary data
 	const binaryData = await this.helpers.prepareBinaryData(
@@ -373,7 +369,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				watermarkText,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

@@ -1,10 +1,8 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	ActionConstants,
-	sanitizeProfiles,
 } from '../GenericFunctions';
 
 
@@ -100,89 +98,25 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Output Format',
-		name: 'outputFormat',
-		type: 'options',
-		required: true,
-		default: 'json',
-		description: 'Choose the output format for the processed health card data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AiProcessHealthCard],
-			},
-		},
-		options: [
-			{
-				name: 'JSON',
-				value: 'json',
-				description: 'Return structured JSON data with extracted health card information',
-			},
-			{
-				name: 'Text',
-				value: 'text',
-				description: 'Return formatted text summary of extracted health card data',
-			},
-		],
-	},
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'processed_health_card',
-		description: 'Name for the output file (without extension)',
-		placeholder: 'extracted_health_card_data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AiProcessHealthCard],
-				outputFormat: ['text'],
-			},
-		},
-	},
-	{
-		displayName: 'Advanced Options',
-		name: 'advancedOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AiProcessHealthCard],
-			},
-		},
-		options: [
-			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing for large health cards',
-			},
-			{
-				displayName: 'Profiles',
-				name: 'profiles',
-				type: 'string',
-				default: '',
-				description: 'Custom processing profiles for health card analysis',
-				placeholder: 'healthcard_profile_1, healthcard_profile_2',
-			},
-		],
-	},
 ];
 
+/**
+ * AI Process Health Card - Extract structured data from health cards using PDF4ME's AI/ML technology
+ * Process: Read health card → Encode to base64 → Send API request → Poll for completion → Return extracted results
+ * 
+ * This action mirrors the Python process_health_card() function functionality exactly:
+ * - Extracts member information, policy details, coverage, and dependent data
+ * - Supports various health card formats using AI/ML technology
+ * - Always processes asynchronously for optimal performance
+ * - Returns structured data in the same format as the Python script
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index, 'processed_health_card') as string;
-	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
-	const useAsync = advancedOptions?.useAsync !== false; // Default to true
-	const profiles = advancedOptions?.profiles as string;
 
 	let docContent: string;
-	let originalFileName = docName;
 
-	// Handle different input data types
+	// Handle different input data types - convert all to base64
 	if (inputDataType === 'binaryData') {
 		// Get health card content from binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
@@ -192,14 +126,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const binaryData = item[0].binary[binaryPropertyName];
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
-
-		// Use the original filename if available
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -209,15 +137,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 	} else if (inputDataType === 'url') {
+		// Download file from URL and convert to base64
 		const healthCardUrl = this.getNodeParameter('healthCardUrl', index) as string;
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 			method: 'GET' as const,
 			url: healthCardUrl,
 			encoding: 'arraybuffer' as const,
 		});
-		const buffer = await this.helpers.binaryToBuffer(response);
+		const buffer = Buffer.from(response);
 		docContent = buffer.toString('base64');
-		originalFileName = healthCardUrl.split('/').pop() || 'health_card.jpeg';
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -227,60 +155,46 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Health card content is required');
 	}
 
-	// Build the request body for health card processing
-	const body: IDataObject = {
-		docContent,
-		docName: originalFileName,
+	// Build the request payload - exactly like contract action
+	const payload: IDataObject = {
+		docContent,    // Base64 encoded health card document content
+		docName,       // User-provided document name
+		IsAsync: true,
 	};
 
-	// Add profiles if provided
-	if (profiles) {
-		body.profiles = profiles;
-	}
-
-	// Sanitize profiles
-	sanitizeProfiles(body);
 
 
-
-	// Make the API request to process the health card
+	// Make the API request to process the health card - matching contract action exactly
 	let result: any;
 	try {
-		if (useAsync) {
-			// Use the same pattern as other actions
-			result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessHealthCard', body);
-		} else {
-			// Use the same pattern as other actions
-			result = await pdf4meApiRequest.call(this, '/api/v2/ProcessHealthCard', body);
-		}
+		// Use async request function for health card processing
+		result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessHealthCard', payload);
 	} catch (error) {
-		// Handle connection and API errors with better debugging
-		
+		// Enhanced error handling with debugging context
 		if (error.code === 'ECONNRESET') {
-			throw new Error('Connection was reset. Please check your network connection and try again.');
+			throw new Error(`Connection was reset. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 500) {
-			throw new Error(`PDF4Me server error (500): ${error.message || 'The service was not able to process your request. Check the console logs for details.'}`);
+			throw new Error(`PDF4Me server error (500): ${error.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 404) {
-			throw new Error('API endpoint not found. Please check if the PDF4Me service is properly configured.');
+			throw new Error(`API endpoint not found. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 401) {
-			throw new Error('Authentication failed. Please check your PDF4Me API credentials.');
+			throw new Error(`Authentication failed. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 403) {
-			throw new Error('Access denied. Please check your PDF4Me API permissions.');
+			throw new Error(`Access denied. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode === 429) {
-			throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+			throw new Error(`Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else if (error.statusCode) {
-			throw new Error(`PDF4Me API error (${error.statusCode}): ${error.message || 'Unknown error'}`);
+			throw new Error(`PDF4Me API error (${error.statusCode}): ${error.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${docName}`);
 		} else {
-			throw new Error(`Connection error: ${error.message || 'Unknown connection issue'}`);
+			throw new Error(`Connection error: ${error.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${docName}, errorCode=${error.code}`);
 		}
 	}
 
-	// Process the response
+	// Process the response - handle the exact same format as contract action
 	if (result) {
 		let processedData: any;
-		let outputText: string = '';
 
-		// Try to parse as JSON first
+		// Parse the result
 		try {
 			if (typeof result === 'string') {
 				processedData = JSON.parse(result);
@@ -288,134 +202,26 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				processedData = result;
 			}
 		} catch (error) {
-			// If not JSON, treat as raw text
-			processedData = { rawContent: result };
+			throw new Error(`Failed to parse API response: ${error.message}`);
 		}
 
-		// Format output based on user preference
-		if (outputFormat === 'text') {
-			// Create formatted text output similar to Python implementation
-			outputText = 'AI Health Card Processing Results\n';
-			outputText += '================================\n';
-			outputText += `Processed on: ${new Date().toISOString()}\n`;
-			outputText += `Source file: ${originalFileName}\n\n`;
-
-			// Extract key health card fields
-			if (processedData.memberName) {
-				outputText += `Member Name: ${processedData.memberName}\n`;
-			}
-			if (processedData.memberId) {
-				outputText += `Member ID: ${processedData.memberId}\n`;
-			}
-			if (processedData.policyNumber) {
-				outputText += `Policy Number: ${processedData.policyNumber}\n`;
-			}
-			if (processedData.groupNumber) {
-				outputText += `Group Number: ${processedData.groupNumber}\n`;
-			}
-			if (processedData.effectiveDate) {
-				outputText += `Effective Date: ${processedData.effectiveDate}\n`;
-			}
-			if (processedData.expirationDate) {
-				outputText += `Expiration Date: ${processedData.expirationDate}\n`;
-			}
-			if (processedData.insuranceProvider) {
-				outputText += `Insurance Provider: ${processedData.insuranceProvider}\n`;
-			}
-			if (processedData.planType) {
-				outputText += `Plan Type: ${processedData.planType}\n`;
-			}
-			if (processedData.coverageLevel) {
-				outputText += `Coverage Level: ${processedData.coverageLevel}\n`;
-			}
-			if (processedData.deductible) {
-				outputText += `Deductible: ${processedData.deductible}\n`;
-			}
-			if (processedData.copay) {
-				outputText += `Copay: ${processedData.copay}\n`;
-			}
-
-			// Add dependent information if available
-			if (processedData.dependents && Array.isArray(processedData.dependents)) {
-				outputText += '\nDependents:\n';
-				outputText += '-----------\n';
-				processedData.dependents.forEach((dependent: any, index: number) => {
-					outputText += `${index + 1}. ${dependent.name || 'N/A'}\n`;
-					if (dependent.relationship) outputText += `   Relationship: ${dependent.relationship}\n`;
-					if (dependent.dateOfBirth) outputText += `   Date of Birth: ${dependent.dateOfBirth}\n`;
-					outputText += '\n';
-				});
-			}
-
-			// Add coverage details if available
-			if (processedData.coverageDetails && Array.isArray(processedData.coverageDetails)) {
-				outputText += '\nCoverage Details:\n';
-				outputText += '-----------------\n';
-				processedData.coverageDetails.forEach((coverage: any, index: number) => {
-					outputText += `${index + 1}. ${coverage.service || 'N/A'}\n`;
-					if (coverage.coverage) outputText += `   Coverage: ${coverage.coverage}\n`;
-					if (coverage.limits) outputText += `   Limits: ${coverage.limits}\n`;
-					outputText += '\n';
-				});
-			}
-
-			outputText += '\nFull Response:\n';
-			outputText += JSON.stringify(processedData, null, 2);
-
-			// Create binary output for text file
-			const textBuffer = Buffer.from(outputText, 'utf8');
-			const binaryData = await this.helpers.prepareBinaryData(
-				textBuffer,
-				`${outputFileName}.txt`,
-				'text/plain',
-			);
-
-			return [
-				{
-					json: {
+		// Return both raw data and metadata
+		return [
+			{
+				json: {
+					...processedData, // Raw API response data
+					_metadata: {
 						success: true,
 						message: 'Health card processed successfully using AI',
-						fileName: `${outputFileName}.txt`,
-						mimeType: 'text/plain',
-						fileSize: textBuffer.length,
-						memberName: processedData.memberName,
-						memberId: processedData.memberId,
-						policyNumber: processedData.policyNumber,
 						processingTimestamp: new Date().toISOString(),
-					},
-					binary: {
-						data: binaryData,
+						sourceFileName: docName,
+						operation: 'aiProcessHealthCard',
 					},
 				},
-			];
-		} else {
-			// Return JSON output
-			return [
-				{
-					json: {
-						success: true,
-						message: 'Health card processed successfully using AI',
-						processedData,
-						memberName: processedData.memberName,
-						memberId: processedData.memberId,
-						policyNumber: processedData.policyNumber,
-						groupNumber: processedData.groupNumber,
-						effectiveDate: processedData.effectiveDate,
-						expirationDate: processedData.expirationDate,
-						insuranceProvider: processedData.insuranceProvider,
-						planType: processedData.planType,
-						coverageLevel: processedData.coverageLevel,
-						deductible: processedData.deductible,
-						copay: processedData.copay,
-						dependents: processedData.dependents,
-						coverageDetails: processedData.coverageDetails,
-						processingTimestamp: new Date().toISOString(),
-					},
-				},
-			];
-		}
+			},
+		];
 	}
 
-	// Error case
+	// Error case - no response received
 	throw new Error('No response data received from PDF4ME AI Health Card Processing API');
 }

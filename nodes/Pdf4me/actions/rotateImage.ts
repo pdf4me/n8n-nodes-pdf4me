@@ -145,6 +145,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'rotated-image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.RotateImage],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -153,7 +166,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const backgroundColor = this.getNodeParameter('backgroundColor', index) as string;
 	const proportionateResize = this.getNodeParameter('proportionateResize', index) as boolean;
 	const rotationAngle = this.getNodeParameter('rotationAngle', index) as number;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -195,7 +208,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		Backgroundcolor: backgroundColor,
 		ProportionateResize: proportionateResize,
 		RotationAngle: rotationAngle,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request
@@ -220,7 +233,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				rotationAngle,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

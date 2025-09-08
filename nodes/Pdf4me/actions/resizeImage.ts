@@ -177,6 +177,19 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'resized-image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ResizeImage],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -184,7 +197,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const resizeType = this.getNodeParameter('resizeType', index) as string;
 	const maintainAspectRatio = this.getNodeParameter('maintainAspectRatio', index) as boolean;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
 	let docContent: string;
@@ -225,7 +238,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		ImageResizeType: resizeType,
 		MaintainAspectRatio: maintainAspectRatio,
-		async: useAsync,
+		IsAsync: true,
 	};
 	if (resizeType === 'Percentage') {
 		const resizePercentage = this.getNodeParameter('resizePercentage', index);
@@ -257,7 +270,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				resizeType,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

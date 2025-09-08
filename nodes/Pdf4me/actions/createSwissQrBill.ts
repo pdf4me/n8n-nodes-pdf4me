@@ -436,6 +436,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreateSwissQrBill],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -501,6 +513,7 @@ export const description: INodeProperties[] = [
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const fileName = this.getNodeParameter('fileName', index) as string;
 	const amount = this.getNodeParameter('amount', index) as string;
 	const currency = this.getNodeParameter('currency', index) as string;
@@ -579,7 +592,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		referenceType,						   // Reference type (NON = No reference) (Required)
 		languageType,							// Language for the QR bill (Required)
 		seperatorLine,						   // Separator line style (Required)
-		async: true,							 // Asynchronous processing as requested
+		IsAsync: true,							 // Asynchronous processing as requested
 	};
 
 	// Add optional parameters from advanced options if provided
@@ -614,7 +627,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				fileName: outputFileName,
 			},
 			binary: {
-				data: await this.helpers.prepareBinaryData(result, outputFileName),
+				[binaryDataName || 'data']: await this.helpers.prepareBinaryData(result, outputFileName),
 			},
 		},
 	];
