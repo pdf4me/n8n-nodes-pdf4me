@@ -98,6 +98,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property that will contain the JSON metadata file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GetPdfMetadata],
+			},
+		},
+	},
+	{
 		displayName: 'Async',
 		name: 'async',
 		type: 'boolean',
@@ -111,10 +123,20 @@ export const description: INodeProperties[] = [
 	},
 ];
 
+/**
+ * Get PDF Metadata - Extract metadata information from PDF documents using PDF4ME
+ * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return metadata
+ * 
+ * This action extracts metadata from PDF documents:
+ * - Returns structured JSON data with PDF metadata (title, author, creation date, etc.)
+ * - Supports various PDF document formats
+ * - Always processes asynchronously for optimal performance
+ * - Returns both JSON data and binary JSON file containing the metadata
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main PDF content
 	let docContent: string;
@@ -148,31 +170,47 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/GetPdfMetadata', body);
 
-	// Return the result as binary data (JSON)
-	const mimeType = 'application/json';
+	// Prepare the JSON response data
+	const jsonResponse = {
+		...result, // Raw API response data
+		_metadata: {
+			success: true,
+			message: 'PDF metadata extracted successfully',
+			processingTimestamp: new Date().toISOString(),
+			sourceFileName: docName,
+			operation: 'getPdfMetadata',
+		},
+	};
+
+	// Create binary data from the JSON response
+	const jsonString = JSON.stringify(jsonResponse, null, 2);
+	const jsonBuffer = Buffer.from(jsonString, 'utf8');
+	
+	// Generate filename for the JSON file
+	let jsonFileName = outputFileName;
+	if (!jsonFileName.toLowerCase().endsWith('.json')) {
+		jsonFileName = `${jsonFileName.replace(/\.[^.]*$/, '')}.json`;
+	}
+
+	// Create binary data using n8n's helper
 	const binaryData = await this.helpers.prepareBinaryData(
-		result,
-		outputFileName,
-		mimeType,
+		jsonBuffer,
+		jsonFileName,
+		'application/json',
 	);
 
+	// Return both JSON and binary data
 	return [
 		{
-			json: {
-				success: true,
-				message: 'PDF metadata extracted successfully',
-				fileName: outputFileName,
-				mimeType,
-				fileSize: result.length,
-			},
+			json: jsonResponse,
 			binary: {
-				data: binaryData,
+				[binaryDataName || 'data']: binaryData,
 			},
 		},
 	];

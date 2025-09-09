@@ -110,11 +110,11 @@ This error occurs during long-running operations like PDF to Word conversion.
 
 #### ✅ Solutions
 
-##### Solution 1: Enable Async Processing
+##### Solution 1: Optimize Processing Settings
 For PDF to Word conversion:
-1. Set "Use Async Processing" to `true`
-2. Increase "Max Retries" to 30-50
-3. Set "Retry Delay" to 5-10 seconds
+1. Increase "Max Retries" to 30-50
+2. Set "Retry Delay" to 5-10 seconds
+3. All operations now use async processing by default for better performance
 
 ##### Solution 2: Optimize Input
 1. Reduce PDF file size if possible

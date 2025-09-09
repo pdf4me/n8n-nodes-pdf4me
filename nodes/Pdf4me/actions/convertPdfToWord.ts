@@ -217,13 +217,6 @@ export const description: INodeProperties[] = [
 				description: 'Base seconds to wait between polling attempts (actual delay increases exponentially)',
 			},
 			{
-				displayName: 'Use Async Processing',
-				name: 'useAsync',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to use asynchronous processing for better handling of large files',
-			},
-			{
 				displayName: 'Use OCR When Needed',
 				name: 'ocrWhenNeeded',
 				type: 'boolean',
@@ -231,6 +224,19 @@ export const description: INodeProperties[] = [
 				description: 'Whether to use OCR (Optical Character Recognition) for scanned PDFs',
 			},
 		],
+	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-word',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertPdfToWord],
+			},
+		},
 	},
 ];
 
@@ -248,6 +254,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const qualityType = this.getNodeParameter('qualityType', index) as string;
 	const language = this.getNodeParameter('language', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let originalFileName = docName;
@@ -369,7 +376,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					language,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

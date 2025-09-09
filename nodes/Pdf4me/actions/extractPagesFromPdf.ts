@@ -110,6 +110,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractPagesFromPdf],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -138,6 +150,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const pageNumbers = this.getNodeParameter('pageNumbers', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -171,7 +184,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName,
 		pageNumbers,
-		async: true, // Enable asynchronous processing
+		IsAsync: true, // Enable asynchronous processing
 	};
 
 	// Add custom profiles if provided
@@ -203,7 +216,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					docName,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

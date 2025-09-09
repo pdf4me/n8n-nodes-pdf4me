@@ -138,6 +138,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		docName,
 		hours,
+		IsAsync: true,
 	};
 
 	// Make the API request using the new httpRequestWithAuthentication helper

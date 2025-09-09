@@ -243,12 +243,26 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'excel-file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.JsonToExcel],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	try {
 		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
 		const worksheetName = this.getNodeParameter('worksheetName', index) as string;
 
@@ -326,6 +340,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			ignoreNullValues: advancedOptions?.ignoreNullValues !== undefined ? advancedOptions.ignoreNullValues : false,
 			firstRow: advancedOptions?.firstRow !== undefined ? advancedOptions.firstRow : 1,
 			firstColumn: advancedOptions?.firstColumn !== undefined ? advancedOptions.firstColumn : 1,
+			IsAsync: true,
 		};
 
 		// Add profiles if provided
@@ -370,7 +385,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						columnCount: null, // Could be calculated if needed
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];

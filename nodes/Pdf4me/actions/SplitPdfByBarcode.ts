@@ -233,6 +233,41 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
+		displayName: 'File Naming',
+		name: 'fileNaming',
+		type: 'options',
+		required: true,
+		default: 'NameAsPerOrder',
+		description: 'File naming convention for split files',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfByBarcode],
+			},
+		},
+		options: [
+			{
+				name: 'Name As Per Order',
+				value: 'NameAsPerOrder',
+			},
+			{
+				name: 'Name As Per Page',
+				value: 'NameAsPerPage',
+			},
+		],
+	},
+	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfByBarcode],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -264,7 +299,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const splitBarcodePage = this.getNodeParameter('splitBarcodePage', index) as string;
 	const combinePagesWithSameConsecutiveBarcodes = this.getNodeParameter('combinePagesWithSameConsecutiveBarcodes', index) as boolean;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
+	const fileNaming = this.getNodeParameter('fileNaming', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let pdfContentBase64: string;
 
@@ -311,6 +348,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		splitBarcodePage,
 		combinePagesWithSameConsecutiveBarcodes,
 		pdfRenderDpi,
+		fileNaming,
+		IsAsync: true,
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;
@@ -410,7 +449,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			for (const doc of parsedResponse) {
 				if (doc.docContent && doc.docName) {
 					const buffer = Buffer.from(doc.docContent, 'base64');
-					const binaryKey = `file_${idx}`;
+					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
 					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.docName, 'application/pdf');
 					filesSummary.push({
 						fileName: doc.docName,
@@ -430,7 +469,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			for (const doc of parsedResponse.splitedDocuments) {
 				if (doc.streamFile && doc.fileName) {
 					const buffer = Buffer.from(doc.streamFile, 'base64');
-					const binaryKey = `file_${idx}`;
+					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
 					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.fileName, 'application/pdf');
 					filesSummary.push({
 						fileName: doc.fileName,
@@ -447,7 +486,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			responseType = 'Multiple PDFs (splitedDocuments)';
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
 			const buffer = Buffer.from(parsedResponse.docContent, 'base64');
-			binaryData['file_1'] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
+			binaryData[`${binaryDataName || 'data'}_1`] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
 			filesSummary.push({
 				fileName: parsedResponse.docName,
 				pageIndex: 1,
@@ -459,8 +498,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			totalFiles = 1;
 			responseType = 'Single PDF (legacy)';
 		} else {
-			// Unexpected response: debug logging removed due to n8n restrictions
-			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API.');
+			// Unexpected response: save for debugging
+			// Debug logging removed due to n8n restrictions
+			throw new Error('Unexpected response format from PDF4me SplitPdfByBarcode API. Raw response saved to /tmp/pdf4me_split_barcode_raw_response.json');
 		}
 	}
 

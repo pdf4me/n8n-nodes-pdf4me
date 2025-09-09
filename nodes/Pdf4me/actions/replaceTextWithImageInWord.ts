@@ -240,6 +240,18 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Output Binary Field Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Name of the binary property to store the output Word file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ReplaceTextWithImageInWord],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -248,6 +260,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const isFirstPageSkip = this.getNodeParameter('isFirstPageSkip', index) as boolean;
 	const pageNumbers = this.getNodeParameter('pageNumbers', index) as string;
 	const searchText = this.getNodeParameter('searchText', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let docName: string;
@@ -316,7 +329,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		IsFirstPageSkip: isFirstPageSkip,
 		PageNumbers: pageNumbers,
 		SearchText: searchText,
-		async: true,
+		IsAsync: true,
 	};
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ReplaceTextWithImageInWord', payload);
 	if (responseData) {
@@ -334,7 +347,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					success: true,
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

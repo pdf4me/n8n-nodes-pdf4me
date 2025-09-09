@@ -267,7 +267,7 @@ export const description: INodeProperties[] = [
 		name: 'printBackground',
 		type: 'boolean',
 		required: true,
-		default: true,
+		default: false,
 		description: 'Select true to PrintBackground in PDF and select false for PrintBackground will not display in PDF',
 		displayOptions: {
 			show: {
@@ -280,7 +280,7 @@ export const description: INodeProperties[] = [
 		name: 'displayHeaderFooter',
 		type: 'boolean',
 		required: true,
-		default: true,
+		default: false,
 		description: 'Select true to DisplayHeaderFooter in PDF and select false for DisplayHeaderFooter will not display in PDF',
 		displayOptions: {
 			show: {
@@ -301,11 +301,25 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'html-pdf-output',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertHtmlToPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const indexFilePath = this.getNodeParameter('indexFilePath', index) as string;
 	const layout = this.getNodeParameter('layout', index) as string;
 	const format = this.getNodeParameter('format', index) as string;
@@ -352,13 +366,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Try to decode to verify it's valid base64
 		try {
 			const decoded = Buffer.from(base64Content, 'base64').toString('utf8');
-			console.log(`Base64 Content Length: ${base64Content.length}`);
-			console.log(`Decoded Content Length: ${decoded.length}`);
-			console.log(`Decoded Content Preview: ${decoded.substring(0, 100)}...`);
+			// console.log(`Base64 Content Length: ${base64Content.length}`);
+			// console.log(`Decoded Content Length: ${decoded.length}`);
+			// console.log(`Decoded Content Preview: ${decoded.substring(0, 100)}...`);
 			
 			// Check if decoded content looks like HTML
 			if (!decoded.includes('<') || !decoded.includes('>')) {
-				console.log('Warning: Decoded base64 content does not appear to be HTML');
+				// console.log('Warning: Decoded base64 content does not appear to be HTML');
 			}
 		} catch (error) {
 			throw new Error(`Invalid base64 content: ${error.message}`);
@@ -375,31 +389,31 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		
 		// Ensure HTML has basic structure
 		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
-			console.log('Warning: HTML code may not have proper HTML structure');
+			// console.log('Warning: HTML code may not have proper HTML structure');
 			// Try to wrap the content in basic HTML structure if it's missing
 			if (!htmlCode.includes('<html')) {
 				htmlCode = `<!DOCTYPE html><html><head><title>Converted HTML</title></head><body>${htmlCode}</body></html>`;
-				console.log('Wrapped HTML content in basic HTML structure');
+				// console.log('Wrapped HTML content in basic HTML structure');
 			}
 		}
 		
 		// Debug: Log the HTML code length and first 100 characters
-		console.log(`HTML Code Length: ${htmlCode.length}`);
-		console.log(`HTML Code Preview: ${htmlCode.substring(0, 100)}...`);
+		// console.log(`HTML Code Length: ${htmlCode.length}`);
+		// console.log(`HTML Code Preview: ${htmlCode.substring(0, 100)}...`);
 		
 		// Convert HTML to base64
 		// Ensure proper UTF-8 encoding and handle any potential encoding issues
 		try {
 			docContent = Buffer.from(htmlCode, 'utf8').toString('base64');
 		} catch (error) {
-			console.log('Error converting HTML to base64:', error);
+			// console.log('Error converting HTML to base64:', error);
 			// Fallback: try with different encoding
 			docContent = Buffer.from(htmlCode, 'latin1').toString('base64');
 		}
 		
 		// Debug: Log the base64 length and first 100 characters
-		console.log(`Base64 Length: ${docContent.length}`);
-		console.log(`Base64 Preview: ${docContent.substring(0, 100)}...`);
+		// console.log(`Base64 Length: ${docContent.length}`);
+		// console.log(`Base64 Preview: ${docContent.substring(0, 100)}...`);
 	} else if (inputDataType === 'url') {
 		const htmlUrl = this.getNodeParameter('htmlUrl', index) as string;
 		docContent = await downloadHtmlFromUrl(this.helpers, htmlUrl);
@@ -421,6 +435,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		rightMargin,
 		printBackground,
 		displayHeaderFooter,
+		IsAsync: true,
 		// Note: async flag is automatically added by pdf4meAsyncRequest function
 	};
 
@@ -431,29 +446,29 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (debugBody.docContent && typeof debugBody.docContent === 'string' && debugBody.docContent.length > 100) {
 		debugBody.docContent = `${debugBody.docContent.substring(0, 100)}... (truncated, total length: ${debugBody.docContent.length})`;
 	}
-	console.log('Request Body:', JSON.stringify(debugBody, null, 2));
+	// console.log('Request Body:', JSON.stringify(debugBody, null, 2));
 
 	// Call the PDF4ME API
 	let responseData;
 	try {
 		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertHtmlToPdf', body);
 	} catch (error) {
-		console.log('API call failed:', error);
+		// console.log('API call failed:', error);
 		throw new Error(`Failed to convert HTML to PDF: ${error.message}`);
 	}
 
 	// Debug: Log the response data type and size
-	console.log('Response Data Type:', typeof responseData);
+	// console.log('Response Data Type:', typeof responseData);
 	if (responseData) {
 		if (Buffer.isBuffer(responseData)) {
-			console.log('Response is Buffer, size:', responseData.length);
+			// console.log('Response is Buffer, size:', responseData.length);
 		} else if (typeof responseData === 'string') {
-			console.log('Response is String, length:', responseData.length);
+			// console.log('Response is String, length:', responseData.length);
 		} else {
-			console.log('Response is other type:', typeof responseData);
+			// console.log('Response is other type:', typeof responseData);
 		}
 	} else {
-		console.log('No response data received');
+		// console.log('No response data received');
 	}
 
 	// Handle the binary response
@@ -486,6 +501,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			'application/pdf',
 		);
 
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
+
 		return [
 			{
 				json: {
@@ -496,7 +514,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					message: 'HTML converted to PDF successfully',
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataKey]: binaryData,
 				},
 			},
 		];

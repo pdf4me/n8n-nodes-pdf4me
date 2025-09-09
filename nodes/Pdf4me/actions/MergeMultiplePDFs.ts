@@ -12,36 +12,6 @@ import {
 
 export const description: INodeProperties[] = [
 	{
-		displayName: 'Input Data Type',
-		name: 'inputDataType',
-		type: 'options',
-		required: true,
-		default: 'binaryData',
-		description: 'Choose how to provide the PDF data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeMultiplePDFs],
-			},
-		},
-		options: [
-			{
-				name: 'Base64 String',
-				value: 'base64',
-				description: 'Provide PDF content as base64 encoded string',
-			},
-			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF files from previous nodes',
-			},
-			{
-				name: 'URL',
-				value: 'url',
-				description: 'Provide URLs to PDF files',
-			},
-		],
-	},
-	{
 		displayName: 'PDF Files',
 		name: 'pdfFiles',
 		type: 'fixedCollection',
@@ -50,11 +20,10 @@ export const description: INodeProperties[] = [
 		},
 		placeholder: 'Add PDF File',
 		default: {},
-		description: 'Add multiple PDF files to merge',
+		description: 'Add multiple PDF files to merge. Each file can use a different input type.',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.MergeMultiplePDFs],
-				inputDataType: ['binaryData'],
 			},
 		},
 		options: [
@@ -62,6 +31,31 @@ export const description: INodeProperties[] = [
 				displayName: 'PDF File',
 				name: 'pdfFile',
 				values: [
+					{
+						displayName: 'Input Type',
+						name: 'inputType',
+						type: 'options',
+						required: true,
+						default: 'binaryData',
+						description: 'Choose how to provide this PDF file',
+						options: [
+							{
+								name: 'Binary Data',
+								value: 'binaryData',
+								description: 'Use PDF file from previous nodes',
+							},
+							{
+								name: 'Base64 String',
+								value: 'base64',
+								description: 'Provide PDF content as base64 encoded string',
+							},
+							{
+								name: 'URL',
+								value: 'url',
+								description: 'Provide URL to PDF file',
+							},
+						],
+					},
 					{
 						displayName: 'Binary Property Name',
 						name: 'binaryPropertyName',
@@ -69,40 +63,12 @@ export const description: INodeProperties[] = [
 						default: 'data',
 						description: 'Name of the binary property containing the PDF file',
 						placeholder: 'data',
+						displayOptions: {
+							show: {
+								inputType: ['binaryData'],
+							},
+						},
 					},
-					{
-						displayName: 'File Name',
-						name: 'fileName',
-						type: 'string',
-						default: '',
-						description: 'Optional name for the PDF file (for reference)',
-						placeholder: 'document1.pdf',
-					},
-				],
-			},
-		],
-	},
-	{
-		displayName: 'PDF Files',
-		name: 'pdfFilesBase64',
-		type: 'fixedCollection',
-		typeOptions: {
-			multipleValues: true,
-		},
-		placeholder: 'Add PDF File',
-		default: {},
-		description: 'Add multiple PDF files to merge',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeMultiplePDFs],
-				inputDataType: ['base64'],
-			},
-		},
-		options: [
-			{
-				displayName: 'PDF File',
-				name: 'pdfFile',
-				values: [
 					{
 						displayName: 'Base64 Content',
 						name: 'base64Content',
@@ -113,40 +79,12 @@ export const description: INodeProperties[] = [
 						default: '',
 						description: 'Base64 encoded PDF content',
 						placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
+						displayOptions: {
+							show: {
+								inputType: ['base64'],
+							},
+						},
 					},
-					{
-						displayName: 'File Name',
-						name: 'fileName',
-						type: 'string',
-						default: '',
-						description: 'Optional name for the PDF file (for reference)',
-						placeholder: 'document1.pdf',
-					},
-				],
-			},
-		],
-	},
-	{
-		displayName: 'PDF Files',
-		name: 'pdfFilesUrl',
-		type: 'fixedCollection',
-		typeOptions: {
-			multipleValues: true,
-		},
-		placeholder: 'Add PDF File',
-		default: {},
-		description: 'Add multiple PDF files to merge',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeMultiplePDFs],
-				inputDataType: ['url'],
-			},
-		},
-		options: [
-			{
-				displayName: 'PDF File',
-				name: 'pdfFile',
-				values: [
 					{
 						displayName: 'PDF URL',
 						name: 'pdfUrl',
@@ -154,6 +92,11 @@ export const description: INodeProperties[] = [
 						default: '',
 						description: 'URL to the PDF file',
 						placeholder: 'https://example.com/document.pdf',
+						displayOptions: {
+							show: {
+								inputType: ['url'],
+							},
+						},
 					},
 					{
 						displayName: 'File Name',
@@ -215,17 +158,30 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'merged-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.MergeMultiplePDFs],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	try {
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-		// Get PDF contents based on input data type
-		const pdfContentsBase64 = await getPdfContents.call(this, index, inputDataType);
+		// Get PDF contents from mixed input types
+		const pdfContentsBase64 = await getPdfContents.call(this, index);
 
 		// Validate that we have at least 2 PDFs to merge
 		if (pdfContentsBase64.length < 2) {
@@ -236,6 +192,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
 			docContent: pdfContentsBase64,
 			docName,
+			IsAsync: true,
 		};
 
 		// Add profiles if provided
@@ -278,7 +235,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						inputFileCount: pdfContentsBase64.length,
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];
@@ -293,84 +250,60 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 }
 
-async function getPdfContents(this: IExecuteFunctions, index: number, inputDataType: string): Promise<string[]> {
-	let pdfContentsBase64: string[];
+async function getPdfContents(this: IExecuteFunctions, index: number): Promise<string[]> {
+	// Get PDF files with mixed input types
+	const pdfFiles = this.getNodeParameter('pdfFiles', index) as IDataObject;
+	const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
 
-	if (inputDataType === 'binaryData') {
-		// Get PDF contents from multiple binary files
-		const pdfFiles = this.getNodeParameter('pdfFiles', index) as IDataObject;
-		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
+	if (!pdfFileArray || pdfFileArray.length === 0) {
+		throw new Error('At least one PDF file is required');
+	}
 
-		if (!pdfFileArray || pdfFileArray.length === 0) {
-			throw new Error('At least one PDF file is required');
-		}
+	const pdfContentsBase64: string[] = [];
+	const item = this.getInputData(index);
 
-		const item = this.getInputData(index);
-		pdfContentsBase64 = [];
+	for (const pdfFile of pdfFileArray) {
+		const inputType = pdfFile.inputType as string;
+		const fileName = pdfFile.fileName as string || 'unnamed';
 
-		for (const pdfFile of pdfFileArray) {
+		if (inputType === 'binaryData') {
+			// Get PDF content from binary data
 			const binaryPropertyName = pdfFile.binaryPropertyName as string;
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				const fileName = pdfFile.fileName as string || binaryPropertyName;
 				throw new Error(`No binary data found in property '${binaryPropertyName}' for file '${fileName}'`);
 			}
 
 			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 			const base64Content = buffer.toString('base64');
 			pdfContentsBase64.push(base64Content);
-		}
-	} else if (inputDataType === 'base64') {
-		// Get PDF contents from multiple base64 files
-		const pdfFiles = this.getNodeParameter('pdfFilesBase64', index) as IDataObject;
-		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-
-		if (!pdfFileArray || pdfFileArray.length === 0) {
-			throw new Error('At least one PDF file is required');
-		}
-
-		pdfContentsBase64 = [];
-		for (const pdfFile of pdfFileArray) {
+		} else if (inputType === 'base64') {
+			// Get PDF content from base64 string
 			const base64Content = pdfFile.base64Content as string;
 			if (!base64Content || base64Content.trim() === '') {
-				const fileName = pdfFile.fileName as string || 'unnamed';
 				throw new Error(`Base64 content is required for file '${fileName}'`);
 			}
 			pdfContentsBase64.push(base64Content.trim());
-		}
-	} else if (inputDataType === 'url') {
-		// Get PDF contents from multiple URLs
-		const pdfFiles = this.getNodeParameter('pdfFilesUrl', index) as IDataObject;
-		const pdfFileArray = pdfFiles.pdfFile as IDataObject[];
-
-		if (!pdfFileArray || pdfFileArray.length === 0) {
-			throw new Error('At least one PDF file is required');
-		}
-
-		pdfContentsBase64 = [];
-		for (const pdfFile of pdfFileArray) {
+		} else if (inputType === 'url') {
+			// Get PDF content from URL
 			const pdfUrl = pdfFile.pdfUrl as string;
 			if (!pdfUrl || pdfUrl.trim() === '') {
-				const fileName = pdfFile.fileName as string || 'unnamed';
 				throw new Error(`PDF URL is required for file '${fileName}'`);
 			}
+
 			const options = {
-
 				method: 'GET' as const,
-
 				url: pdfUrl.trim(),
-
 				encoding: 'arraybuffer' as const,
-
 			};
 
 			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 			const buffer = Buffer.from(response as Buffer);
 			const base64Content = buffer.toString('base64');
 			pdfContentsBase64.push(base64Content);
+		} else {
+			throw new Error(`Unsupported input type '${inputType}' for file '${fileName}'`);
 		}
-	} else {
-		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
 	return pdfContentsBase64;

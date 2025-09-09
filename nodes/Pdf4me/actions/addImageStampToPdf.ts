@@ -475,6 +475,19 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'pdf-with-image-stamp',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AddImageStampToPdf],
+			},
+		},
+	},
 ];
 
 /**
@@ -502,6 +515,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const isBackground = this.getNodeParameter('isBackground', index) as boolean;
 	const showOnlyInPrint = this.getNodeParameter('showOnlyInPrint', index) as boolean;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Initialize debug logger
 	const debugConfig: DebugConfig = {
@@ -517,6 +531,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		outputFileName,
 		alignX,
 		alignY,
+		IsAsync: true,
 	});
 
 	try {
@@ -659,6 +674,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			isBackground,
 			// Default: true
 			showOnlyInPrint,
+			IsAsync: true,
 		};
 
 		logger.log('debug', 'Request body prepared', {
@@ -729,7 +745,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						message: 'Image stamp added successfully',
 					},
 					binary: {
-						data: binaryData,
+						[binaryDataName || 'data']: binaryData,
 					},
 				},
 			];

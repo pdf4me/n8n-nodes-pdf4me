@@ -125,220 +125,131 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Conversion Options',
-		name: 'conversionOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
+		displayName: 'Output Format',
+		name: 'outputFormat',
+		type: 'options',
+		default: 'PDF',
+		required: true,
+		description: 'Desired output format',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
 			},
 		},
 		options: [
-			{
-				displayName: 'Page Index',
-				name: 'pageIndex',
-				type: 'number',
-				default: 0,
-				description: 'Starting page index for conversion (0-based)',
-			},
-			{
-				displayName: 'Page Count',
-				name: 'pageCount',
-				type: 'number',
-				default: 0,
-				description: 'Number of pages to convert (0 = all pages)',
-			},
-			{
-				displayName: 'Include Hidden Pages',
-				name: 'includeHiddenPages',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to include hidden pages in the conversion',
-			},
-			{
-				displayName: 'Save Foreground Page',
-				name: 'saveForegroundPage',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to save the foreground page',
-			},
-			{
-				displayName: 'Is PDF Compliant',
-				name: 'isPdfCompliant',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to ensure PDF compliance',
-			},
-			{
-				displayName: 'Auto Fit',
-				name: 'autoFit',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to auto-fit the content',
-			},
-			{
-				displayName: 'Save Toolbar',
-				name: 'saveToolBar',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to save the toolbar',
-			},
-			{
-				displayName: 'JPEG Quality',
-				name: 'jpegQuality',
-				type: 'number',
-				default: 90,
-				description: 'JPEG quality setting (1-100)',
-				typeOptions: {
-					minValue: 1,
-					maxValue: 100,
-				},
-			},
-			{
-				displayName: 'Resolution',
-				name: 'resolution',
-				type: 'number',
-				default: 96,
-				description: 'Resolution setting in DPI',
-				typeOptions: {
-					minValue: 1,
-					maxValue: 600,
-				},
-			},
-			{
-				displayName: 'Scale',
-				name: 'scale',
-				type: 'number',
-				default: 1.0,
-				description: 'Scale factor for the conversion',
-				typeOptions: {
-					minValue: 0.1,
-					maxValue: 10.0,
-					numberStepSize: 0.1,
-				},
-			},
-			{
-				displayName: 'Image Brightness',
-				name: 'imageBrightness',
-				type: 'number',
-				default: 0,
-				description: 'Image brightness adjustment (-100 to 100)',
-				typeOptions: {
-					minValue: -100,
-					maxValue: 100,
-				},
-			},
-			{
-				displayName: 'Image Contrast',
-				name: 'imageContrast',
-				type: 'number',
-				default: 0,
-				description: 'Image contrast adjustment (-100 to 100)',
-				typeOptions: {
-					minValue: -100,
-					maxValue: 100,
-				},
-			},
-			{
-				displayName: 'Default Font',
-				name: 'defaultFont',
-				type: 'string',
-				default: 'Arial',
-				description: 'Default font to use for text elements',
-			},
-			{
-				displayName: 'Page Size',
-				name: 'pageSize',
-				type: 'options',
-				default: 'A4',
-				description: 'Page size for the output PDF',
-				options: [
-					{ name: 'A4', value: 'A4' },
-					{ name: 'Letter', value: 'Letter' },
-					{ name: 'Legal', value: 'Legal' },
-					{ name: 'A3', value: 'A3' },
-					{ name: 'A5', value: 'A5' },
-					{ name: 'Custom', value: 'Custom' },
-				],
-			},
-			{
-				displayName: 'Image Color Mode',
-				name: 'imageColorMode',
-				type: 'options',
-				default: 'Color',
-				description: 'Color mode for images',
-				options: [
-					{ name: 'Color', value: 'Color' },
-					{ name: 'Grayscale', value: 'Grayscale' },
-					{ name: 'Black and White', value: 'BlackAndWhite' },
-				],
-			},
-			{
-				displayName: 'Compositing Quality',
-				name: 'compositingQuality',
-				type: 'options',
-				default: 'HighQuality',
-				description: 'Compositing quality setting',
-				options: [
-					{ name: 'High Quality', value: 'HighQuality' },
-					{ name: 'High Speed', value: 'HighSpeed' },
-					{ name: 'Default', value: 'Default' },
-				],
-			},
-			{
-				displayName: 'Interpolation Mode',
-				name: 'interpolationMode',
-				type: 'options',
-				default: 'HighQualityBicubic',
-				description: 'Interpolation mode for image scaling',
-				options: [
-					{ name: 'High Quality Bicubic', value: 'HighQualityBicubic' },
-					{ name: 'Bicubic', value: 'Bicubic' },
-					{ name: 'Bilinear', value: 'Bilinear' },
-					{ name: 'Nearest Neighbor', value: 'NearestNeighbor' },
-				],
-			},
-			{
-				displayName: 'Pixel Offset Mode',
-				name: 'pixelOffsetMode',
-				type: 'options',
-				default: 'HighQuality',
-				description: 'Pixel offset mode',
-				options: [
-					{ name: 'High Quality', value: 'HighQuality' },
-					{ name: 'High Speed', value: 'HighSpeed' },
-					{ name: 'Default', value: 'Default' },
-				],
-			},
-			{
-				displayName: 'Smoothing Mode',
-				name: 'smoothingMode',
-				type: 'options',
-				default: 'HighQuality',
-				description: 'Smoothing mode for graphics',
-				options: [
-					{ name: 'High Quality', value: 'HighQuality' },
-					{ name: 'High Speed', value: 'HighSpeed' },
-					{ name: 'Default', value: 'Default' },
-				],
-			},
-			{
-				displayName: 'TIFF Compression',
-				name: 'tiffCompression',
-				type: 'options',
-				default: 'LZW',
-				description: 'TIFF compression method',
-				options: [
-					{ name: 'LZW', value: 'LZW' },
-					{ name: 'CCITT3', value: 'CCITT3' },
-					{ name: 'CCITT4', value: 'CCITT4' },
-					{ name: 'RLE', value: 'RLE' },
-					{ name: 'None', value: 'None' },
-				],
-			},
+			{ name: 'PDF', value: 'PDF' },
+			{ name: 'JPG', value: 'JPG' },
+			{ name: 'PNG', value: 'PNG' },
+			{ name: 'TIFF', value: 'TIFF' },
 		],
+	},
+	{
+		displayName: 'Is PDF Compliant',
+		name: 'isPdfCompliant',
+		type: 'boolean',
+		default: true,
+		required: true,
+		description: 'Make PDF compliant with standards',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Page Index',
+		name: 'pageIndex',
+		type: 'number',
+		default: 0,
+		required: true,
+		description: 'Start from first page (0-indexed)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Page Count',
+		name: 'pageCount',
+		type: 'number',
+		default: 5,
+		required: true,
+		description: 'Number of pages to convert (1-100)',
+		typeOptions: {
+			minValue: 1,
+			maxValue: 100,
+		},
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Include Hidden Pages',
+		name: 'includeHiddenPages',
+		type: 'boolean',
+		default: true,
+		required: true,
+		description: 'Include hidden pages (True/False)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Save Foreground Page',
+		name: 'saveForegroundPage',
+		type: 'boolean',
+		default: true,
+		required: true,
+		description: 'Save foreground elements (True/False)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Save Tool Bar',
+		name: 'saveToolBar',
+		type: 'boolean',
+		default: true,
+		required: true,
+		description: 'Include toolbar (True/False)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Auto Fit',
+		name: 'autoFit',
+		type: 'boolean',
+		default: true,
+		required: true,
+		description: 'Auto-fit content to page (True/False)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
+	{
+		displayName: 'Async',
+		name: 'async',
+		type: 'boolean',
+		default: true,
+		required: true,
+		description: 'Enable asynchronous processing',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
 	},
 	{
 		displayName: 'Advanced Options',
@@ -362,12 +273,33 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'converted-visio',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertVisio],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const conversionOptions = this.getNodeParameter('conversionOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
+	const outputFormat = this.getNodeParameter('outputFormat', index) as string;
+	const isPdfCompliant = this.getNodeParameter('isPdfCompliant', index) as boolean;
+	const pageIndex = this.getNodeParameter('pageIndex', index) as number;
+	const pageCount = this.getNodeParameter('pageCount', index) as number;
+	const includeHiddenPages = this.getNodeParameter('includeHiddenPages', index) as boolean;
+	const saveForegroundPage = this.getNodeParameter('saveForegroundPage', index) as boolean;
+	const saveToolBar = this.getNodeParameter('saveToolBar', index) as boolean;
+	const autoFit = this.getNodeParameter('autoFit', index) as boolean;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
@@ -435,32 +367,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Build the request body based on the C# code structure
+	// Build the request body based on the simplified API specification
 	const body: IDataObject = {
 		docContent,
-		docName: docName,
-		OutputFormat: 'string',
-		PageIndex: conversionOptions.pageIndex || 0,
-		PageCount: conversionOptions.pageCount || 0,
-		DefaultFont: conversionOptions.defaultFont || 'Arial',
-		IncludeHiddenPages: conversionOptions.includeHiddenPages !== false, // Default to true
-		PageSize: conversionOptions.pageSize || 'A4',
-		JpegQuality: conversionOptions.jpegQuality || 90,
-		SaveForegroundPage: conversionOptions.saveForegroundPage !== false, // Default to true
-		IsPdfCompliant: conversionOptions.isPdfCompliant !== false, // Default to true
-		ImageBrightness: conversionOptions.imageBrightness || 0,
-		ImageContrast: conversionOptions.imageContrast || 0,
-		ImageColorMode: conversionOptions.imageColorMode || 'Color',
-		CompositingQuality: conversionOptions.compositingQuality || 'HighQuality',
-		InterpolationMode: conversionOptions.interpolationMode || 'HighQualityBicubic',
-		PixelOffsetMode: conversionOptions.pixelOffsetMode || 'HighQuality',
-		Resolution: conversionOptions.resolution || 96,
-		Scale: conversionOptions.scale || 1.0,
-		SmoothingMode: conversionOptions.smoothingMode || 'HighQuality',
-		TiffCompression: conversionOptions.tiffCompression || 'LZW',
-		SaveToolBar: conversionOptions.saveToolBar || false,
-		AutoFit: conversionOptions.autoFit !== false, // Default to true
-		async: true, // For big files and too many calls async is recommended to reduce server load
+		docName: 'output',
+		OutputFormat: outputFormat,
+		IsPdfCompliant: isPdfCompliant,
+		PageIndex: pageIndex,
+		PageCount: pageCount,
+		IncludeHiddenPages: includeHiddenPages,
+		SaveForegroundPage: saveForegroundPage,
+		SaveToolBar: saveToolBar,
+		AutoFit: autoFit,
+		IsAsync: true,
 	};
 
 	// Add profiles if provided
@@ -476,33 +395,69 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the binary response (PDF data)
 	if (responseData) {
-		// Validate that we received valid PDF data
-		if (!Buffer.isBuffer(responseData)) {
-			throw new Error('Invalid response format: Expected Buffer but received ' + typeof responseData);
+		let pdfBuffer: Buffer;
+
+		// Handle different response formats
+		if (Buffer.isBuffer(responseData)) {
+			pdfBuffer = responseData;
+		} else if (typeof responseData === 'string') {
+			// If it's a string, it might be base64 encoded
+			try {
+				pdfBuffer = Buffer.from(responseData, 'base64');
+			} catch (error) {
+				// If base64 decoding fails, treat as raw string
+				pdfBuffer = Buffer.from(responseData, 'utf8');
+			}
+		} else {
+			// Convert other types to string first, then to buffer
+			pdfBuffer = Buffer.from(String(responseData), 'utf8');
 		}
 
 		// Check if the response looks like a PDF (should start with %PDF)
-		const responseString = responseData.toString('utf8', 0, 10);
+		const responseString = pdfBuffer.toString('utf8', 0, 10);
 		if (!responseString.startsWith('%PDF')) {
 			// If it doesn't look like a PDF, it might be an error message or base64 encoded
-			const errorText = responseData.toString('utf8', 0, 200);
-			if (errorText.includes('error') || errorText.includes('Error')) {
+			const errorText = pdfBuffer.toString('utf8', 0, 200);
+			
+			// Check if it's an error message
+			if (errorText.includes('error') || errorText.includes('Error') || errorText.includes('exception')) {
 				throw new Error(`API returned error: ${errorText}`);
 			}
+			
 			// Try to decode as base64 if it doesn't look like a PDF
 			try {
-				const decodedBuffer = Buffer.from(responseData.toString('utf8'), 'base64');
+				const decodedBuffer = Buffer.from(pdfBuffer.toString('utf8'), 'base64');
 				const decodedString = decodedBuffer.toString('utf8', 0, 10);
 				if (decodedString.startsWith('%PDF')) {
 					// It was base64 encoded, use the decoded version
-					responseData = decodedBuffer;
+					pdfBuffer = decodedBuffer;
 				} else {
-					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+					// If still not a PDF, check if it's a JSON error response
+					try {
+						const jsonResponse = JSON.parse(pdfBuffer.toString('utf8'));
+						if (jsonResponse.error || jsonResponse.message) {
+							throw new Error(`API returned error: ${jsonResponse.error || jsonResponse.message}`);
+						}
+					} catch (jsonError) {
+						// Not JSON, so it's likely invalid data
+						throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+					}
 				}
 			} catch (decodeError) {
-				throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+				// If base64 decoding fails, check if it's a JSON error
+				try {
+					const jsonResponse = JSON.parse(pdfBuffer.toString('utf8'));
+					if (jsonResponse.error || jsonResponse.message) {
+						throw new Error(`API returned error: ${jsonResponse.error || jsonResponse.message}`);
+					}
+				} catch (jsonError) {
+					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+				}
 			}
 		}
+
+		// Use the validated PDF buffer
+		responseData = pdfBuffer;
 
 		// Generate filename if not provided
 		let fileName = outputFileName;
@@ -527,19 +482,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					inputDataType,
 					sourceFileName: docName,
 					conversionOptions: {
-						pageIndex: body.PageIndex,
-						pageCount: body.PageCount,
-						includeHiddenPages: body.IncludeHiddenPages,
-						saveForegroundPage: body.SaveForegroundPage,
-						isPdfCompliant: body.IsPdfCompliant,
-						autoFit: body.AutoFit,
-						jpegQuality: body.JpegQuality,
-						resolution: body.Resolution,
-						scale: body.Scale,
+						outputFormat: outputFormat,
+						pageIndex: pageIndex,
+						pageCount: pageCount,
+						includeHiddenPages: includeHiddenPages,
+						saveForegroundPage: saveForegroundPage,
+						isPdfCompliant: isPdfCompliant,
+						saveToolBar: saveToolBar,
+						autoFit: autoFit,
 					},
 				},
 				binary: {
-					data: binaryData,
+					[binaryDataName || 'data']: binaryData,
 				},
 			},
 		];

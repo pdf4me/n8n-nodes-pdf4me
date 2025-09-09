@@ -186,11 +186,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Async',
-		name: 'async',
-		type: 'boolean',
-		default: true,
-		description: 'Enable asynchronous processing (recommended for large files)',
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'editable-pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToEditableOcr],
@@ -202,6 +203,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	// PDF input
 	const pdfInputDataType = this.getNodeParameter('pdfInputDataType', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	let docContent: string;
 	let docName: string = 'input.pdf';
 
@@ -270,6 +272,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		mimeType,
 	);
 
+	// Determine the binary data name
+	const binaryDataKey = binaryDataName || 'data';
+
 	return [
 		{
 			json: {
@@ -284,7 +289,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				mergeAllSheets,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataKey]: binaryData,
 			},
 		},
 	];

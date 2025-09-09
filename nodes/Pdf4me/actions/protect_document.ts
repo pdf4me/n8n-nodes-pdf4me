@@ -113,11 +113,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Async',
-		name: 'async',
-		type: 'boolean',
-		default: true,
-		description: 'Process asynchronously',
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'protected-pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ProtectDocument],
@@ -131,7 +132,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const password = this.getNodeParameter('password', index) as string;
 	const pdfPermission = this.getNodeParameter('pdfPermission', index) as string;
-	const useAsync = this.getNodeParameter('async', index) as boolean;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main PDF content
 	let docContent: string;
@@ -167,17 +168,18 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		docContent,
 		password,
 		pdfPermission,
-		async: useAsync,
+		IsAsync: true,
 	};
 
 	// Make the API request
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Protect', body);
 
 	// Return the result as binary data
+	const binaryDataKey = binaryDataName || 'data';
 	return [
 		{
 			binary: {
-				data: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/pdf'),
+				[binaryDataKey]: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/pdf'),
 			},
 			json: {},
 		},

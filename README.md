@@ -61,10 +61,21 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^1.3.0"
+    "n8n-nodes-pdf4me": "^2.0.0"
   }
 }
 ```
+
+## What's New in Version 2.0.0
+
+Version 2.0.0 brings significant improvements to the PDF4ME n8n node:
+
+- **🎯 Simplified Interface**: Removed complex configuration parameters for easier setup
+- **⚡ Enhanced Performance**: Optimized response handling and processing speed
+- **🔧 Better Error Handling**: Improved error messages and debugging capabilities
+- **📝 Clearer Descriptions**: Enhanced action descriptions for better user understanding
+- **🔄 Streamlined Workflows**: Simplified output handling across all operations
+- **✅ Backward Compatible**: All existing workflows continue to work without changes
 
 ## Operations
 
@@ -182,7 +193,7 @@ To use this node, you need a PDF4ME API key. Here's how to get started:
 
 ## Usage
 
-This node allows you to automate document processing tasks in your n8n workflows. Here are some common use cases:
+This node allows you to automate document processing tasks in your n8n workflows. With version 2.0.0, the interface has been simplified for easier configuration and better user experience. Here are some common use cases:
 
 ### AI-Powered Document Processing
 - Automatically extract invoice data for accounting systems
@@ -264,12 +275,13 @@ The Convert HTML to PDF operation supports multiple input methods for maximum fl
 - Extract and manage document metadata
 
 ### Automated Workflows
-- Chain multiple PDF4ME operations together
+- Chain multiple PDF4ME operations together with simplified configuration
 - Integrate with email nodes for automated document distribution
 - Connect with storage services for file management
-- Build complete document processing pipelines
+- Build complete document processing pipelines with enhanced reliability
 - Automate document classification and routing
-- Create end-to-end document workflows
+- Create end-to-end document workflows with improved error handling
+- **Version 2.0.0**: Streamlined workflow creation with fewer configuration steps
 
 For detailed examples and workflow templates, visit our documentation.
 
@@ -284,8 +296,19 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 1.5.0
+- **Latest Version**: Major refactoring and enhanced user experience
+- **Simplified Output Handling**: Removed complex binaryDataName parameters across all actions
+- **Enhanced Response Processing**: Improved response handling to return raw data and metadata consistently
+- **Streamlined Interface**: Simplified action configurations for better usability
+- **Improved Descriptions**: Enhanced action descriptions for clarity and consistency
+- **Better Error Handling**: Refined error handling and response processing
+- **Code Optimization**: Significant code cleanup and optimization across all actions
+- **Maintained Compatibility**: All existing workflows continue to work seamlessly
+- **Enhanced Performance**: Improved processing speed and reliability
+
 ### 1.3.5
-- **Latest Version**: Enhanced HTML to PDF conversion with direct HTML code input
+- **Previous Version**: Enhanced HTML to PDF conversion with direct HTML code input
 - Added **HTML Code** input option for Convert HTML to PDF operation
 - Users can now write HTML code directly in the interface without saving files first
 - HTML code is automatically converted to base64 for API processing

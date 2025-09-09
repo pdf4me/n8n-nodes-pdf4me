@@ -126,12 +126,26 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'compressed-pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CompressPdf],
+			},
+		},
+	},
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const optimizeProfile = this.getNodeParameter('optimizeProfile', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main PDF content
 	let docContent: string;
@@ -180,6 +194,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		mimeType,
 	);
 
+	// Determine the binary data name
+	const binaryDataKey = binaryDataName || 'data';
+
 	return [
 		{
 			json: {
@@ -191,7 +208,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				optimizeProfile,
 			},
 			binary: {
-				data: binaryData,
+				[binaryDataKey]: binaryData,
 			},
 		},
 	];
