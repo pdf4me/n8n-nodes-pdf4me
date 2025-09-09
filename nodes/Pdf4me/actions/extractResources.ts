@@ -158,28 +158,24 @@ export const description: INodeProperties[] = [
 			},
 		],
 	},
-	{
-		displayName: 'Binary Data Output Name',
-		name: 'binaryDataName',
-		type: 'string',
-		default: 'data',
-		description: 'Custom name for the binary data in n8n output',
-		placeholder: 'extracted-resources',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ExtractResources],
-			},
-		},
-	},
 ];
 
+/**
+ * Extract Resources - Extract text, images, and other resources from PDF documents using PDF4ME
+ * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return extracted resources data
+ * 
+ * This action extracts various resources from PDF documents:
+ * - Returns structured JSON data with all extracted resources (text, images, etc.)
+ * - Supports various PDF document formats
+ * - Always processes asynchronously for optimal performance
+ * - Returns the raw API response data directly
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const extractionOptions = this.getNodeParameter('extractionOptions', index) as IDataObject;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const pagesOption = advancedOptions?.pages as string || 'all';
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 
@@ -247,64 +243,24 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the response (extracted resources)
 	if (responseData) {
-		let jsonString: string;
-		if (Buffer.isBuffer(responseData)) {
-			jsonString = responseData.toString('utf8');
-		} else if (typeof responseData === 'string') {
-			jsonString = Buffer.from(responseData, 'base64').toString('utf8');
-		} else if (typeof responseData === 'object') {
-			jsonString = JSON.stringify(responseData, null, 2);
-		} else {
-			throw new Error('Unexpected response type');
-		}
-
-		let parsedJson: any;
-		try {
-			parsedJson = JSON.parse(jsonString);
-		} catch (err) {
-			throw new Error('Response is not valid JSON');
-		}
-
-		// Prepare binary output for images
-		const binary: { [key: string]: any } = {};
-		if (parsedJson.images && Array.isArray(parsedJson.images)) {
-			for (const img of parsedJson.images) {
-				if (img.fileName && img.streamFile) {
-					binary[img.fileName] = await this.helpers.prepareBinaryData(
-						Buffer.from(img.streamFile, 'base64'),
-						img.fileName
-					);
-				}
-			}
-		}
-
-		// Save the JSON as well
-		const fileName = `extracted_resources_${Date.now()}.json`;
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(JSON.stringify(parsedJson, null, 2), 'utf8'),
-			fileName,
-			'application/json',
-		);
-
+		// Return both raw data and metadata
 		return [
 			{
 				json: {
-					fileName,
-					mimeType: 'application/json',
-					fileSize: Buffer.byteLength(JSON.stringify(parsedJson, null, 2)),
-					success: true,
-					message: 'Resource extraction completed successfully',
-					docName,
-				},
-				binary: {
-					[binaryDataName || 'data']: binaryData,
-					...binary, // All images as separate binary properties
+					...responseData, // Raw API response data
+					_metadata: {
+						success: true,
+						message: 'Resources extracted successfully',
+						processingTimestamp: new Date().toISOString(),
+						sourceFileName: docName,
+						operation: 'extractResources',
+					},
 				},
 			},
 		];
 	}
 
-	// Error case
+	// Error case - no response received
 	throw new Error('No resource extraction results received from PDF4ME API');
 }
 

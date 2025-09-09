@@ -103,8 +103,8 @@ export async function pdf4meApiRequest(
 async function delayAsync(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 ): Promise<void> {
-	const startTime = Date.now();
-	console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
+	// const startTime = Date.now();
+	// console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
 
 	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 		url: config.baseUrl + '/api/v2/AddDelay',
@@ -112,10 +112,10 @@ async function delayAsync(
 		returnFullResponse: true,
 		ignoreHttpStatusErrors: true,
 	});
-	
-	const endTime = Date.now();
-	const actualDelay = endTime - startTime;
-	console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
+
+	// const endTime = Date.now();
+	// const actualDelay = endTime - startTime;
+	// console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
 }
 
 export async function pdf4meAsyncRequest(
@@ -129,11 +129,15 @@ export async function pdf4meAsyncRequest(
 	// Use the body as-is without modifying it
 	const asyncBody = body;
 
-	// Determine if this is a JSON response operation (like CreateImages, AI processing)
+	// Determine if this is a JSON response operation (like CreateImages, AI processing, metadata extraction)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
 		url.includes('/ProcessInvoice') || url.includes('/ProcessHealthCard') ||
 		url.includes('/ProcessContract') || url.includes('/ParseDocument') ||
-		url.includes('/ClassifyDocument');
+		url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
+		url.includes('/ExtractResources') || url.includes('/ExtractPdfFormData') ||
+		url.includes('/GetPdfMetadata') || url.includes('/ExtractTextByExpression') ||
+		url.includes('/ExtractAttachmentFromPdf') || url.includes('/GetImageMetadata') ||
+		url.includes('/ExtractTableFromPdf');
 
 	let options: IHttpRequestOptions = {
 		baseURL: config.baseUrl,

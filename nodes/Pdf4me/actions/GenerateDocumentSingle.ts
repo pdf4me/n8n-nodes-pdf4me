@@ -372,11 +372,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		
 		// Ensure HTML has basic structure
 		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
-			console.log('Warning: HTML code may not have proper HTML structure');
+			// console.log('Warning: HTML code may not have proper HTML structure');
 			// Try to wrap the content in basic HTML structure if it's missing
 			if (!htmlCode.includes('<html')) {
 				htmlCode = `<!DOCTYPE html><html><head><title>Template</title></head><body>${htmlCode}</body></html>`;
-				console.log('Wrapped HTML content in basic HTML structure');
+				// console.log('Wrapped HTML content in basic HTML structure');
 			}
 		}
 		
@@ -384,7 +384,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			templateFileData = Buffer.from(htmlCode, 'utf8').toString('base64');
 		} catch (error) {
-			console.log('Error converting HTML to base64:', error);
+			// console.log('Error converting HTML to base64:', error);
 			// Fallback: try with different encoding
 			templateFileData = Buffer.from(htmlCode, 'latin1').toString('base64');
 		}

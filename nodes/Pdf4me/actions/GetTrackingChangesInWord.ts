@@ -104,37 +104,20 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'tracking_changes.json',
-		description: 'Name for the output JSON file',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GetTrackingChangesInWord],
-			},
-		},
-	},
-	{
-		displayName: 'Binary Data Output Name',
-		name: 'binaryDataName',
-		type: 'string',
-		default: 'data',
-		description: 'Custom name for the binary data in n8n output',
-		placeholder: 'tracking-changes-data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GetTrackingChangesInWord],
-			},
-		},
-	},
 ];
 
+/**
+ * Get Tracking Changes in Word - Extract tracking changes and comments from Word documents using PDF4ME
+ * Process: Read Word document → Encode to base64 → Send API request → Poll for completion → Return tracking changes data
+ * 
+ * This action extracts all tracking changes, comments, and revision history from Word documents:
+ * - Returns structured JSON data with all tracked changes
+ * - Supports various Word document formats (.docx, .doc)
+ * - Always processes asynchronously for optimal performance
+ * - Returns the raw API response data directly
+ */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
 	let docName: string;
@@ -171,27 +154,27 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent,
 		IsAsync: true,
 	};
+	
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/GetTrackingChangesInWord', payload);
+	
 	if (responseData) {
-		const jsonString = typeof responseData === 'string' ? responseData : JSON.stringify(responseData);
-		const binaryData = await this.helpers.prepareBinaryData(
-			Buffer.from(jsonString, 'utf8'),
-			outputFileName || 'tracking_changes.json',
-			'application/json',
-		);
+		// Return both raw data and metadata
 		return [
 			{
 				json: {
-					fileName: outputFileName || 'tracking_changes.json',
-					mimeType: 'application/json',
-					fileSize: jsonString.length,
-					success: true,
+					...responseData, // Raw API response data
+					_metadata: {
+						success: true,
+						message: 'Tracking changes extracted successfully',
+						processingTimestamp: new Date().toISOString(),
+						sourceFileName: docName,
+						operation: 'getTrackingChangesInWord',
+					},
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
 			},
 		];
 	}
+
+	// Error case - no response received
 	throw new Error('No response data received from PDF4ME API');
 }

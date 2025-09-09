@@ -262,7 +262,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	try {
 		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
 		const worksheetName = this.getNodeParameter('worksheetName', index) as string;
 
@@ -384,9 +384,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						rowCount: null, // Could be calculated if needed
 						columnCount: null, // Could be calculated if needed
 					},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+					binary: {
+						[binaryDataName || 'data']: binaryData,
+					},
 				},
 			];
 		}

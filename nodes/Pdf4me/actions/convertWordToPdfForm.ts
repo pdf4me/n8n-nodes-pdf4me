@@ -327,9 +327,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					operation: 'ConvertWordToPdfForm',
 					message: 'Word document successfully converted to PDF form',
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}

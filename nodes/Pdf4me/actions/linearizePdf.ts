@@ -293,8 +293,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	sanitizeProfiles(body);
 
 	// Make the API request
-	let result: any;
-	result = await pdf4meAsyncRequest.call(this, '/api/v2/LinearizePdf', body);
+	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/LinearizePdf', body);
 
 	// Handle the response
 	if (result) {
@@ -362,9 +361,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					originalFileName,
 					description: 'PDF is now optimized for web viewing and faster loading',
 				},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
 			},
 		];
 	}

@@ -625,11 +625,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		// Make the API request (following C# example pattern)
-		let result: any;
 		logger.log('debug', 'Making API request', { endpoint: '/api/v2/AddAttachmentToPdf' });
 
 		// Use async request method for better performance with large files
-		result = await pdf4meAsyncRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
+		const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/AddAttachmentToPdf', body);
 
 		logger.log('debug', 'API request completed successfully', {
 			resultType: typeof result,

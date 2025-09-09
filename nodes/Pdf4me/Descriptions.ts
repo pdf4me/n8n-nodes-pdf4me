@@ -106,6 +106,25 @@ export const descriptions: INodeTypeDescription = {
 			type: 'options',
 			noDataExpression: true,
 			options: [
+				// AI Actions (keeping these as they don't fit the main categories)
+				{
+					name: 'AI-Invoice Parser',
+					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
+					value: ActionConstants.AiInvoiceParser,
+					action: ActionConstants.AiInvoiceParser,
+				},
+				{
+					name: 'AI-Process HealthCard',
+					description: 'Extract structured data from health cards using AI/ML technology for member management',
+					value: ActionConstants.AiProcessHealthCard,
+					action: ActionConstants.AiProcessHealthCard,
+				},
+				{
+					name: 'AI-Process Contract',
+					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
+					value: ActionConstants.AiProcessContract,
+					action: ActionConstants.AiProcessContract,
+				},
 				// Barcode
 				{
 					name: 'Add Barcode To PDF',
@@ -584,25 +603,7 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.UploadFile,
 					action: ActionConstants.UploadFile,
 				},
-				// AI Actions (keeping these as they don't fit the main categories)
-				{
-					name: 'AI-Invoice Parser',
-					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
-					value: ActionConstants.AiInvoiceParser,
-					action: ActionConstants.AiInvoiceParser,
-				},
-				{
-					name: 'AI-Process HealthCard',
-					description: 'Extract structured data from health cards using AI/ML technology for member management',
-					value: ActionConstants.AiProcessHealthCard,
-					action: ActionConstants.AiProcessHealthCard,
-				},
-				{
-					name: 'AI-Process Contract',
-					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
-					value: ActionConstants.AiProcessContract,
-					action: ActionConstants.AiProcessContract,
-				},
+				
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
