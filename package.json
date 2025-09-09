@@ -1,6 +1,6 @@
 {
-  "name": "n8n-nodes-pdf4me-beta",
-  "version": "1.0.5",
+  "name": "n8n-nodes-pdf4me",
+  "version": "1.4.0",
   "description": "n8n community node for PDF4me API integration",
   "keywords": [
     "n8n-community-node-package"
@@ -20,8 +20,15 @@
   },
   "main": "index.js",
   "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "tsc && gulp build",
+    "clean": "rimraf dist",
+    "build:ts": "tsc && gulp build",
+    "updatePackage:dev": "cross-env NODE_ENV=development node scripts/package-name-update.js",
+    "updatePackage:prod": "cross-env NODE_ENV=production node scripts/package-name-update.js",
+    "write:dev": "cross-env NODE_ENV=development node scripts/generate-config.js",
+    "write:prod": "cross-env NODE_ENV=production node scripts/generate-config.js",
+    "pkg:install": "npm i",
+    "build:dev": "npm-run-all clean updatePackage:dev write:dev pkg:install build:ts",
+    "build": "npm-run-all clean updatePackage:prod write:prod pkg:install build:ts",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
@@ -48,11 +55,12 @@
     "@types/node": "20.19.7",
     "@typescript-eslint/eslint-plugin": "~5.45",
     "@typescript-eslint/parser": "~5.45",
-    "dotenv": "^17.2.2",
+    "cross-env": "^10.0.0",
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
     "gulp": "^4.0.2",
     "merge-stream": "^2.0.0",
     "n8n-workflow": "*",
+    "npm-run-all": "^4.1.5",
     "prettier": "^2.7.1",
     "rimraf": "^6.0.1",
     "typescript": "~4.8.4"
