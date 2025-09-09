@@ -296,7 +296,7 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
-### 2.0.0
+### 1.5.0
 - **Latest Version**: Major refactoring and enhanced user experience
 - **Simplified Output Handling**: Removed complex binaryDataName parameters across all actions
 - **Enhanced Response Processing**: Improved response handling to return raw data and metadata consistently
