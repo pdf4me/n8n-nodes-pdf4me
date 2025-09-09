@@ -16,7 +16,7 @@ if (env === 'development') {
 	version = '1.0.5'
 } else {
 	newName = 'n8n-nodes-pdf4me';
-	version = '1.4.0'
+	version = '1.5.0'
 }
 // Change the name
 packageJson.name = newName;
