@@ -1,7 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
+	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -702,7 +702,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Make the API request
 		logger.log('debug', 'Making API request', { endpoint: '/api/v2/ImageStamp' });
 
-		const responseData = await pdf4meApiRequest.call(this, '/api/v2/ImageStamp', body);
+		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ImageStamp', body);
 
 		logger.log('debug', 'API request completed successfully', {
 			responseType: typeof responseData,

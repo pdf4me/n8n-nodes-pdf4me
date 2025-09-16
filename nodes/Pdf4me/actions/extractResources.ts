@@ -2,7 +2,6 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
-	pdf4meApiRequest,
 	sanitizeProfiles,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -303,8 +302,8 @@ async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pa
 			IsAsync: true,
 		};
 
-		// Make API call to ExtractPages endpoint using the existing pdf4meApiRequest function
-		const responseData = await pdf4meApiRequest.call(this, '/api/v2/Extract', extractPagesBody);
+		// Make API call to ExtractPages endpoint using the existing pdf4meAsyncRequest function
+		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Extract', extractPagesBody);
 
 		// Convert response to base64
 		if (responseData && responseData instanceof Buffer) {
