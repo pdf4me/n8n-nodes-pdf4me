@@ -100,66 +100,54 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Extraction Options',
-		name: 'extractionOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
+		displayName: 'Extract Text',
+		name: 'extractText',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to extract text content from the PDF',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ExtractResources],
 			},
 		},
-		options: [
-			{
-				displayName: 'Extract Text',
-				name: 'extractText',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to extract text content from the PDF',
-			},
-			{
-				displayName: 'Extract Images',
-				name: 'extractImage',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to extract images from the PDF',
-			},
-		],
 	},
 	{
-		displayName: 'Output Options',
-		name: 'outputOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
+		displayName: 'Extract Images',
+		name: 'extractImage',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to extract images from the PDF',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ExtractResources],
 			},
 		},
-		options: [
-			{
-				displayName: 'Return Images as Binary',
-				name: 'returnImagesAsBinary',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to return extracted images as binary data in addition to JSON metadata',
+	},
+	{
+		displayName: 'Return Images as Binary',
+		name: 'returnImagesAsBinary',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return extracted images as binary data in addition to JSON metadata',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractResources],
 			},
-			{
-				displayName: 'Binary Data Name',
-				name: 'binaryDataName',
-				type: 'string',
-				default: 'image',
-				description: 'Name for the binary data property in the output',
-				placeholder: 'image',
-				displayOptions: {
-					show: {
-						returnImagesAsBinary: [true],
-					},
-				},
+		},
+	},
+	{
+		displayName: 'Binary Data Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'image',
+		description: 'Name for the binary data property in the output',
+		placeholder: 'image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractResources],
+				returnImagesAsBinary: [true],
 			},
-		],
+		},
 	},
 	{
 		displayName: 'Advanced Options',
@@ -207,12 +195,12 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const extractionOptions = this.getNodeParameter('extractionOptions', index) as IDataObject;
-	const outputOptions = this.getNodeParameter('outputOptions', index) as IDataObject;
+	const extractText = this.getNodeParameter('extractText', index) as boolean;
+	const extractImage = this.getNodeParameter('extractImage', index) as boolean;
+	const returnImagesAsBinary = this.getNodeParameter('returnImagesAsBinary', index) as boolean;
+	const binaryDataName = returnImagesAsBinary ? this.getNodeParameter('binaryDataName', index) as string : 'image';
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const pagesOption = advancedOptions?.pages as string || 'all';
-	const returnImagesAsBinary = outputOptions?.returnImagesAsBinary as boolean || false;
-	const binaryDataName = outputOptions?.binaryDataName as string || 'image';
 
 	let docContent: string;
 
@@ -251,20 +239,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent = await filterPdfPages.call(this, docContent, pagesOption);
 	}
 
-	// Handle both extractImage and extractImages properties for compatibility
-	let extractImages = true;
-	if (extractionOptions?.extractImage !== undefined) {
-		extractImages = extractionOptions.extractImage as boolean;
-	} else if (extractionOptions?.extractImages !== undefined) {
-		extractImages = extractionOptions.extractImages as boolean;
-	}
-
 	// Prepare request body
 	const body: IDataObject = {
 		docContent,
 		docName,
-		extractText: extractionOptions?.extractText !== undefined ? extractionOptions.extractText : true,
-		extractImages,
+		extractText: extractText || false,
+		extractImages: extractImage || false,
 		IsAsync: true, // Enable asynchronous processing
 	};
 
@@ -294,7 +274,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		};
 
 		// Process images as binary data if requested
-		if (returnImagesAsBinary && extractImages) {
+		if (returnImagesAsBinary && extractImage) {
 			const binaryData = await processImagesAsBinary.call(this, responseData, binaryDataName);
 			if (binaryData && Object.keys(binaryData).length > 0) {
 				result.binary = binaryData;
