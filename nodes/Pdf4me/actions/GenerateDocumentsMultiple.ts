@@ -1,5 +1,5 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
-import { ActionConstants, pdf4meApiRequest } from '../GenericFunctions';
+import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
 	{
@@ -458,7 +458,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		IsAsync: true,
 	};
 
-	const responseData = await pdf4meApiRequest.call(this, '/api/v2/GenerateDocumentMultiple', payload);
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/GenerateDocumentMultiple', payload);
 
 	if (responseData) {
 		// Handle different response formats

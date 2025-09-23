@@ -1,7 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
-	pdf4meApiRequest,
+	pdf4meAsyncRequest,
 	ActionConstants,
 } from '../GenericFunctions';
 
@@ -166,13 +166,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		IsAsync: true,
 	};
 
-	// Make the API request to process the invoice - matching Python script exactly
+	// Make the API request to process the invoice - using async request for proper 202 handling
 	let result: any;
 	try {
-		// Debug info before making request (logged only on error)
-		// Will be used in catch block if request fails
-		
-		result = await pdf4meApiRequest.call(this, '/api/v2/ProcessInvoice', payload);
+		// Use async request function for invoice processing
+		result = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessInvoice', payload);
 	} catch (error) {
 		// Enhanced error handling with debugging context
 		if (error.code === 'ECONNRESET') {
@@ -209,10 +207,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`Failed to parse API response: ${error.message}`);
 		}
 
-		// Return the raw API response exactly like the JSON file
+		// Return both raw data and metadata
 		return [
 			{
-				json: processedData,
+				json: {
+					...processedData, // Raw API response data
+					_metadata: {
+						success: true,
+						message: 'Invoice processed successfully using AI',
+						processingTimestamp: new Date().toISOString(),
+						sourceFileName: docName,
+						operation: 'aiInvoiceParser',
+					},
+				},
 			},
 		];
 	}
