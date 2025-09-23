@@ -2,7 +2,6 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
-	pdf4meApiRequest,
 	sanitizeProfiles,
 	ActionConstants,
 } from '../GenericFunctions';
@@ -101,32 +100,54 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Extraction Options',
-		name: 'extractionOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
+		displayName: 'Extract Text',
+		name: 'extractText',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to extract text content from the PDF',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ExtractResources],
 			},
 		},
-		options: [
-			{
-				displayName: 'Extract Text',
-				name: 'extractText',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to extract text content from the PDF',
+	},
+	{
+		displayName: 'Extract Images',
+		name: 'extractImage',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to extract images from the PDF',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractResources],
 			},
-			{
-				displayName: 'Extract Images',
-				name: 'extractImage',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to extract images from the PDF',
+		},
+	},
+	{
+		displayName: 'Return Images as Binary',
+		name: 'returnImagesAsBinary',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return extracted images as binary data in addition to JSON metadata',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractResources],
 			},
-		],
+		},
+	},
+	{
+		displayName: 'Binary Data Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'image',
+		description: 'Name for the binary data property in the output',
+		placeholder: 'image',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractResources],
+				returnImagesAsBinary: [true],
+			},
+		},
 	},
 	{
 		displayName: 'Advanced Options',
@@ -166,14 +187,18 @@ export const description: INodeProperties[] = [
  * 
  * This action extracts various resources from PDF documents:
  * - Returns structured JSON data with all extracted resources (text, images, etc.)
+ * - Optionally returns extracted images as binary data for direct use in n8n
  * - Supports various PDF document formats
  * - Always processes asynchronously for optimal performance
- * - Returns the raw API response data directly
+ * - Returns both JSON metadata and binary image data when requested
  */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
-	const extractionOptions = this.getNodeParameter('extractionOptions', index) as IDataObject;
+	const extractText = this.getNodeParameter('extractText', index) as boolean;
+	const extractImage = this.getNodeParameter('extractImage', index) as boolean;
+	const returnImagesAsBinary = this.getNodeParameter('returnImagesAsBinary', index) as boolean;
+	const binaryDataName = returnImagesAsBinary ? this.getNodeParameter('binaryDataName', index) as string : 'image';
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const pagesOption = advancedOptions?.pages as string || 'all';
 
@@ -214,20 +239,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent = await filterPdfPages.call(this, docContent, pagesOption);
 	}
 
-	// Handle both extractImage and extractImages properties for compatibility
-	let extractImages = true;
-	if (extractionOptions?.extractImage !== undefined) {
-		extractImages = extractionOptions.extractImage as boolean;
-	} else if (extractionOptions?.extractImages !== undefined) {
-		extractImages = extractionOptions.extractImages as boolean;
-	}
-
 	// Prepare request body
 	const body: IDataObject = {
 		docContent,
 		docName,
-		extractText: extractionOptions?.extractText !== undefined ? extractionOptions.extractText : true,
-		extractImages,
+		extractText: extractText || false,
+		extractImages: extractImage || false,
 		IsAsync: true, // Enable asynchronous processing
 	};
 
@@ -243,21 +260,28 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the response (extracted resources)
 	if (responseData) {
-		// Return both raw data and metadata
-		return [
-			{
-				json: {
-					...responseData, // Raw API response data
-					_metadata: {
-						success: true,
-						message: 'Resources extracted successfully',
-						processingTimestamp: new Date().toISOString(),
-						sourceFileName: docName,
-						operation: 'extractResources',
-					},
+		const result: any = {
+			json: {
+				...responseData, // Raw API response data
+				_metadata: {
+					success: true,
+					message: 'Resources extracted successfully',
+					processingTimestamp: new Date().toISOString(),
+					sourceFileName: docName,
+					operation: 'extractResources',
 				},
 			},
-		];
+		};
+
+		// Process images as binary data if requested
+		if (returnImagesAsBinary && extractImage) {
+			const binaryData = await processImagesAsBinary.call(this, responseData, binaryDataName);
+			if (binaryData && Object.keys(binaryData).length > 0) {
+				result.binary = binaryData;
+			}
+		}
+
+		return [result];
 	}
 
 	// Error case - no response received
@@ -303,8 +327,8 @@ async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pa
 			IsAsync: true,
 		};
 
-		// Make API call to ExtractPages endpoint using the existing pdf4meApiRequest function
-		const responseData = await pdf4meApiRequest.call(this, '/api/v2/Extract', extractPagesBody);
+		// Make API call to ExtractPages endpoint using the existing pdf4meAsyncRequest function
+		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Extract', extractPagesBody);
 
 		// Convert response to base64
 		if (responseData && responseData instanceof Buffer) {
@@ -320,6 +344,135 @@ async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pa
 	} catch (error) {
 		// Note: Failed to filter PDF pages, using original content
 		return base64Content;
+	}
+}
+
+/**
+ * Process images from API response and convert them to binary data
+ * @param responseData - API response data containing extracted resources
+ * @param binaryDataName - Name for the binary data property
+ * @returns Object containing binary data for images
+ */
+async function processImagesAsBinary(this: IExecuteFunctions, responseData: any, binaryDataName: string): Promise<IDataObject> {
+	const binaryData: IDataObject = {};
+	let imageIndex = 1;
+
+	try {
+		// Handle different response structures that might contain images
+		if (responseData && typeof responseData === 'object') {
+			// Check for images in various possible locations in the response
+			const imageSources = [
+				responseData.images,
+				responseData.extractedImages,
+				responseData.resources?.images,
+				responseData.outputDocuments,
+			].filter(Boolean);
+
+			for (const imageSource of imageSources) {
+				if (Array.isArray(imageSource)) {
+					for (const imageItem of imageSource) {
+						if (imageItem && (imageItem.streamFile || imageItem.data || imageItem.content)) {
+							const imageBuffer = await processImageItem(imageItem);
+							if (imageBuffer) {
+								const fileName = imageItem.fileName || imageItem.name || `extracted_image_${imageIndex}.png`;
+								const mimeType = getImageMimeType(fileName, imageItem.mimeType);
+								
+								const binaryDataItem = await this.helpers.prepareBinaryData(
+									imageBuffer,
+									fileName,
+									mimeType,
+								);
+
+								binaryData[`${binaryDataName}_${imageIndex}`] = binaryDataItem;
+								imageIndex++;
+							}
+						}
+					}
+				} else if (imageSource && typeof imageSource === 'object') {
+					// Handle single image object
+					if (imageSource.streamFile || imageSource.data || imageSource.content) {
+						const imageBuffer = await processImageItem(imageSource);
+						if (imageBuffer) {
+							const fileName = imageSource.fileName || imageSource.name || `extracted_image_${imageIndex}.png`;
+							const mimeType = getImageMimeType(fileName, imageSource.mimeType);
+							
+							const binaryDataItem = await this.helpers.prepareBinaryData(
+								imageBuffer,
+								fileName,
+								mimeType,
+							);
+
+							binaryData[`${binaryDataName}_${imageIndex}`] = binaryDataItem;
+							imageIndex++;
+						}
+					}
+				}
+			}
+		}
+	} catch (error) {
+		// Log error but don't fail the entire operation
+		// Note: Error handling follows n8n guidelines
+	}
+
+	return binaryData;
+}
+
+/**
+ * Process a single image item and return buffer
+ * @param imageItem - Image item from API response
+ * @returns Buffer containing image data
+ */
+async function processImageItem(imageItem: any): Promise<Buffer | null> {
+	try {
+		if (imageItem.streamFile) {
+			// Base64 encoded image data
+			return Buffer.from(imageItem.streamFile, 'base64');
+		} else if (imageItem.data) {
+			// Direct base64 data
+			return Buffer.from(imageItem.data, 'base64');
+		} else if (imageItem.content) {
+			// Content field
+			return Buffer.from(imageItem.content, 'base64');
+		} else if (imageItem.url) {
+			// URL to image - would need to download
+			// This is a placeholder for future implementation
+			return null;
+		}
+	} catch (error) {
+		// Return null if processing fails
+		return null;
+	}
+	return null;
+}
+
+/**
+ * Get MIME type for image based on filename or provided type
+ * @param fileName - Name of the file
+ * @param providedMimeType - MIME type if provided
+ * @returns MIME type string
+ */
+function getImageMimeType(fileName: string, providedMimeType?: string): string {
+	if (providedMimeType) {
+		return providedMimeType;
+	}
+
+	const extension = fileName.toLowerCase().split('.').pop();
+	switch (extension) {
+	case 'jpg':
+	case 'jpeg':
+		return 'image/jpeg';
+	case 'png':
+		return 'image/png';
+	case 'gif':
+		return 'image/gif';
+	case 'bmp':
+		return 'image/bmp';
+	case 'webp':
+		return 'image/webp';
+	case 'svg':
+		return 'image/svg+xml';
+	default:
+		return 'image/png'; // Default fallback
 	}
 }
 

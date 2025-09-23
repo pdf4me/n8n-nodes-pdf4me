@@ -30,7 +30,12 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Base64 String',
 				value: 'base64',
-				description: 'Provide Markdown content as base64 encoded string',
+				description: 'Provide Markdown content already encoded in base64 format',
+			},
+			{
+				name: 'Markdown Code',
+				value: 'markdownCode',
+				description: 'Write raw Markdown code manually (will be converted to base64)',
 			},
 			{
 				name: 'URL',
@@ -62,12 +67,30 @@ export const description: INodeProperties[] = [
 		},
 		required: true,
 		default: '',
-		description: 'Base64 encoded Markdown document content',
-		placeholder: '# Sample Markdown\n\nThis is a **bold** text and *italic* text.\n\n- List item 1\n- List item 2',
+		description: 'Provide the Markdown content already encoded in base64 format (not raw Markdown code). Example: IyBTYW1wbGUgTWFya2Rvd24KCkZvciBleGFtcGxlLCB0aGlzIGlzIGEgKipib2xkKiogdGV4dC4=',
+		placeholder: 'IyBTYW1wbGUgTWFya2Rvd24KCkZvciBleGFtcGxlLCB0aGlzIGlzIGEgKipib2xkKiogdGV4dC4=',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertMarkdownToPdf],
 				inputDataType: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'Markdown Code',
+		name: 'markdownCode',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
+		required: true,
+		default: '',
+		description: 'Write your Markdown code here. It will be automatically converted to base64.',
+		placeholder: '# Sample Markdown\n\nThis is a **bold** text and *italic* text.\n\n- List item 1\n- List item 2',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertMarkdownToPdf],
+				inputDataType: ['markdownCode'],
 			},
 		},
 	},
@@ -198,9 +221,49 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			? this.getNodeParameter('mdBase64Content', index) as string
 			: this.getNodeParameter('base64Content', index) as string;
 
+		// Validate base64 content
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Base64 content cannot be empty');
+		}
+		
+		// Validate that it looks like base64 (contains only valid base64 characters)
+		const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+		if (!base64Regex.test(docContent)) {
+			throw new Error('Invalid base64 format. Base64 should only contain A-Z, a-z, 0-9, +, /, and = characters');
+		}
+		
+		// Try to decode to verify it's valid base64
+		try {
+			const decoded = Buffer.from(docContent, 'base64').toString('utf8');
+			// Check if decoded content looks like Markdown
+			if (!decoded.includes('#') && !decoded.includes('*') && !decoded.includes('-')) {
+				// console.log('Warning: Decoded base64 content does not appear to be Markdown');
+			}
+		} catch (error) {
+			throw new Error(`Invalid base64 content: ${error.message}`);
+		}
+
 		// Remove data URL prefix if present (e.g., "data:text/markdown;base64,")
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
+		}
+	} else if (inputDataType === 'markdownCode') {
+		// Use raw Markdown code and convert to base64
+		const markdownCode = operation === ActionConstants.ConvertToPdf
+			? this.getNodeParameter('mdMarkdownCode', index) as string
+			: this.getNodeParameter('markdownCode', index) as string;
+		
+		// Validate Markdown code
+		if (!markdownCode || markdownCode.trim().length === 0) {
+			throw new Error('Markdown code cannot be empty');
+		}
+		
+		// Convert Markdown to base64
+		try {
+			docContent = Buffer.from(markdownCode, 'utf8').toString('base64');
+		} catch (error) {
+			// Fallback: try with different encoding
+			docContent = Buffer.from(markdownCode, 'latin1').toString('base64');
 		}
 	} else if (inputDataType === 'url') {
 		// Use Markdown URL directly - download the file first
