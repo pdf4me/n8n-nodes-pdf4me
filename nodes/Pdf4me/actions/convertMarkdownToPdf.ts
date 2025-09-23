@@ -249,7 +249,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 	} else if (inputDataType === 'markdownCode') {
 		// Use raw Markdown code and convert to base64
-		let markdownCode = operation === ActionConstants.ConvertToPdf
+		const markdownCode = operation === ActionConstants.ConvertToPdf
 			? this.getNodeParameter('mdMarkdownCode', index) as string
 			: this.getNodeParameter('markdownCode', index) as string;
 		

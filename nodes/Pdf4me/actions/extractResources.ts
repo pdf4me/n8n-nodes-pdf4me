@@ -458,21 +458,21 @@ function getImageMimeType(fileName: string, providedMimeType?: string): string {
 
 	const extension = fileName.toLowerCase().split('.').pop();
 	switch (extension) {
-		case 'jpg':
-		case 'jpeg':
-			return 'image/jpeg';
-		case 'png':
-			return 'image/png';
-		case 'gif':
-			return 'image/gif';
-		case 'bmp':
-			return 'image/bmp';
-		case 'webp':
-			return 'image/webp';
-		case 'svg':
-			return 'image/svg+xml';
-		default:
-			return 'image/png'; // Default fallback
+	case 'jpg':
+	case 'jpeg':
+		return 'image/jpeg';
+	case 'png':
+		return 'image/png';
+	case 'gif':
+		return 'image/gif';
+	case 'bmp':
+		return 'image/bmp';
+	case 'webp':
+		return 'image/webp';
+	case 'svg':
+		return 'image/svg+xml';
+	default:
+		return 'image/png'; // Default fallback
 	}
 }
 
