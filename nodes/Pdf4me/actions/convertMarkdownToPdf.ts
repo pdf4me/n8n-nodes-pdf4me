@@ -225,13 +225,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!docContent || docContent.trim() === '') {
 			throw new Error('Base64 content cannot be empty');
 		}
-		
+
 		// Validate that it looks like base64 (contains only valid base64 characters)
 		const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
 		if (!base64Regex.test(docContent)) {
 			throw new Error('Invalid base64 format. Base64 should only contain A-Z, a-z, 0-9, +, /, and = characters');
 		}
-		
+
 		// Try to decode to verify it's valid base64
 		try {
 			const decoded = Buffer.from(docContent, 'base64').toString('utf8');
@@ -249,15 +249,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 	} else if (inputDataType === 'markdownCode') {
 		// Use raw Markdown code and convert to base64
-		let markdownCode = operation === ActionConstants.ConvertToPdf
+		const markdownCode = operation === ActionConstants.ConvertToPdf
 			? this.getNodeParameter('mdMarkdownCode', index) as string
 			: this.getNodeParameter('markdownCode', index) as string;
-		
+
 		// Validate Markdown code
 		if (!markdownCode || markdownCode.trim().length === 0) {
 			throw new Error('Markdown code cannot be empty');
 		}
-		
+
 		// Convert Markdown to base64
 		try {
 			docContent = Buffer.from(markdownCode, 'utf8').toString('base64');
