@@ -151,7 +151,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 1000023, // 60 second timeout for initial request (increased from 30s)
+		timeout: 1000023,
 	};
 	options = Object.assign({}, options, option);
 
