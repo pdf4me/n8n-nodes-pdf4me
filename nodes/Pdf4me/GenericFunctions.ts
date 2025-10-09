@@ -62,7 +62,7 @@ export async function pdf4meApiRequest(
 			if (isJsonResponse) {
 				return response.body; // Already parsed when json: true is set
 			}
-			
+
 			// For binary responses, return binary content
 			if (response.body instanceof Buffer) {
 				return response.body;
@@ -104,14 +104,14 @@ async function delayAsync(
 ): Promise<void> {
 	// const startTime = Date.now();
 	// console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
-	
+
 	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 		url: 'https://api.pdf4me.com/api/v2/AddDelay',
 		method: 'GET',
 		returnFullResponse: true,
 		ignoreHttpStatusErrors: true,
 	});
-	
+
 	// const endTime = Date.now();
 	// const actualDelay = endTime - startTime;
 	// console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
@@ -151,7 +151,7 @@ export async function pdf4meAsyncRequest(
 		returnFullResponse: true, // Need full response to get headers
 		ignoreHttpStatusErrors: true, // Don't throw on non-2xx status codes
 		encoding: 'arraybuffer' as const, // For potential binary response
-		timeout: 100023, // 60 second timeout for initial request (increased from 30s)
+		timeout: 1000023, // 60 second timeout for initial request (increased from 30s)
 	};
 	options = Object.assign({}, options, option);
 
@@ -339,7 +339,7 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 60,
+	maxRetries: number = 9000,
 ): Promise<any> {
 	let retryCount = 0;
 
