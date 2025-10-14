@@ -61,21 +61,21 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^2.0.0"
+    "n8n-nodes-pdf4me": "^1.5.1"
   }
 }
 ```
 
-## What's New in Version 2.0.0
+## What's New in Version 1.5.1
 
-Version 2.0.0 brings significant improvements to the PDF4ME n8n node:
+Version 1.5.1 brings stability improvements and code optimizations to the PDF4ME n8n node:
 
-- **🎯 Simplified Interface**: Removed complex configuration parameters for easier setup
-- **⚡ Enhanced Performance**: Optimized response handling and processing speed
-- **🔧 Better Error Handling**: Improved error messages and debugging capabilities
-- **📝 Clearer Descriptions**: Enhanced action descriptions for better user understanding
-- **🔄 Streamlined Workflows**: Simplified output handling across all operations
-- **✅ Backward Compatible**: All existing workflows continue to work without changes
+- **🔧 Code Refactoring**: Improved variable declarations and code structure
+- **🖼️ Image Processing**: Enhanced MIME type handling for image operations
+- **📝 Markdown Conversion**: Optimized Markdown to PDF conversion process
+- **🔍 Resource Extraction**: Improved resource extraction functionality
+- **✅ Stability**: Enhanced overall stability and performance
+- **🔄 Backward Compatible**: All existing workflows continue to work seamlessly
 
 ## Operations
 
@@ -193,7 +193,7 @@ To use this node, you need a PDF4ME API key. Here's how to get started:
 
 ## Usage
 
-This node allows you to automate document processing tasks in your n8n workflows. With version 2.0.0, the interface has been simplified for easier configuration and better user experience. Here are some common use cases:
+This node allows you to automate document processing tasks in your n8n workflows. With version 1.5.1, the interface has been optimized for better performance and stability. Here are some common use cases:
 
 ### AI-Powered Document Processing
 - Automatically extract invoice data for accounting systems
@@ -281,7 +281,7 @@ The Convert HTML to PDF operation supports multiple input methods for maximum fl
 - Build complete document processing pipelines with enhanced reliability
 - Automate document classification and routing
 - Create end-to-end document workflows with improved error handling
-- **Version 2.0.0**: Streamlined workflow creation with fewer configuration steps
+- **Version 1.5.1**: Enhanced stability and performance for reliable workflow execution
 
 For detailed examples and workflow templates, visit our documentation.
 
@@ -296,8 +296,17 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 1.5.1
+- **Latest Version**: Stability improvements and code optimizations
+- **Code Refactoring**: Improved variable declarations and code structure across actions
+- **Image Processing**: Enhanced MIME type handling for image operations in extractResources
+- **Markdown Conversion**: Optimized convertMarkdownToPdf functionality
+- **Resource Extraction**: Improved resource extraction with better error handling
+- **Performance**: Enhanced overall stability and processing speed
+- **Maintained Compatibility**: All existing workflows continue to work seamlessly
+
 ### 1.5.0
-- **Latest Version**: Major refactoring and enhanced user experience
+- **Previous Version**: Major refactoring and enhanced user experience
 - **Simplified Output Handling**: Removed complex binaryDataName parameters across all actions
 - **Enhanced Response Processing**: Improved response handling to return raw data and metadata consistently
 - **Streamlined Interface**: Simplified action configurations for better usability
