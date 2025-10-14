@@ -98,15 +98,57 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Custom Fields',
+		name: 'customFields',
+		placeholder: 'Add Custom Field',
+		type: 'fixedCollection',
+		default: {},
+		typeOptions: {
+			multipleValues: true,
+		},
+		description: 'Add custom fields to extract from the invoice using AI (e.g., phone number, email, tax ID)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.AiInvoiceParser],
+			},
+		},
+		options: [
+			{
+				name: 'field',
+				displayName: 'Field',
+				values: [
+					{
+						displayName: 'Field Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+						placeholder: 'e.g., phone, email, tax_id',
+						description: 'Name of the custom field to extract',
+						required: true,
+					},
+					{
+						displayName: 'Field Description',
+						name: 'description',
+						type: 'string',
+						default: '',
+						placeholder: 'e.g., Phone number of the vendor',
+						description: 'Description to help the AI understand what to extract',
+					},
+				],
+			},
+		],
+	},
 ];
 
 /**
  * AI Invoice Parser - Extract structured data from invoices using PDF4ME's AI/ML technology
  * Process: Read invoice → Encode to base64 → Send API request → Return extracted results
- * 
+ *
  * This action mirrors the Python aiinvoice.py script functionality exactly:
  * - Extracts amounts, dates, vendor information, and line items
  * - Supports various invoice formats using AI/ML technology
+ * - Supports custom fields (phone, email, tax ID, etc.) for AI extraction
  * - Returns structured data in the same format as the Python script
  */
 export async function execute(this: IExecuteFunctions, index: number) {
@@ -159,10 +201,25 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error(`Invalid PDF content. Base64 should start with 'JVBERi0x' (PDF header), but starts with: ${docContent.substring(0, 20)}`);
 	}
 
-	// Build the request payload - exactly like Python script
+	// Get custom fields if specified
+	const customFieldsData = this.getNodeParameter('customFields', index, {}) as IDataObject;
+	const customFieldsList = (customFieldsData.field as Array<{ name: string; description?: string }>) || [];
+
+	// Transform custom fields into an array of field names
+	const customFieldNames: string[] = [];
+	if (customFieldsList.length > 0) {
+		customFieldsList.forEach((field) => {
+			if (field.name) {
+				customFieldNames.push(field.name);
+			}
+		});
+	}
+
+	// Build the request payload
 	const payload: IDataObject = {
-		docContent,    // Base64 encoded invoice document content
 		docName,       // User-provided document name
+		docContent,    // Base64 encoded invoice document content
+		...(customFieldNames.length > 0 && { customFieldKeys: customFieldNames }),
 		IsAsync: true,
 	};
 
@@ -208,17 +265,25 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		// Return both raw data and metadata
+		const metadata: IDataObject = {
+			success: true,
+			message: 'Invoice processed successfully using AI',
+			processingTimestamp: new Date().toISOString(),
+			sourceFileName: docName,
+			operation: 'aiInvoiceParser',
+		};
+
+		// Add custom fields info to metadata if used
+		if (customFieldsList.length > 0) {
+			metadata.customFieldsUsed = customFieldsList.map((f) => f.name);
+			metadata.customFieldsCount = customFieldsList.length;
+		}
+
 		return [
 			{
 				json: {
 					...processedData, // Raw API response data
-					_metadata: {
-						success: true,
-						message: 'Invoice processed successfully using AI',
-						processingTimestamp: new Date().toISOString(),
-						sourceFileName: docName,
-						operation: 'aiInvoiceParser',
-					},
+					_metadata: metadata,
 				},
 			},
 		];
