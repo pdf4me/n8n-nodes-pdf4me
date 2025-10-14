@@ -1,24 +1,28 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "n8n community node for PDF4me API integration",
   "keywords": [
     "n8n-community-node-package"
   ],
-  "license": "MIT",
   "homepage": "https://dev.pdf4me.com",
-  "author": {
-    "name": "PDF4me",
-    "email": "support@pdf4me.com"
+  "bugs": {
+    "url": "https://github.com/pdf4me/n8n-nodes-pdf4me/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/pdf4me/n8n-nodes-pdf4me.git"
   },
-  "engines": {
-    "node": ">=20.15"
-  },
+  "license": "MIT",
+  "author": "PDF4me <support@pdf4me.com>",
+  "type": "commonjs",
   "main": "index.js",
+  "files": [
+    "dist",
+    "index.js",
+    "LICENSE.md",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc && gulp build",
     "dev": "tsc --watch",
@@ -27,21 +31,6 @@
     "lintfix": "eslint nodes credentials package.json --fix",
     "prepublishOnly": "npm run build && npm run validate-build && eslint -c .eslintrc.prepublish.js nodes credentials package.json",
     "validate-build": "node -e \"const fs=require('fs'); const path=require('path'); const requiredFiles=['dist/nodes/Pdf4me/Pdf4me.node.js','dist/credentials/Pdf4meApi.credentials.js']; requiredFiles.forEach(f=>{if(!fs.existsSync(f))throw new Error('Missing required file: '+f);});\""
-  },
-  "files": [
-    "dist",
-    "index.js",
-    "LICENSE.md",
-    "README.md"
-  ],
-  "n8n": {
-    "n8nNodesApiVersion": 1,
-    "credentials": [
-      "dist/credentials/Pdf4meApi.credentials.js"
-    ],
-    "nodes": [
-      "dist/nodes/Pdf4me/Pdf4me.node.js"
-    ]
   },
   "devDependencies": {
     "@types/node": "20.19.7",
@@ -56,5 +45,17 @@
   },
   "peerDependencies": {
     "n8n-workflow": "*"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/Pdf4meApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Pdf4me/Pdf4me.node.js"
+    ]
   }
 }

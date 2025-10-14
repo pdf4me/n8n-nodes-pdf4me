@@ -151,22 +151,22 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body: body,
 		json: true, // Parse response as JSON
 	};
-	
+
 	const result: any = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
 
 	// Extract document URL from response
 	let documentUrl;
-	
+
 	if (result.documents && result.documents.length > 0) {
 		documentUrl = result.documents[0].documentUrl;
 	} else if (result.documentUrl) {
 		documentUrl = result.documentUrl;
 	}
-	
+
 	if (!documentUrl) {
 		throw new Error('No document URL found in response');
 	}
-	
+
 	return [
 		{
 			json: {

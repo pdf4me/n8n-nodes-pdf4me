@@ -351,25 +351,25 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent = buffer.toString('base64');
 	} else if (inputDataType === 'base64') {
 		const base64Content = this.getNodeParameter('base64Content', index) as string;
-		
+
 		// Validate base64 content
 		if (!base64Content || base64Content.trim().length === 0) {
 			throw new Error('Base64 content cannot be empty');
 		}
-		
+
 		// Validate that it looks like base64 (contains only valid base64 characters)
 		const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
 		if (!base64Regex.test(base64Content)) {
 			throw new Error('Invalid base64 format. Base64 should only contain A-Z, a-z, 0-9, +, /, and = characters');
 		}
-		
+
 		// Try to decode to verify it's valid base64
 		try {
 			const decoded = Buffer.from(base64Content, 'base64').toString('utf8');
 			// console.log(`Base64 Content Length: ${base64Content.length}`);
 			// console.log(`Decoded Content Length: ${decoded.length}`);
 			// console.log(`Decoded Content Preview: ${decoded.substring(0, 100)}...`);
-			
+
 			// Check if decoded content looks like HTML
 			if (!decoded.includes('<') || !decoded.includes('>')) {
 				// console.log('Warning: Decoded base64 content does not appear to be HTML');
@@ -377,16 +377,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		} catch (error) {
 			throw new Error(`Invalid base64 content: ${error.message}`);
 		}
-		
+
 		docContent = base64Content;
 	} else if (inputDataType === 'htmlCode') {
 		let htmlCode = this.getNodeParameter('htmlCode', index) as string;
-		
+
 		// Validate HTML code
 		if (!htmlCode || htmlCode.trim().length === 0) {
 			throw new Error('HTML code cannot be empty');
 		}
-		
+
 		// Ensure HTML has basic structure
 		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
 			// console.log('Warning: HTML code may not have proper HTML structure');
@@ -396,11 +396,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				// console.log('Wrapped HTML content in basic HTML structure');
 			}
 		}
-		
+
 		// Debug: Log the HTML code length and first 100 characters
 		// console.log(`HTML Code Length: ${htmlCode.length}`);
 		// console.log(`HTML Code Preview: ${htmlCode.substring(0, 100)}...`);
-		
+
 		// Convert HTML to base64
 		// Ensure proper UTF-8 encoding and handle any potential encoding issues
 		try {
@@ -410,7 +410,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Fallback: try with different encoding
 			docContent = Buffer.from(htmlCode, 'latin1').toString('base64');
 		}
-		
+
 		// Debug: Log the base64 length and first 100 characters
 		// console.log(`Base64 Length: ${docContent.length}`);
 		// console.log(`Base64 Preview: ${docContent.substring(0, 100)}...`);
@@ -490,8 +490,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			pdfBuffer = responseData;
 		} else if (typeof responseData === 'string') {
 			pdfBuffer = Buffer.from(responseData, 'base64');
+		} else if (responseData instanceof ArrayBuffer) {
+			pdfBuffer = Buffer.from(responseData);
 		} else {
-			pdfBuffer = Buffer.from(responseData as any);
+			// Handle any other type by attempting conversion
+			pdfBuffer = Buffer.from(responseData as ArrayBuffer);
 		}
 
 		// Create binary data for output
@@ -525,17 +528,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 const downloadHtmlFromUrl = async (helpers: IExecuteFunctions['helpers'], htmlUrl: string): Promise<string> => {
 	try {
-		const response = await helpers.httpRequest({
+		// helpers.httpRequest returns the response body directly when encoding is specified
+		const responseBody = await helpers.httpRequest({
 			method: 'GET',
 			url: htmlUrl,
 			encoding: 'arraybuffer',
 		});
 
-		if (response.statusCode >= 400) {
-			throw new Error(`Failed to download HTML from URL: ${response.statusCode} ${response.statusMessage}`);
-		}
+		// Convert the response to a Buffer
+		// responseBody should be an ArrayBuffer when encoding is 'arraybuffer'
+		const buffer = Buffer.isBuffer(responseBody)
+			? responseBody
+			: Buffer.from(responseBody as ArrayBuffer);
 
-		const buffer = Buffer.from(response.body);
 		return buffer.toString('base64');
 	} catch (error) {
 		throw new Error(`Error downloading HTML from URL: ${error.message}`);
