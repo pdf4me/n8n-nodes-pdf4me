@@ -134,6 +134,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertHtmlToPdf],
 			},
 		},
+		hint: 'Convert HTML to PDF. See our <b><a href="https://docs.pdf4me.com/n8n/convert/html-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Layout',

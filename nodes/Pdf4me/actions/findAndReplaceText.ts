@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				pdfInputDataType: ['url'],
 			},
 		},
+		hint: 'Find and replace text in PDF. See our <b><a href="https://docs.pdf4me.com/n8n/find-search/find-and-replace-text/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Old Text',

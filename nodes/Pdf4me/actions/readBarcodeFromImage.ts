@@ -82,7 +82,8 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ReadBarcodeFromImage],
 				inputDataType: ['url'],
 			},
-		},
+			},
+			hint: 'Read barcodes from image. See our <b><a href="https://docs.pdf4me.com/n8n/image/read-barcode-from-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output File Name',

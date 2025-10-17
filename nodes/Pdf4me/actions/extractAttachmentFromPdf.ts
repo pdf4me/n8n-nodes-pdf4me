@@ -86,6 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Extract attachment from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-attachment-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

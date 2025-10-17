@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Flip image. See our <b><a href="https://docs.pdf4me.com/n8n/image/flip-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output File Name',

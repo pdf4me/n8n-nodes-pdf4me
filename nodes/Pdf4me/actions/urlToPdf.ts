@@ -84,6 +84,7 @@ export const description: INodeProperties[] = [
 				authType: ['Basic'],
 			},
 		},
+		hint: 'URL to PDF conversion. See our <b><a href="https://docs.pdf4me.com/n8n/convert/url-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Page Layout',

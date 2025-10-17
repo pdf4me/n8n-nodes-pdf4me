@@ -49,6 +49,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.GenerateDocumentSingle],
 			},
 		},
+		hint: 'Generate document using a template file. See our <b><a href="https://docs.pdf4me.com/n8n/generate/generate-document-single/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Template Binary Property',

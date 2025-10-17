@@ -65,6 +65,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Enable tracking changes in Word document. See our <b><a href="https://docs.pdf4me.com/n8n/generate/enable-tracking-changes-word/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output File Name',

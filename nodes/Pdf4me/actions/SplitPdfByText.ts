@@ -84,6 +84,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Split PDF by text. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/split-pdf-by-text/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Text to Search',

@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Remove EXIF tags from image. See our <b><a href="https://docs.pdf4me.com/n8n/image/remove-exif-tag-from-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output File Name',

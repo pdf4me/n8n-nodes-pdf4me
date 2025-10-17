@@ -86,6 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Convert PDF to PowerPoint document. See our <b><a href="https://docs.pdf4me.com/n8n/convert/pdf-to-powerpoint/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output File Name',

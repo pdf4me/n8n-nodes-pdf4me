@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				pdfInputDataType: ['url'],
 			},
 		},
+		hint: 'Convert PDF to editable PDF using OCR. See our <b><a href="https://docs.pdf4me.com/n8n/find-search/convert-pdf-to-editable-pdf-using-ocr/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Quality Type',

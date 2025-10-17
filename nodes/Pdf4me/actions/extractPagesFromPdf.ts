@@ -95,7 +95,9 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ExtractPagesFromPdf],
 			},
 		},
+		hint: 'Extract pages from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/organize/extract-pages-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
+	
 	{
 		displayName: 'Page Numbers',
 		name: 'pageNumbers',

@@ -19,6 +19,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.GetDocumentFromPdf4me],
 			},
 		},
+		hint: 'Get document from PDF4me. See our <b><a href="https://docs.pdf4me.com/n8n/pdf4me/get-document-from-pdf4me/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Callback URL',

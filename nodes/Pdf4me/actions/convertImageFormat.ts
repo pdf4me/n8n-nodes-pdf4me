@@ -84,6 +84,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+		hint: 'Convert image format. See our <b><a href="https://docs.pdf4me.com/n8n/image/convert-image-format/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output File Name',
