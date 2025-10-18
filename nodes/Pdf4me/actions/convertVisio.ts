@@ -52,7 +52,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['binaryData'],
 			},
 		},
-		hint: 'Convert VISIO to PDF. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-visio/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 	{
 		displayName: 'Input File Name',
@@ -96,6 +96,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['base64', 'url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'File URL',
@@ -124,6 +125,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertVisio],
 			},
 		},
+		hint: 'Convert VISIO to PDF. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-visio/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output Format',

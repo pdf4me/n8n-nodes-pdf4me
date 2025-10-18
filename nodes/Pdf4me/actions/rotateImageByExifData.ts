@@ -83,7 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		hint: 'Rotate image by EXIF data. See our <b><a href="https://docs.pdf4me.com/n8n/image/rotate-image-by-exif-data/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 
 	{
@@ -98,6 +98,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.RotateImageByExifData],
 			},
 		},
+		hint: 'Rotate image by EXIF data. See our <b><a href="https://docs.pdf4me.com/n8n/image/rotate-image-by-exif-data/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Async',

@@ -109,7 +109,7 @@ export const description: INodeProperties[] = [
 				],
 			},
 		],
-		hint: 'Merge multiple PDFs. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/merge-multiple-pdfs/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -123,6 +123,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.MergeMultiplePDFs],
 			},
 		},
+		hint: 'Merge multiple PDFs. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/merge-multiple-pdfs/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

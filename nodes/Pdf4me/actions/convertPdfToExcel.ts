@@ -83,7 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		hint: 'Convert PDF to Excel spreadsheet. See our <b><a href="https://docs.pdf4me.com/n8n/convert/pdf-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 	{
 		displayName: 'Quality Type',
@@ -109,6 +109,7 @@ export const description: INodeProperties[] = [
 				description: 'Slower but more accurate, better for complex layouts',
 			},
 		],
+
 	},
 	{
 		displayName: 'Language',
@@ -123,6 +124,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertPdfToExcel],
 			},
 		},
+		hint: 'Convert PDF to Excel spreadsheet. See our <b><a href="https://docs.pdf4me.com/n8n/convert/pdf-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Merge All Sheets',

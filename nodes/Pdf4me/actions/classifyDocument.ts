@@ -87,7 +87,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		hint: 'Classify document types and extract metadata using AI/ML technology. See our <b><a href="https://docs.pdf4me.com/n8n/extract/classify-document/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 	{
 		displayName: 'Document Name',
@@ -100,6 +100,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ClassifyDocument],
 			},
 		},
+		hint: 'Classify document types and extract metadata using AI/ML technology. See our <b><a href="https://docs.pdf4me.com/n8n/extract/classify-document/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output Binary Field Name',

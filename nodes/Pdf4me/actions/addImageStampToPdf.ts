@@ -218,7 +218,7 @@ export const description: INodeProperties[] = [
 				imageInputDataType: ['url'],
 			},
 		},
-		hint: 'Add image stamp to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-image-stamp-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 
 	{
@@ -232,6 +232,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddImageStampToPdf],
 			},
 		},
+		hint: 'Add image stamp to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-image-stamp-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Pages',

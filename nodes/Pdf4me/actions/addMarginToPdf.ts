@@ -86,7 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		hint: 'Add margins to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-margin-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -100,6 +100,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddMarginToPdf],
 			},
 		},
+		hint: 'Add margins to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-margin-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

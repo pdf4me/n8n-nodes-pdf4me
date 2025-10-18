@@ -146,7 +146,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		hint: 'Add HTML header/footer to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-html-header-footer-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		
 	},
 	{
 		displayName: 'HTML Content',
@@ -164,6 +164,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddHtmlHeaderFooter],
 			},
 		},
+		hint: 'Add HTML header/footer to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-html-header-footer-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Location',
