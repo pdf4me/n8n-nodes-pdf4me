@@ -124,7 +124,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertPdfToExcel],
 			},
 		},
-		hint: 'Convert PDF to Excel spreadsheet. See our <b><a href="https://docs.pdf4me.com/n8n/convert/pdf-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert PDF to Excel spreadsheet. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-pdf-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Merge All Sheets',
@@ -383,7 +383,7 @@ const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl:
 		}
 
 		let buffer: Buffer;
-		
+
 		// Handle different response body formats
 		if (response.body instanceof Buffer) {
 			buffer = response.body;

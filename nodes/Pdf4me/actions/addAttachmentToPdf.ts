@@ -183,7 +183,6 @@ export const description: INodeProperties[] = [
 		placeholder: 'Add Attachment',
 		default: {},
 		description: 'Files to attach to the PDF document',
-		hint: 'Add various file types as attachments to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-attachment-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddAttachmentToPdf],

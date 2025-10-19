@@ -82,7 +82,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ReadBarcodeFromImage],
 				inputDataType: ['url'],
 			},
-			},
+		},
 
 	},
 	{

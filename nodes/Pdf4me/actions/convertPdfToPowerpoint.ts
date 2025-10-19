@@ -100,7 +100,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertPdfToPowerpoint],
 			},
 		},
-		hint: 'Convert PDF to PowerPoint document. See our <b><a href="https://docs.pdf4me.com/n8n/convert/pdf-to-powerpoint/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert PDF to PowerPoint document. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-pdf-to-powerpoint/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

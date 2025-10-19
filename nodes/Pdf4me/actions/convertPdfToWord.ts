@@ -100,7 +100,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertPdfToWord],
 			},
 		},
-		hint: 'Convert PDF to Word document. See our <b><a href="https://docs.pdf4me.com/n8n/convert/pdf-to-word/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert PDF to Word document. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-pdf-to-word/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

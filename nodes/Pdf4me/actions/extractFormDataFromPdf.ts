@@ -86,7 +86,6 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		hint: 'Extract form data from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-form-data-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',
@@ -99,6 +98,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ExtractFormDataFromPdf],
 			},
 		},
+		hint: 'Extract form data from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-form-data-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Advanced Options',
@@ -127,7 +127,7 @@ export const description: INodeProperties[] = [
 /**
  * Extract Form Data from PDF - Extract form field data and values from PDF documents using PDF4ME
  * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return form data
- * 
+ *
  * This action extracts form field data from PDF documents:
  * - Returns structured JSON data with all form field names and values
  * - Supports various PDF document formats

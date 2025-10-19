@@ -71,7 +71,7 @@ export const description: INodeProperties[] = [
 				description: 'Provide URL to layer PDF file',
 			},
 		],
-		hint: 'Overlay PDFs. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/overlay-pdfs/ target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Overlay PDFs. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/overlay-pdfs/">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Base PDF Binary Field',
