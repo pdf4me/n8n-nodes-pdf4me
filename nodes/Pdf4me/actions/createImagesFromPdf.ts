@@ -85,6 +85,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Document Name',
@@ -98,6 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.CreateImagesFromPdf],
 			},
 		},
+		hint: 'Convert PDF to images. See our <b><a href="https://docs.pdf4me.com/n8n/image/create-image-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Image Settings',

@@ -84,6 +84,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Document Name',
@@ -96,6 +97,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.RotatePage],
 			},
 		},
+		hint: 'Rotate page. See our <b><a href="https://docs.pdf4me.com/n8n/organize/rotate-pdf-page/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Rotation Type',

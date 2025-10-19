@@ -1,11 +1,11 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "n8n community node for PDF4me API integration",
   "keywords": [
     "n8n-community-node-package"
   ],
-  "homepage": "https://dev.pdf4me.com",
+  "homepage": "https://docs.pdf4me.com/n8n/getting-started/",
   "bugs": {
     "url": "https://github.com/pdf4me/n8n-nodes-pdf4me/issues"
   },

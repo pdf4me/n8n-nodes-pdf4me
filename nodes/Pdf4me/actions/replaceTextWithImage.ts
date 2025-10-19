@@ -160,6 +160,7 @@ export const description: INodeProperties[] = [
 				imageInputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Text to Replace',
@@ -173,6 +174,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ReplaceTextWithImage],
 			},
 		},
+		hint: 'Replace text with image. See our <b><a href="https://docs.pdf4me.com/n8n/image/replace-text-with-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Page Sequence',

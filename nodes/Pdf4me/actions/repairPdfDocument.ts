@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -96,6 +97,8 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.RepairPdfDocument],
 			},
 		},
+		hint: 'Repair PDF document. See our <b><a href="https://docs.pdf4me.com/n8n/pdf/repair-pdf-document/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+
 	},
 	{
 		displayName: 'Async',

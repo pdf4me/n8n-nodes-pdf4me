@@ -86,6 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Document Name',
@@ -98,6 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ExtractTextFromWord],
 			},
 		},
+		hint: 'Extract text from Word document. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-text-from-word/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Start Page Number',

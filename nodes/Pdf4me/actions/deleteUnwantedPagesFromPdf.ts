@@ -84,6 +84,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Document Name',
@@ -96,6 +97,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.DeleteUnwantedPagesFromPdf],
 			},
 		},
+		hint: 'Delete unwanted pages from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/organize/delete-unwanted-pages-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Page Numbers',

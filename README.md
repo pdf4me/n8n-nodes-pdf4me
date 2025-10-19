@@ -287,6 +287,7 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Resources
 
+- [PDF4me n8n Integration Documentation](https://docs.pdf4me.com/n8n/getting-started/)
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
 - [PDF4ME API Documentation](https://dev.pdf4me.com/apiv2/documentation/)
 - [PDF4ME Developer Portal](https://dev.pdf4me.com/)

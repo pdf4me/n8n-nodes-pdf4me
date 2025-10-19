@@ -65,6 +65,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -77,6 +78,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ProtectDocument],
 			},
 		},
+		hint: 'Protect PDF. See our <b><a href="https://docs.pdf4me.com/n8n/security/protect-document/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Password',

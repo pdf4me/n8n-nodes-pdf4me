@@ -97,6 +97,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AiProcessHealthCard],
 			},
 		},
+		hint: 'Extract structured data from health cards using AI technology for member management. See our <b><a href="https://docs.pdf4me.com/n8n/pdf4me-ai/ai-process-health-card/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 ];
 

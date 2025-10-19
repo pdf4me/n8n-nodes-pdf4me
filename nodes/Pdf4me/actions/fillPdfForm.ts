@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				pdfInputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Data Type',
@@ -108,6 +109,7 @@ export const description: INodeProperties[] = [
 				description: 'Generate multiple documents from a list of data',
 			},
 		],
+		hint: 'Fill a PDF form. See our <b><a href="https://docs.pdf4me.com/n8n/forms/fill-a-pdf-form/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Form Data (JSON)',

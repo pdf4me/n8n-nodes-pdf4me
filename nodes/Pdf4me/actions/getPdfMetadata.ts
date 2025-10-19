@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -96,6 +97,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.GetPdfMetadata],
 			},
 		},
+		hint: 'Get PDF metadata. See our <b><a href="https://docs.pdf4me.com/n8n/pdf/get-pdf-metadata/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Binary Data Output Name',
