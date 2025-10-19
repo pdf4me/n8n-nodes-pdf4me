@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				pdfInputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Initial Value',
@@ -97,6 +98,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddFormFieldsToPdf],
 			},
 		},
+		hint: 'Add form fields to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/forms/add-form-fields-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Position X',

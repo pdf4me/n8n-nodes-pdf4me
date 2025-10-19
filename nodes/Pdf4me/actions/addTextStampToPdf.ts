@@ -86,6 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -99,6 +100,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddTextStampToPdf],
 			},
 		},
+		hint: 'Add text stamp to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-text-stamp-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

@@ -97,6 +97,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AiInvoiceParser],
 			},
 		},
+		hint: 'Extract structured data from invoices using AI technology for automated data entry. See our <b><a href="https://docs.pdf4me.com/n8n/pdf4me-ai/ai-invoice-parser/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Custom Fields',

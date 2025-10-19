@@ -162,6 +162,7 @@ export const description: INodeProperties[] = [
 			{ name: 'USPS Postnet 9', value: 'uspsPostnet9' },
 			{ name: 'VIN', value: 'vin' },
 		],
+
 	},
 	{
 		displayName: 'Hide Text',
@@ -175,6 +176,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.BarcodeGenerator],
 			},
 		},
+		hint: 'Generate barcodes of various types. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/create-barcode/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Binary Data Output Name',

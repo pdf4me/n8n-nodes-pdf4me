@@ -36,6 +36,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.GenerateDocumentsMultiple],
 			},
 		},
+
 	},
 	{
 		displayName: 'Template Binary Property',
@@ -50,6 +51,7 @@ export const description: INodeProperties[] = [
 				templateInputDataType: ['binaryData'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Template File Name',
@@ -64,6 +66,7 @@ export const description: INodeProperties[] = [
 				templateInputDataType: ['binaryData'],
 			},
 		},
+		hint: 'Generate documents using a template file. See our <b><a href="https://docs.pdf4me.com/n8n/generate/generate-documents-multiple/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Template Base64 Content',

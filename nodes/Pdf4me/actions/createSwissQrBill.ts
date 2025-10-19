@@ -95,6 +95,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.CreateSwissQrBill],
 			},
 		},
+		hint: 'Create Swiss QR Bill. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/create-swiss-qr-bill/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Amount',

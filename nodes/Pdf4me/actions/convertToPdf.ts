@@ -110,6 +110,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 
 	{
@@ -124,6 +125,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertToPdf],
 			},
 		},
+		hint: 'Convert file to PDF. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Advanced Options',

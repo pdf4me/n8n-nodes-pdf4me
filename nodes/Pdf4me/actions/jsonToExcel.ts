@@ -88,6 +88,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['base64'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -102,6 +103,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.JsonToExcel],
 			},
 		},
+		hint: 'JSON to Excel conversion. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-json-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

@@ -36,6 +36,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.UrlToPdf],
 			},
 		},
+		hint: 'URL to PDF conversion. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-url-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Authentication Type',
@@ -84,6 +85,7 @@ export const description: INodeProperties[] = [
 				authType: ['Basic'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Page Layout',
@@ -101,6 +103,7 @@ export const description: INodeProperties[] = [
 			{ name: 'Portrait', value: 'portrait' },
 			{ name: 'Landscape', value: 'landscape' },
 		],
+
 	},
 	{
 		displayName: 'Page Format',

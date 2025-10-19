@@ -83,6 +83,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -96,6 +97,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.CompressPdf],
 			},
 		},
+		hint: 'Compress PDF file using various algorithms. See our <b><a href="https://docs.pdf4me.com/n8n/optimize-compress/compress-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Optimize Profile',

@@ -86,6 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Document Name',
@@ -100,6 +101,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ParseDocument],
 			},
 		},
+		hint: 'Parse document. See our <b><a href="https://docs.pdf4me.com/n8n/extract/parse-document/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Parse ID',

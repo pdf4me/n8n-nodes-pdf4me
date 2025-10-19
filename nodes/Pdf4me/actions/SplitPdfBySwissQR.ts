@@ -84,6 +84,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Split QR Page',
@@ -107,6 +108,7 @@ export const description: INodeProperties[] = [
 				value: 'before',
 			},
 		],
+		hint: 'Split PDF by SwissQR. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/split-pdf-swiss-qr/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Combine Pages With Same Barcodes',

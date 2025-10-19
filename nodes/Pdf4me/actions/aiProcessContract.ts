@@ -95,6 +95,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AiProcessContract],
 			},
 		},
+		hint: 'Extract structured data from contracts using AI technology for legal document analysis. See our <b><a href="https://docs.pdf4me.com/n8n/pdf4me-ai/ai-process-contract/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 
 ];

@@ -86,6 +86,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Document Name',
@@ -98,6 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ExtractTextByExpression],
 			},
 		},
+		hint: 'Extract text from PDF using custom expressions. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-text-by-expression/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Expression',

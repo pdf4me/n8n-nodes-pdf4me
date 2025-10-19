@@ -163,6 +163,7 @@ export const description: INodeProperties[] = [
 				watermarkDataType: ['url'],
 			},
 		},
+
 	},
 	{
 		displayName: 'Output File Name',
@@ -176,6 +177,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddImageWatermarkToImage],
 			},
 		},
+		hint: 'Add image watermark to your image. See our <b><a href="https://docs.pdf4me.com/n8n/image/add-image-watermark-to-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Position',
