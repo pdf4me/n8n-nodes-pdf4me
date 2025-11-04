@@ -101,494 +101,833 @@ export const descriptions: INodeTypeDescription = {
 	], // eslint-disable-line n8n-nodes-base/node-param-default-missing
 	properties: [
 		{
-			displayName: 'Action',
-			name: 'operation',
+			displayName: 'Resource',
+			name: 'resource',
 			type: 'options',
 			noDataExpression: true,
 			options: [
 				{
-					name: 'Add Attachment To PDF',
-					description: 'Add file attachments to PDF documents',
-					value: ActionConstants.AddAttachmentToPdf,
-					action: ActionConstants.AddAttachmentToPdf,
+					name: 'AI',
+					value: 'ai',
+					description: 'AI-powered document processing and classification',
 				},
 				{
-					name: 'Add Barcode To PDF',
-					description: 'Add barcodes to existing PDF documents with positioning and styling options',
-					value: ActionConstants.AddBarcodeToPdf,
-					action: ActionConstants.AddBarcodeToPdf,
+					name: 'Barcode',
+					value: 'barcode',
+					description: 'Generate QR codes and barcodes for use in documents',
 				},
 				{
-					name: 'Add Form Fields To PDF',
-					description: 'Add interactive form fields to PDF documents',
-					value: ActionConstants.AddFormFieldsToPdf,
-					action: ActionConstants.AddFormFieldsToPdf,
+					name: 'Convert',
+					value: 'convert',
+					description: 'Convert various document formats to and from PDF',
 				},
 				{
-					name: 'Add HTML Header Footer',
-					description: 'Add HTML-based headers and footers to PDF documents',
-					value: ActionConstants.AddHtmlHeaderFooter,
-					action: ActionConstants.AddHtmlHeaderFooter,
+					name: 'Edit',
+					value: 'edit',
+					description: 'Edit PDF documents: add attachments, headers, footers, stamps, and signatures',
 				},
 				{
-					name: 'Add Image Stamp To PDF',
-					description: 'Add image stamps or watermarks to PDF documents',
-					value: ActionConstants.AddImageStampToPdf,
-					action: ActionConstants.AddImageStampToPdf,
+					name: 'Extract',
+					value: 'extract',
+					description: 'Extract data, text, tables, and attachments from documents',
 				},
 				{
-					name: 'Add Image Watermark To Image',
-					description: 'Add image watermark to image documents',
-					value: ActionConstants.AddImageWatermarkToImage,
-					action: ActionConstants.AddImageWatermarkToImage,
+					name: 'Find Search',
+					value: 'findSearch',
+					description: 'Find and replace text, convert PDF to editable format using OCR',
 				},
 				{
-					name: 'Add Margin To PDF',
-					description: 'Add margins to PDF documents',
-					value: ActionConstants.AddMarginToPdf,
-					action: ActionConstants.AddMarginToPdf,
+					name: 'Forms',
+					value: 'forms',
+					description: 'Create, fill, and manage PDF forms',
 				},
 				{
-					name: 'Add Page Number To PDF',
-					description: 'Add page numbers to PDF documents',
-					value: ActionConstants.AddPageNumberToPdf,
-					action: ActionConstants.AddPageNumberToPdf,
+					name: 'Generate',
+					value: 'generate',
+					description: 'Generate PDFs from templates with data, manage Word documents',
 				},
 				{
-					name: 'Add Text Stamp To PDF',
-					description: 'Add text stamps or watermarks to PDF documents',
-					value: ActionConstants.AddTextStampToPdf,
-					action: ActionConstants.AddTextStampToPdf,
+					name: 'Image',
+					value: 'image',
+					description: 'Process and manipulate images: resize, crop, rotate, compress, and extract text',
 				},
 				{
-					name: 'Add Text Watermark To Image',
-					description: 'Add text watermarks to images with positioning and styling options',
-					value: ActionConstants.AddTextWatermarkToImage,
-					action: ActionConstants.AddTextWatermarkToImage,
+					name: 'Merge & Split',
+					value: 'mergeSplit',
+					description: 'Merge multiple PDFs or split PDFs by various criteria',
 				},
+				{
+					name: 'Optimize Compress',
+					value: 'optimizeCompress',
+					description: 'Compress and optimize PDF files',
+				},
+				{
+					name: 'Organize',
+					value: 'organize',
+					description: 'Organize PDF pages: delete, extract, and rotate pages',
+				},
+				{
+					name: 'PDF4me',
+					value: 'pdf4me',
+					description: 'PDF4me-specific operations: get documents and update hyperlinks',
+				},
+				{
+					name: 'PDF',
+					value: 'pdf',
+					description: 'Get PDF metadata and repair PDF documents',
+				},
+				{
+					name: 'Security',
+					value: 'security',
+					description: 'Protect and unlock PDF documents',
+				},
+				{
+					name: 'Word',
+					value: 'word',
+					description: 'Manage Word document tracking changes',
+				},
+			],
+			default: 'ai',
+			description: 'Choose the type of PDF operation: generate documents, convert formats, process PDFs, extract data, or manage images',
+		},
+
+		// AI Operations
+		{
+			displayName: 'AI Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['ai'],
+				},
+			},
+			options: [
 				{
 					name: 'AI-Invoice Parser',
-					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
 					value: ActionConstants.AiInvoiceParser,
-					action: ActionConstants.AiInvoiceParser,
+					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
+					action: 'AI-Invoice Parser',
 				},
 				{
 					name: 'AI-Process Contract',
-					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
 					value: ActionConstants.AiProcessContract,
-					action: ActionConstants.AiProcessContract,
+					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
+					action: 'AI-Process Contract',
 				},
 				{
 					name: 'AI-Process HealthCard',
-					description: 'Extract structured data from health cards using AI/ML technology for member management',
 					value: ActionConstants.AiProcessHealthCard,
-					action: ActionConstants.AiProcessHealthCard,
+					description: 'Extract structured data from health cards using AI/ML technology for member management',
+					action: 'AI-Process HealthCard',
+				},
+			],
+			default: ActionConstants.AiInvoiceParser,
+		},
+
+		// Barcode Operations
+		{
+			displayName: 'Barcode Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['barcode'],
+				},
+			},
+			options: [
+				{
+					name: 'Add Barcode to PDF',
+					value: ActionConstants.AddBarcodeToPdf,
+					description: 'Add barcodes to existing PDF documents with positioning and styling options',
+					action: 'Add barcode to PDF',
 				},
 				{
-					name: 'Classify Document',
-					description: 'Classify documents using AI to determine document type and extract relevant information',
-					value: ActionConstants.ClassifyDocument,
-					action: ActionConstants.ClassifyDocument,
-				},
-				{
-					name: 'Compress Image',
-					description: 'Compress image documents',
-					value: ActionConstants.CompressImage,
-					action: ActionConstants.CompressImage,
-				},
-				{
-					name: 'Compress PDF',
-					description: 'Compress and optimize PDF files',
-					value: ActionConstants.CompressPdf,
-					action: ActionConstants.CompressPdf,
-				},
-				{
-					name: 'Convert HTML To PDF',
-					description: 'Convert HTML files to PDF documents',
-					value: ActionConstants.ConvertHtmlToPdf,
-					action: ActionConstants.ConvertHtmlToPdf,
-				},
-				{
-					name: 'Convert Image Format',
-					description: 'Convert image format (BMP, GIF, JPG, PNG, TIFF)',
-					value: ActionConstants.ConvertImageFormat,
-					action: ActionConstants.ConvertImageFormat,
-				},
-				{
-					name: 'Convert JSON To Excel',
-					description: 'Convert JSON data to Excel format',
-					value: ActionConstants.JsonToExcel,
-					action: ActionConstants.JsonToExcel,
-				},
-				{
-					name: 'Convert Markdown To PDF',
-					description: 'Convert Markdown files to PDF documents',
-					value: ActionConstants.ConvertMarkdownToPdf,
-					action: ActionConstants.ConvertMarkdownToPdf,
-				},
-				{
-					name: 'Convert PDF To Editable PDF Using OCR',
-					description: 'Convert PDF to editable PDF using OCR for scanned documents',
-					value: ActionConstants.ConvertPdfToEditableOcr,
-					action: ActionConstants.ConvertPdfToEditableOcr,
-				},
-				{
-					name: 'Convert PDF To Excel',
-					description: 'Convert PDF documents to Excel spreadsheets',
-					value: ActionConstants.ConvertPdfToExcel,
-					action: ActionConstants.ConvertPdfToExcel,
-				},
-				{
-					name: 'Convert PDF To PowerPoint',
-					description: 'Convert PDF documents to PowerPoint format with OCR support',
-					value: ActionConstants.ConvertPdfToPowerpoint,
-					action: ActionConstants.ConvertPdfToPowerpoint,
-				},
-				{
-					name: 'Convert PDF To Word',
-					description: 'Convert PDF documents to Word format with OCR support',
-					value: ActionConstants.ConvertPdfToWord,
-					action: ActionConstants.ConvertPdfToWord,
-				},
-				{
-					name: 'Convert To PDF',
-					description: 'Convert various document formats to PDF',
-					value: ActionConstants.ConvertToPdf,
-					action: ActionConstants.ConvertToPdf,
-				},
-				{
-					name: 'Convert URL to PDF',
-					description: 'Convert web pages to PDF while preserving layout, styling, and content',
-					value: ActionConstants.UrlToPdf,
-					action: ActionConstants.UrlToPdf,
-				},
-				{
-					name: 'Convert VISIO',
-					description: 'Convert VISIO files (.vsdx, .vsd) to PDF format with advanced conversion options',
-					value: ActionConstants.ConvertVisio,
-					action: ActionConstants.ConvertVisio,
-				},
-				{
-					name: 'Convert Word to PDF Form',
-					description: 'Convert Word documents to PDF forms',
-					value: ActionConstants.ConvertWordToPdfForm,
-					action: ActionConstants.ConvertWordToPdfForm,
-				},
-				{
-					name: 'Create Images From PDF',
-					description: 'Create images from PDF pages',
-					value: ActionConstants.CreateImagesFromPdf,
-					action: ActionConstants.CreateImagesFromPdf,
-				},
-				{
-					name: 'Create PDF/A',
-					description: 'Convert PDF to PDF/A for long-term archiving and compliance',
-					value: ActionConstants.CreatePdfA,
-					action: ActionConstants.CreatePdfA,
-				},
-				{
-					name: 'Create Swiss QR Bill',
-					description: 'Create Swiss QR Bills using all compliance standards for digital payment transactions',
-					value: ActionConstants.CreateSwissQrBill,
-					action: ActionConstants.CreateSwissQrBill,
-				},
-				{
-					name: 'Crop Image',
-					description: 'Crop images with border or rectangle cropping options',
-					value: ActionConstants.CropImage,
-					action: ActionConstants.CropImage,
-				},
-				{
-					name: 'Delete Blank Pages From PDF',
-					description: 'Remove blank pages from PDF documents based on specified criteria',
-					value: ActionConstants.DeleteBlankPagesFromPdf,
-					action: ActionConstants.DeleteBlankPagesFromPdf,
-				},
-				{
-					name: 'Delete Unwanted Pages From PDF',
-					description: 'Remove specific pages from PDF documents by page numbers',
-					value: ActionConstants.DeleteUnwantedPagesFromPdf,
-					action: ActionConstants.DeleteUnwantedPagesFromPdf,
-				},
-				{
-					name: 'Disable Tracking Changes In Word',
-					description: 'Disable tracking changes in Word documents',
-					value: ActionConstants.DisableTrackingChangesInWord,
-					action: ActionConstants.DisableTrackingChangesInWord,
-				},
-				{
-					name: 'Enable Tracking Changes In Word',
-					description: 'Enable tracking changes in Word documents',
-					value: ActionConstants.EnableTrackingChangesInWord,
-					action: ActionConstants.EnableTrackingChangesInWord,
-				},
-				{
-					name: 'Extract Attachment From PDF',
-					description: 'Extract file attachments from PDF documents',
-					value: ActionConstants.ExtractAttachmentFromPdf,
-					action: ActionConstants.ExtractAttachmentFromPdf,
-				},
-				{
-					name: 'Extract Form Data From PDF',
-					description: 'Extract form field data from PDF documents',
-					value: ActionConstants.ExtractFormDataFromPdf,
-					action: ActionConstants.ExtractFormDataFromPdf,
-				},
-				{
-					name: 'Extract Pages From PDF',
-					description: 'Extract specific pages from PDF documents',
-					value: ActionConstants.ExtractPagesFromPdf,
-					action: ActionConstants.ExtractPagesFromPdf,
-				},
-				{
-					name: 'Extract Resources',
-					description: 'Extract text and images from PDF documents',
-					value: ActionConstants.ExtractResources,
-					action: ActionConstants.ExtractResources,
-				},
-				{
-					name: 'Extract Table From PDF',
-					description: 'Extract tables from PDF documents',
-					value: ActionConstants.ExtractTableFromPdf,
-					action: ActionConstants.ExtractTableFromPdf,
-				},
-				{
-					name: 'Extract Text By Expression',
-					description: 'Extract text from PDF using regular expressions',
-					value: ActionConstants.ExtractTextByExpression,
-					action: ActionConstants.ExtractTextByExpression,
-				},
-				{
-					name: 'Extract Text From Word',
-					description: 'Extract text content from Word documents',
-					value: ActionConstants.ExtractTextFromWord,
-					action: ActionConstants.ExtractTextFromWord,
-				},
-				{
-					name: 'Fill PDF Form',
-					description: 'Fill PDF forms with data or generate multiple documents from templates',
-					value: ActionConstants.FillPdfForm,
-					action: ActionConstants.FillPdfForm,
-				},
-				{
-					name: 'Find And Replace Text',
-					description: 'Find and replace text in PDF documents',
-					value: ActionConstants.FindAndReplaceText,
-					action: ActionConstants.FindAndReplaceText,
-				},
-				{
-					name: 'Flip Image',
-					description: 'Flip image documents horizontally, vertically, or both',
-					value: ActionConstants.FlipImage,
-					action: ActionConstants.FlipImage,
-				},
-				{
-					name: 'Flatten PDF',
-					description: 'Convert interactive PDF elements into static, non-editable content',
-					value: ActionConstants.FlattenPdf,
-					action: ActionConstants.FlattenPdf,
-				},
-				{
-					name: 'Generate Barcode',
-					description: 'Generate various types of barcodes including QR codes, Code 128, Code 39, and more',
+					name: 'Create Barcode',
 					value: ActionConstants.BarcodeGenerator,
-					action: ActionConstants.BarcodeGenerator,
-				},
-				{
-					name: 'Generate Document Single',
-					description: 'Generate a single document from template with data',
-					value: ActionConstants.GenerateDocumentSingle,
-					action: ActionConstants.GenerateDocumentSingle,
-				},
-				{
-					name: 'Generate Documents Multiple',
-					description: 'Generate multiple documents from template with different data sets',
-					value: ActionConstants.GenerateDocumentsMultiple,
-					action: ActionConstants.GenerateDocumentsMultiple,
-				},
-				{
-					name: 'Get Document From Pdf4me',
-					description: 'Split PDF documents by barcode and output as ZIP',
-					value: ActionConstants.GetDocumentFromPdf4me,
-					action: ActionConstants.GetDocumentFromPdf4me,
-				},
-				{
-					name: 'Get Image Metadata',
-					description: 'Extract metadata information from images including EXIF data and properties',
-					value: ActionConstants.GetImageMetadata,
-					action: ActionConstants.GetImageMetadata,
-				},
-				{
-					name: 'Get PDF Metadata',
-					description: 'Extract metadata from PDF files',
-					value: ActionConstants.GetPdfMetadata,
-					action: ActionConstants.GetPdfMetadata,
-				},
-				{
-					name: 'Get Tracking Changes In Word',
-					description: 'Get tracking changes information from Word documents',
-					value: ActionConstants.GetTrackingChangesInWord,
-					action: ActionConstants.GetTrackingChangesInWord,
-				},
-				{
-					name: 'Image Extract Text',
-					description: 'Extract text content from images using OCR (Optical Character Recognition)',
-					value: ActionConstants.ImageExtractText,
-					action: ActionConstants.ImageExtractText,
-				},
-				{
-					name: 'Linearize PDF',
-					description: 'Optimize PDFs for web viewing with faster loading and progressive display',
-					value: ActionConstants.LinearizePdf,
-					action: ActionConstants.LinearizePdf,
-				},
-				{
-					name: 'Merge Multiple PDFs',
-					description: 'Combine multiple PDF files into a single PDF document',
-					value: ActionConstants.MergeMultiplePDFs,
-					action: ActionConstants.MergeMultiplePDFs,
-				},
-				{
-					name: 'Overlay PDFs',
-					description: 'Merge two PDF files one over another as overlay',
-					value: ActionConstants.OverlayPDFs,
-					action: ActionConstants.OverlayPDFs,
-				},
-				{
-					name: 'Parse Document',
-					description: 'Parse documents to extract structured data using template-based parsing',
-					value: ActionConstants.ParseDocument,
-					action: ActionConstants.ParseDocument,
-				},
-				{
-					name: 'Protect PDF',
-					description: 'Protect PDF documents with encryption, passwords, and permissions',
-					value: ActionConstants.ProtectDocument,
-					action: ActionConstants.ProtectDocument,
-				},
-				{
-					name: 'Read Barcode From Image',
-					description: 'Read barcodes from images using OCR',
-					value: ActionConstants.ReadBarcodeFromImage,
-					action: ActionConstants.ReadBarcodeFromImage,
-				},
-				{
-					name: 'Read Barcode From PDF',
-					description: 'Read single or multiple Barcodes or QR Codes from your PDF file',
-					value: ActionConstants.ReadBarcodeFromPdf,
-					action: ActionConstants.ReadBarcodeFromPdf,
+					description: 'Generate various types of barcodes including QR codes, Code 128, Code 39, and more',
+					action: 'Create barcode',
 				},
 				{
 					name: 'Read SwissQR Code',
-					description: 'Read Swiss QR code data from PDF documents',
 					value: ActionConstants.ReadSwissQrCode,
-					action: ActionConstants.ReadSwissQrCode,
+					description: 'Read Swiss QR code data from PDF documents',
+					action: 'Read SwissQR code',
 				},
 				{
-					name: 'Remove EXIF Tags From Image',
-					description: 'Remove metadata/EXIF tags from images for privacy and file size reduction',
-					value: ActionConstants.RemoveExifTagsFromImage,
-					action: ActionConstants.RemoveExifTagsFromImage,
+					name: 'Create SwissQR Bill',
+					value: ActionConstants.CreateSwissQrBill,
+					description: 'Create Swiss QR Bills using all compliance standards for digital payment transactions',
+					action: 'Create SwissQR bill',
 				},
 				{
-					name: 'Repair PDF Document',
-					description: 'Repair corrupted or damaged PDF files',
-					value: ActionConstants.RepairPdfDocument,
-					action: ActionConstants.RepairPdfDocument,
-				},
-				{
-					name: 'Replace Text With Image',
-					description: 'Replace specific text in PDF documents with images',
-					value: ActionConstants.ReplaceTextWithImage,
-					action: ActionConstants.ReplaceTextWithImage,
-				},
-				{
-					name: 'Replace Text With Image In Word',
-					description: 'Replace specific text in Word documents with images',
-					value: ActionConstants.ReplaceTextWithImageInWord,
-					action: ActionConstants.ReplaceTextWithImageInWord,
-				},
-				{
-					name: 'Resize Image',
-					description: 'Resize images by percentage or specific dimensions with aspect ratio control',
-					value: ActionConstants.ResizeImage,
-					action: ActionConstants.ResizeImage,
-				},
-				{
-					name: 'Rotate Document',
-					description: 'Rotate entire PDF documents by 90, 180, or 270 degrees',
-					value: ActionConstants.RotateDocument,
-					action: ActionConstants.RotateDocument,
-				},
-				{
-					name: 'Rotate Image',
-					description: 'Rotate images with custom angle, background color, and proportionate resize options',
-					value: ActionConstants.RotateImage,
-					action: ActionConstants.RotateImage,
-				},
-				{
-					name: 'Rotate Image By EXIF Data',
-					description: 'Rotate image automatically based on EXIF orientation metadata',
-					value: ActionConstants.RotateImageByExifData,
-					action: ActionConstants.RotateImageByExifData,
-				},
-				{
-					name: 'Rotate PDF Page',
-					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
-					value: ActionConstants.RotatePage,
-					action: ActionConstants.RotatePage,
-				},
-				{
-					name: 'Sign PDF',
-					description: 'Digitally sign PDF documents',
-					value: ActionConstants.SignPdf,
-					action: ActionConstants.SignPdf,
-				},
-				{
-					name: 'Split PDF By Barcode',
-					description: 'Split PDF documents by barcode and output as ZIP',
-					value: ActionConstants.SplitPdfByBarcode,
-					action: ActionConstants.SplitPdfByBarcode,
-				},
-				{
-					name: 'Split PDF By Swiss QR',
-					description: 'Split PDF documents by Swiss QR code and output as ZIP',
-					value: ActionConstants.SplitPdfBySwissQR,
-					action: ActionConstants.SplitPdfBySwissQR,
-				},
-				{
-					name: 'Split PDF By Text',
-					description: 'Split PDF documents by text and output as ZIP',
-					value: ActionConstants.SplitPdfByText,
-					action: ActionConstants.SplitPdfByText,
-				},
-				{
-					name: 'Split PDF Regular',
-					description: 'Split PDF documents by regular expression and output as ZIP',
-					value: ActionConstants.SplitPdfRegular,
-					action: ActionConstants.SplitPdfRegular,
-				},
-				{
-					name: 'Unlock PDF',
-					description: 'Unlock PDF documents by removing encryption',
-					value: ActionConstants.UnlockPdf,
-					action: ActionConstants.UnlockPdf,
-				},
-				{
-					name: 'Update Hyperlinks Annotation',
-					description: 'Update hyperlinks in PDF documents',
-					value: ActionConstants.UpdateHyperlinksAnnotation,
-					action: ActionConstants.UpdateHyperlinksAnnotation,
-				},
-				{
-					name: 'Upload File To PDF4me',
-					description: 'Upload files to PDF4ME for further processing',
-					value: ActionConstants.UploadFile,
-					action: ActionConstants.UploadFile,
+					name: 'Read Barcode from PDF',
+					value: ActionConstants.ReadBarcodeFromPdf,
+					description: 'Read single or multiple Barcodes or QR Codes from your PDF file',
+					action: 'Read barcode from PDF',
 				},
 			],
 			default: ActionConstants.BarcodeGenerator,
 		},
+
+		// Convert Operations
+		{
+			displayName: 'Convert Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['convert'],
+				},
+			},
+			options: [
+				{
+					name: 'Convert JSON To Excel',
+					value: ActionConstants.JsonToExcel,
+					description: 'Convert JSON data to Excel format',
+					action: 'Convert JSON to Excel',
+				},
+				{
+					name: 'Convert to PDF',
+					value: ActionConstants.ConvertToPdf,
+					description: 'Convert various document formats to PDF',
+					action: 'Convert to PDF',
+				},
+				{
+					name: 'Convert VISIO',
+					value: ActionConstants.ConvertVisio,
+					description: 'Convert VISIO files (.vsdx, .vsd) to PDF format with advanced conversion options',
+					action: 'Convert VISIO',
+				},
+				{
+					name: 'Convert Word to PDF Form',
+					value: ActionConstants.ConvertWordToPdfForm,
+					description: 'Convert Word documents to PDF forms',
+					action: 'Convert Word to PDF Form',
+				},
+				{
+					name: 'Create PDF/A',
+					value: ActionConstants.CreatePdfA,
+					description: 'Convert PDF to PDF/A for long-term archiving and compliance',
+					action: 'Create PDF/A',
+				},
+				{
+					name: 'Flatten PDF',
+					value: ActionConstants.FlattenPdf,
+					description: 'Convert interactive PDF elements into static, non-editable content',
+					action: 'Flatten PDF',
+				},
+				{
+					name: 'Convert Html to PDF',
+					value: ActionConstants.ConvertHtmlToPdf,
+					description: 'Convert HTML files to PDF documents',
+					action: 'Convert Html to PDF',
+				},
+				{
+					name: 'Linearize PDF',
+					value: ActionConstants.LinearizePdf,
+					description: 'Optimize PDFs for web viewing with faster loading and progressive display',
+					action: 'Linearize PDF',
+				},
+				{
+					name: 'Convert Markdown To PDF',
+					value: ActionConstants.ConvertMarkdownToPdf,
+					description: 'Convert Markdown files to PDF documents',
+					action: 'Convert Markdown To PDF',
+				},
+				{
+					name: 'Convert PDF to Excel',
+					value: ActionConstants.ConvertPdfToExcel,
+					description: 'Convert PDF documents to Excel spreadsheets',
+					action: 'Convert PDF to Excel',
+				},
+				{
+					name: 'Convert PDF to PowerPoint',
+					value: ActionConstants.ConvertPdfToPowerpoint,
+					description: 'Convert PDF documents to PowerPoint format with OCR support',
+					action: 'Convert PDF to PowerPoint',
+				},
+				{
+					name: 'Convert PDF to Word',
+					value: ActionConstants.ConvertPdfToWord,
+					description: 'Convert PDF documents to Word format with OCR support',
+					action: 'Convert PDF to Word',
+				},
+				{
+					name: 'Convert Url to PDF',
+					value: ActionConstants.UrlToPdf,
+					description: 'Convert web pages to PDF while preserving layout, styling, and content',
+					action: 'Convert Url to PDF',
+				},
+			],
+			default: ActionConstants.ConvertToPdf,
+		},
+
+		// Edit Operations
+		{
+			displayName: 'Edit Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['edit'],
+				},
+			},
+			options: [
+				{
+					name: 'Add Attachment To PDF',
+					value: ActionConstants.AddAttachmentToPdf,
+					description: 'Add file attachments to PDF documents',
+					action: 'Add attachment to PDF',
+				},
+				{
+					name: 'Add HTML Header Footer to PDF',
+					value: ActionConstants.AddHtmlHeaderFooter,
+					description: 'Add HTML-based headers and footers to PDF documents',
+					action: 'Add HTML header footer to PDF',
+				},
+				{
+					name: 'Add Margin to PDF',
+					value: ActionConstants.AddMarginToPdf,
+					description: 'Add margins to PDF documents',
+					action: 'Add margin to PDF',
+				},
+				{
+					name: 'Add Page Number to PDF',
+					value: ActionConstants.AddPageNumberToPdf,
+					description: 'Add page numbers to PDF documents',
+					action: 'Add page number to PDF',
+				},
+				{
+					name: 'Add Image Stamp To PDF',
+					value: ActionConstants.AddImageStampToPdf,
+					description: 'Add image stamps or watermarks to PDF documents',
+					action: 'Add image stamp to PDF',
+				},
+				{
+					name: 'Sign PDF',
+					value: ActionConstants.SignPdf,
+					description: 'Digitally sign PDF documents',
+					action: 'Sign PDF',
+				},
+				{
+					name: 'Add Text Stamp To PDF',
+					value: ActionConstants.AddTextStampToPdf,
+					description: 'Add text stamps or watermarks to PDF documents',
+					action: 'Add text stamp to PDF',
+				},
+			],
+			default: ActionConstants.AddAttachmentToPdf,
+		},
+
+		// Extract Operations
+		{
+			displayName: 'Extract Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['extract'],
+				},
+			},
+			options: [
+				{
+					name: 'Classify Document',
+					value: ActionConstants.ClassifyDocument,
+					description: 'Classify documents using AI to determine document type and extract relevant information',
+					action: 'Classify document',
+				},
+				{
+					name: 'Extract Attachment From PDF',
+					value: ActionConstants.ExtractAttachmentFromPdf,
+					description: 'Extract file attachments from PDF documents',
+					action: 'Extract attachment from PDF',
+				},
+				{
+					name: 'Extract Form Data From PDF',
+					value: ActionConstants.ExtractFormDataFromPdf,
+					description: 'Extract form field data from PDF documents',
+					action: 'Extract form data from PDF',
+				},
+				{
+					name: 'Extract Resources',
+					value: ActionConstants.ExtractResources,
+					description: 'Extract text and images from PDF documents',
+					action: 'Extract resources',
+				},
+				{
+					name: 'Extract Table From PDF',
+					value: ActionConstants.ExtractTableFromPdf,
+					description: 'Extract tables from PDF documents',
+					action: 'Extract table from PDF',
+				},
+				{
+					name: 'Extract Text by Expression',
+					value: ActionConstants.ExtractTextByExpression,
+					description: 'Extract text from PDF using regular expressions',
+					action: 'Extract text by expression',
+				},
+				{
+					name: 'Extract Text from word',
+					value: ActionConstants.ExtractTextFromWord,
+					description: 'Extract text content from Word documents',
+					action: 'Extract text from word',
+				},
+				{
+					name: 'Parse Document',
+					value: ActionConstants.ParseDocument,
+					description: 'Parse documents to extract structured data using template-based parsing',
+					action: 'Parse document',
+				},
+			],
+			default: ActionConstants.ExtractResources,
+		},
+
+		// Find Search Operations
+		{
+			displayName: 'Find Search Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['findSearch'],
+				},
+			},
+			options: [
+				{
+					name: 'Find and Replace Text',
+					value: ActionConstants.FindAndReplaceText,
+					description: 'Find and replace text in PDF documents',
+					action: 'Find and replace text',
+				},
+				{
+					name: 'Convert PDF to editable PDF using OCR',
+					value: ActionConstants.ConvertPdfToEditableOcr,
+					description: 'Convert PDF to editable PDF using OCR for scanned documents',
+					action: 'Convert PDF to editable PDF using OCR',
+				},
+			],
+			default: ActionConstants.FindAndReplaceText,
+		},
+
+		// Forms Operations
+		{
+			displayName: 'Forms Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['forms'],
+				},
+			},
+			options: [
+				{
+					name: 'Add Form Fields To PDF',
+					value: ActionConstants.AddFormFieldsToPdf,
+					description: 'Add interactive form fields to PDF documents',
+					action: 'Add form fields to PDF',
+				},
+				{
+					name: 'Fill a PDF Form',
+					value: ActionConstants.FillPdfForm,
+					description: 'Fill PDF forms with data or generate multiple documents from templates',
+					action: 'Fill a PDF form',
+				},
+			],
+			default: ActionConstants.FillPdfForm,
+		},
+
+		// Generate Operations
+		{
+			displayName: 'Generate Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['generate'],
+				},
+			},
+			options: [
+				{
+					name: 'Enable Tracking changes in word',
+					value: ActionConstants.EnableTrackingChangesInWord,
+					description: 'Enable tracking changes in Word documents',
+					action: 'Enable tracking changes in word',
+				},
+				{
+					name: 'Generate Document (Single)',
+					value: ActionConstants.GenerateDocumentSingle,
+					description: 'Generate a single document from template with data',
+					action: 'Generate document (single)',
+				},
+				{
+					name: 'Generate Documents (Multiple)',
+					value: ActionConstants.GenerateDocumentsMultiple,
+					description: 'Generate multiple documents from template with different data sets',
+					action: 'Generate documents (multiple)',
+				},
+				{
+					name: 'Get Tracking Changes In Word',
+					value: ActionConstants.GetTrackingChangesInWord,
+					description: 'Get tracking changes information from Word documents',
+					action: 'Get tracking changes in word',
+				},
+				{
+					name: 'Replace Text With Image In Word',
+					value: ActionConstants.ReplaceTextWithImageInWord,
+					description: 'Replace specific text in Word documents with images',
+					action: 'Replace text with image in word',
+				},
+			],
+			default: ActionConstants.GenerateDocumentSingle,
+		},
+
+		// Image Operations
+		{
+			displayName: 'Image Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['image'],
+				},
+			},
+			options: [
+				{
+					name: 'Add Image watermark To Image',
+					value: ActionConstants.AddImageWatermarkToImage,
+					description: 'Add image watermark to image documents',
+					action: 'Add image watermark to image',
+				},
+				{
+					name: 'Add Text watermark To Image',
+					value: ActionConstants.AddTextWatermarkToImage,
+					description: 'Add text watermarks to images with positioning and styling options',
+					action: 'Add text watermark to image',
+				},
+				{
+					name: 'Compress Image',
+					value: ActionConstants.CompressImage,
+					description: 'Compress image documents',
+					action: 'Compress image',
+				},
+				{
+					name: 'Convert Image Format',
+					value: ActionConstants.ConvertImageFormat,
+					description: 'Convert image format (BMP, GIF, JPG, PNG, TIFF)',
+					action: 'Convert image format',
+				},
+				{
+					name: 'Create Image from PDF',
+					value: ActionConstants.CreateImagesFromPdf,
+					description: 'Create images from PDF pages',
+					action: 'Create image from PDF',
+				},
+				{
+					name: 'Crop Image',
+					value: ActionConstants.CropImage,
+					description: 'Crop images with border or rectangle cropping options',
+					action: 'Crop image',
+				},
+				{
+					name: 'Flip Image',
+					value: ActionConstants.FlipImage,
+					description: 'Flip image documents horizontally, vertically, or both',
+					action: 'Flip image',
+				},
+				{
+					name: 'Get Image Metadata',
+					value: ActionConstants.GetImageMetadata,
+					description: 'Extract metadata information from images including EXIF data and properties',
+					action: 'Get image metadata',
+				},
+				{
+					name: 'Image Extract Text',
+					value: ActionConstants.ImageExtractText,
+					description: 'Extract text content from images using OCR (Optical Character Recognition)',
+					action: 'Image extract text',
+				},
+				{
+					name: 'Replace Text with Image',
+					value: ActionConstants.ReplaceTextWithImage,
+					description: 'Replace specific text in PDF documents with images',
+					action: 'Replace text with image',
+				},
+				{
+					name: 'Resize Image',
+					value: ActionConstants.ResizeImage,
+					description: 'Resize images by percentage or specific dimensions with aspect ratio control',
+					action: 'Resize image',
+				},
+				{
+					name: 'Rotate Image By Exif Data',
+					value: ActionConstants.RotateImageByExifData,
+					description: 'Rotate image automatically based on EXIF orientation metadata',
+					action: 'Rotate image by exif data',
+				},
+				{
+					name: 'Rotate Image',
+					value: ActionConstants.RotateImage,
+					description: 'Rotate images with custom angle, background color, and proportionate resize options',
+					action: 'Rotate image',
+				},
+				{
+					name: 'Read Barcode From Image',
+					value: ActionConstants.ReadBarcodeFromImage,
+					description: 'Read barcodes from images using OCR',
+					action: 'Read barcode from image',
+				},
+				{
+					name: 'Remove EXIF Tags From Image',
+					value: ActionConstants.RemoveExifTagsFromImage,
+					description: 'Remove metadata/EXIF tags from images for privacy and file size reduction',
+					action: 'Remove EXIF tags from image',
+				},
+			],
+			default: ActionConstants.CompressImage,
+		},
+
+		// Merge & Split Operations
+		{
+			displayName: 'Merge & Split Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['mergeSplit'],
+				},
+			},
+			options: [
+				{
+					name: 'Merge Multiple PDF files into Single PDF',
+					value: ActionConstants.MergeMultiplePDFs,
+					description: 'Combine multiple PDF files into a single PDF document',
+					action: 'Merge multiple PDF files into single PDF',
+				},
+				{
+					name: 'Merge two PDF files one over another as Overlay',
+					value: ActionConstants.OverlayPDFs,
+					description: 'Merge two PDF files one over another as overlay',
+					action: 'Merge two PDF files one over another as overlay',
+				},
+				{
+					name: 'Split PDF',
+					value: ActionConstants.SplitPdfRegular,
+					description: 'Split PDF documents by regular expression and output as ZIP',
+					action: 'Split PDF',
+				},
+				{
+					name: 'Split PDF by Barcode',
+					value: ActionConstants.SplitPdfByBarcode,
+					description: 'Split PDF documents by barcode and output as ZIP',
+					action: 'Split PDF by barcode',
+				},
+				{
+					name: 'Split PDF by Swiss QR',
+					value: ActionConstants.SplitPdfBySwissQR,
+					description: 'Split PDF documents by Swiss QR code and output as ZIP',
+					action: 'Split PDF by Swiss QR',
+				},
+				{
+					name: 'Split PDF by Text',
+					value: ActionConstants.SplitPdfByText,
+					description: 'Split PDF documents by text and output as ZIP',
+					action: 'Split PDF by text',
+				},
+			],
+			default: ActionConstants.MergeMultiplePDFs,
+		},
+
+		// Optimize Compress Operations
+		{
+			displayName: 'Optimize Compress Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['optimizeCompress'],
+				},
+			},
+			options: [
+				{
+					name: 'Compress PDF',
+					value: ActionConstants.CompressPdf,
+					description: 'Compress and optimize PDF files',
+					action: 'Compress PDF',
+				},
+			],
+			default: ActionConstants.CompressPdf,
+		},
+
+		// Organize Operations
+		{
+			displayName: 'Organize Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['organize'],
+				},
+			},
+			options: [
+				{
+					name: 'Delete Blank Pages from PDF',
+					value: ActionConstants.DeleteBlankPagesFromPdf,
+					description: 'Remove blank pages from PDF documents based on specified criteria',
+					action: 'Delete blank pages from PDF',
+				},
+				{
+					name: 'Delete unwanted Pages from PDF',
+					value: ActionConstants.DeleteUnwantedPagesFromPdf,
+					description: 'Remove specific pages from PDF documents by page numbers',
+					action: 'Delete unwanted pages from PDF',
+				},
+				{
+					name: 'Extract Pages',
+					value: ActionConstants.ExtractPagesFromPdf,
+					description: 'Extract specific pages from PDF documents',
+					action: 'Extract pages',
+				},
+				{
+					name: 'Rotate Page',
+					value: ActionConstants.RotatePage,
+					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
+					action: 'Rotate page',
+				},
+				{
+					name: 'Rotate Document',
+					value: ActionConstants.RotateDocument,
+					description: 'Rotate entire PDF documents by 90, 180, or 270 degrees',
+					action: 'Rotate document',
+				},
+			],
+			default: ActionConstants.DeleteBlankPagesFromPdf,
+		},
+
+		// PDF4me Operations
+		{
+			displayName: 'PDF4me Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['pdf4me'],
+				},
+			},
+			options: [
+				{
+					name: 'Get Document from PDF4me',
+					value: ActionConstants.GetDocumentFromPdf4me,
+					description: 'Retrieve a document from PDF4me storage',
+					action: 'Get document from PDF4me',
+				},
+				{
+					name: 'Update Hyperlinks Annotation',
+					value: ActionConstants.UpdateHyperlinksAnnotation,
+					description: 'Update hyperlinks in PDF documents',
+					action: 'Update hyperlinks annotation',
+				},
+			],
+			default: ActionConstants.GetDocumentFromPdf4me,
+		},
+
+		// PDF Operations
+		{
+			displayName: 'PDF Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['pdf'],
+				},
+			},
+			options: [
+				{
+					name: 'Get PDF Information',
+					value: ActionConstants.GetPdfMetadata,
+					description: 'Extract metadata and information from PDF files',
+					action: 'Get PDF information',
+				},
+				{
+					name: 'Get PDF Metadata',
+					value: ActionConstants.GetPdfMetadata,
+					description: 'Extract metadata from PDF files',
+					action: 'Get PDF metadata',
+				},
+				{
+					name: 'Repair PDF Document',
+					value: ActionConstants.RepairPdfDocument,
+					description: 'Repair corrupted or damaged PDF files',
+					action: 'Repair PDF document',
+				},
+			],
+			default: ActionConstants.GetPdfMetadata,
+		},
+
+		// Security Operations
+		{
+			displayName: 'Security Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['security'],
+				},
+			},
+			options: [
+				{
+					name: 'Protect Document',
+					value: ActionConstants.ProtectDocument,
+					description: 'Protect PDF documents with encryption, passwords, and permissions',
+					action: 'Protect document',
+				},
+				{
+					name: 'Unlock PDF',
+					value: ActionConstants.UnlockPdf,
+					description: 'Unlock PDF documents by removing encryption',
+					action: 'Unlock PDF',
+				},
+			],
+			default: ActionConstants.ProtectDocument,
+		},
+
+		// Word Operations
+		{
+			displayName: 'Word Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['word'],
+				},
+			},
+			options: [
+				{
+					name: 'Disable Tracking changes In Word',
+					value: ActionConstants.DisableTrackingChangesInWord,
+					description: 'Disable tracking changes in Word documents',
+					action: 'Disable tracking changes in word',
+				},
+			],
+			default: ActionConstants.DisableTrackingChangesInWord,
+		},
+
+		// Spread all action descriptions
 		...addAttachmentToPdf.description,
 		...addBarcodeToPdf.description,
 		...addFormFieldsToPdf.description,
@@ -670,6 +1009,6 @@ export const descriptions: INodeTypeDescription = {
 		...update_hyperlinks_annotation.description,
 		...uploadFile.description,
 	],
-	subtitle: '={{$parameter["operation"]}}',
+	subtitle: '={{$parameter["resource"]}} / {{$parameter["operation"]}}',
 	version: 1,
 };

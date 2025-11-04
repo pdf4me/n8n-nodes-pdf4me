@@ -5,6 +5,101 @@ import {
 	ActionConstants,
 } from '../GenericFunctions';
 
+/**
+ * JSON Schema for barcode read results from PDF
+ * This describes the structure of the data returned by the ReadBarcodes API endpoint
+ */
+export const barcodeSchema = {
+	$schema: 'http://json-schema.org/draft-07/schema#',
+	type: 'object',
+	description: 'Barcode read results from PDF',
+	properties: {
+		docName: {
+			type: 'string',
+			description: 'Name of the PDF document that was processed',
+		},
+		barcodes: {
+			type: 'array',
+			description: 'Array of detected barcodes',
+			items: {
+				type: 'object',
+				properties: {
+					barcodeType: {
+						type: 'string',
+						description: 'Type of barcode detected (e.g., QRCode, Code128, DataMatrix, PDF417, etc.)',
+						enum: [
+							'all',
+							'unknown',
+							'code11',
+							'code39',
+							'code93',
+							'code128',
+							'codabar',
+							'inter2of5',
+							'patchCode',
+							'ean8',
+							'upce',
+							'ean13',
+							'upca',
+							'plus2',
+							'plus5',
+							'pdf417',
+							'dataMatrix',
+							'qrCode',
+							'postnet',
+							'planet',
+							'rm4SCC',
+							'australiaPost',
+							'intelligentMail',
+							'code39Extended',
+							'microQRCode',
+							'pharmaCode',
+							'ucc128',
+							'rss14',
+							'rssLimited',
+							'rssExpanded',
+						],
+					},
+					barcodeString: {
+						type: 'string',
+						description: 'The decoded barcode text/value',
+					},
+					pageNumber: {
+						type: 'number',
+						description: 'Page number where the barcode was detected (0-based indexing)',
+					},
+					xPosition: {
+						type: 'number',
+						description: 'X coordinate of the barcode position on the page',
+					},
+					yPosition: {
+						type: 'number',
+						description: 'Y coordinate of the barcode position on the page',
+					},
+					width: {
+						type: 'number',
+						description: 'Width of the detected barcode',
+					},
+					height: {
+						type: 'number',
+						description: 'Height of the detected barcode',
+					},
+				},
+			},
+		},
+		pagesProcessed: {
+			type: 'array',
+			description: 'List of page numbers that were processed',
+			items: {
+				type: 'number',
+			},
+		},
+		totalBarcodesFound: {
+			type: 'number',
+			description: 'Total number of barcodes detected across all pages',
+		},
+	},
+};
 
 export const description: INodeProperties[] = [
 	{
@@ -97,7 +192,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ReadBarcodeFromPdf],
 			},
 		},
-		hint: 'Read barcodes from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/read-barcode-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Read barcodes from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/read-barcode-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples. Output JSON schema: <b><code>barcodeSchema</code></b>',
 	},
 	{
 		displayName: 'Barcode Type',
@@ -234,27 +329,61 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	};
 
 	// Make the API request
-	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ReadBarcodes', body);
+	const result = await pdf4meAsyncRequest.call(this, '/api/v2/ReadBarcodes', body);
 
-	// Return the result as binary data (JSON)
-	const mimeType = 'application/json';
+	// Parse the JSON response
+	let parsedResult = result;
+	if (Buffer.isBuffer(result)) {
+		try {
+			parsedResult = JSON.parse(result.toString('utf8'));
+		} catch (e) {
+			parsedResult = result;
+		}
+	} else if (typeof result === 'string') {
+		try {
+			parsedResult = JSON.parse(result);
+		} catch {
+			parsedResult = result;
+		}
+	}
+
+	// Structure the output for easy access in n8n
+	const output = {
+		// Main barcode data from API response (easily accessible)
+		barcodeData: parsedResult,
+		// Metadata separated for clarity
+		metadata: {
+			success: true,
+			message: 'Barcode data extracted successfully',
+			processingTimestamp: new Date().toISOString(),
+			sourceFileName: docName,
+			operation: 'readBarcodeFromPdf',
+			barcodeType,
+			pages,
+		},
+	};
+
+	// Create binary data from the JSON response for file download
+	const jsonString = JSON.stringify(output, null, 2);
+	const jsonBuffer = Buffer.from(jsonString, 'utf8');
+
+	// Generate filename for the JSON file
+	let jsonFileName = outputFileName;
+	if (!jsonFileName.toLowerCase().endsWith('.json')) {
+		jsonFileName = `${jsonFileName.replace(/\.[^.]*$/, '')}.json`;
+	}
+
+	// Create binary data using n8n's helper
 	const binaryData = await this.helpers.prepareBinaryData(
-		result,
-		outputFileName,
-		mimeType,
+		jsonBuffer,
+		jsonFileName,
+		'application/json',
 	);
 
+	// Return both JSON (for n8n workflow access) and binary data (for file)
 	return [
 		{
-			json: {
-				success: true,
-				message: 'Barcode data extracted successfully',
-				fileName: outputFileName,
-				mimeType,
-				fileSize: result.length,
-				barcodeType,
-				pages,
-			},
+			json: output,
 			binary: {
 				[binaryDataName || 'data']: binaryData,
 			},
