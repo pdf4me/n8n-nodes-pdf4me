@@ -133,7 +133,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Pages',
 		name: 'pages',
 		type: 'string',
-		default: '1',
+		default: 'all',
 		description: 'Page range where text stamp should be applied',
 		displayOptions: {
 			show: {
@@ -272,18 +272,6 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: false,
 		description: 'Whether the text stamp is placed in the background',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddTextStampToPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Async Processing',
-		name: 'async',
-		type: 'boolean',
-		default: true,
-		description: 'Whether to use async processing (recommended for big files and too many calls to reduce server load)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddTextStampToPdf],

@@ -238,7 +238,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Pages',
 		name: 'pages',
 		type: 'string',
-		default: '1',
+		default: 'all',
 		description: 'Specify page indices as comma-separated values or ranges to process (e.g. "0, 1, 2-" or "1, 2, 3-7"). If not specified, the default configuration processes all pages. The input must be in string format',
 		displayOptions: {
 			show: {
@@ -428,8 +428,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Background Stamp',
 		name: 'isBackground',
 		type: 'boolean',
-		default: true,
-		description: 'Whether to use the image as a background stamp. Default: true.',
+		default: false,
+		description: 'Whether to use the image as a background stamp. Default: false.',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddImageStampToPdf],
@@ -440,8 +440,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Show Only in Print',
 		name: 'showOnlyInPrint',
 		type: 'boolean',
-		default: true,
-		description: 'Whether to show the stamp only in print. Default: true.',
+		default: false,
+		description: 'Whether to show the stamp only in print. Default: false.',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddImageStampToPdf],
