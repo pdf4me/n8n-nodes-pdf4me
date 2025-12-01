@@ -59,6 +59,7 @@ import * as extractTextFromWord from './actions/extractTextFromWord';
 import * as findAndReplaceText from './actions/findAndReplaceText';
 import * as convertPdfToEditableOcr from './actions/convertPdfToEditableOcr';
 import * as createSwissQrBill from './actions/createSwissQrBill';
+import * as zugferdInvoice from './actions/zugferdInvoice';
 import * as replaceTextWithImageInWord from './actions/replaceTextWithImageInWord';
 import * as generateDocumentSingle from './actions/GenerateDocumentSingle';
 import * as generateDocumentsMultiple from './actions/GenerateDocumentsMultiple';
@@ -130,6 +131,11 @@ export const descriptions: INodeTypeDescription = {
 					name: 'Extract',
 					value: 'extract',
 					description: 'Extract data, text, tables, and attachments from documents',
+				},
+				{
+					name: 'Invoice',
+					value: 'invoice',
+					description: 'Create compliant invoices: Swiss QR Bills and Zugferd invoices',
 				},
 				{
 					name: 'Find Search',
@@ -254,12 +260,6 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.ReadSwissQrCode,
 					description: 'Read Swiss QR code data from PDF documents',
 					action: 'Read SwissQR code',
-				},
-				{
-					name: 'Create SwissQR Bill',
-					value: ActionConstants.CreateSwissQrBill,
-					description: 'Create Swiss QR Bills using all compliance standards for digital payment transactions',
-					action: 'Create SwissQR bill',
 				},
 				{
 					name: 'Read Barcode from PDF',
@@ -485,6 +485,34 @@ export const descriptions: INodeTypeDescription = {
 				},
 			],
 			default: ActionConstants.ExtractResources,
+		},
+
+		// Invoice Operations
+		{
+			displayName: 'Invoice Operations',
+			name: 'operation',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: {
+				show: {
+					resource: ['invoice'],
+				},
+			},
+			options: [
+				{
+					name: 'Create SwissQR Bill',
+					value: ActionConstants.CreateSwissQrBill,
+					description: 'Create Swiss QR Bills using all compliance standards for digital payment transactions',
+					action: 'Create SwissQR bill',
+				},
+				{
+					name: 'Create Zugferd Invoice',
+					value: ActionConstants.ZugferdInvoice,
+					description: 'Create Zugferd compliant invoices from XML, JSON, or CSV data',
+					action: 'Create Zugferd invoice',
+				},
+			],
+			default: ActionConstants.CreateSwissQrBill,
 		},
 
 		// Find Search Operations
@@ -1008,6 +1036,7 @@ export const descriptions: INodeTypeDescription = {
 		...unlock_pdf.description,
 		...update_hyperlinks_annotation.description,
 		...uploadFile.description,
+		...zugferdInvoice.description,
 	],
 	subtitle: '={{$parameter["resource"]}} / {{$parameter["operation"]}}',
 	version: 1,

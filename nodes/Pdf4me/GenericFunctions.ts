@@ -333,6 +333,7 @@ export const ActionConstants = {
 	UnlockPdf: 'Unlock PDF',
 	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
 	UploadFile: 'Upload File To PDF4me',
+	ZugferdInvoice: 'Zugferd Invoice',
 };
 
 async function pollForCompletion(
