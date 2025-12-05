@@ -169,6 +169,57 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Language',
+		name: 'language',
+		type: 'options',
+		required: true,
+		default: 'de',
+		description: 'Language for the Zugferd invoice',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ZugferdInvoice],
+			},
+		},
+		options: [
+			{
+				name: 'German',
+				value: 'de',
+			},
+			{
+				name: 'French',
+				value: 'fr',
+			},
+			{
+				name: 'Italian',
+				value: 'it',
+			},
+			{
+				name: 'English',
+				value: 'en',
+			},
+			{
+				name: 'Spanish',
+				value: 'es',
+			},
+			{
+				name: 'Dutch',
+				value: 'nl',
+			},
+			{
+				name: 'Polish',
+				value: 'pl',
+			},
+			{
+				name: 'Portuguese',
+				value: 'pt',
+			},
+			{
+				name: 'Czech',
+				value: 'cs',
+			},
+		],
+	},
+	{
 		displayName: 'Render Invoice On PDF',
 		name: 'renderInvoiceOnPdf',
 		type: 'boolean',
@@ -381,13 +432,6 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Asynchronous Processing',
-				name: 'isAsync',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to process the request asynchronously',
-			},
-			{
 				displayName: 'Custom Profiles',
 				name: 'profiles',
 				type: 'string',
@@ -406,6 +450,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputMode = this.getNodeParameter('outputMode', index) as string;
 	const conformanceLevel = this.getNodeParameter('conformanceLevel', index) as string;
 	const zugferdVersion = this.getNodeParameter('zugferdVersion', index) as string;
+	const language = this.getNodeParameter('language', index) as string;
 	const renderInvoiceOnPdf = this.getNodeParameter('renderInvoiceOnPdf', index) as boolean;
 	const inputFormat = this.getNodeParameter('inputFormat', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
@@ -525,35 +570,32 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Invoice data conversion to base64 failed or resulted in empty data');
 	}
 
-	// Build zugferdCreatorAction object
-	const zugferdCreatorAction: IDataObject = {
-		outputMode,
-		conformanceLevel,
-		zugferdVersion,
-		renderInvoiceOnPdf,
-		inputFormat,
+	// Build ZugferdCreatorAction object
+	const ZugferdCreatorAction: IDataObject = {
+		OutputMode: outputMode,
+		InputFormat: inputFormat,
+		ConformanceLevel: conformanceLevel,
+		ZugferdVersion: zugferdVersion,
+		RenderInvoiceOnPdf: renderInvoiceOnPdf,
+		Language: language,
 	};
 
 	// Add invoice data based on format (already in base64)
 	if (inputFormat === 'XML') {
-		zugferdCreatorAction.invoiceXmlData = invoiceDataBase64;
+		ZugferdCreatorAction.InvoiceXmlData = invoiceDataBase64;
 	} else if (inputFormat === 'JSON') {
-		zugferdCreatorAction.invoiceJsonData = invoiceDataBase64;
+		ZugferdCreatorAction.InvoiceJsonData = invoiceDataBase64;
 	} else if (inputFormat === 'CSV') {
-		zugferdCreatorAction.invoiceCsvData = invoiceDataBase64;
+		ZugferdCreatorAction.InvoiceCsvData = invoiceDataBase64;
 	}
 
 	// Prepare payload
 	const payload: IDataObject = {
+		docContent: docContent || '',
 		docName: fileName,
-		zugferdCreatorAction,
-		isAsync: advancedOptions?.isAsync !== undefined ? advancedOptions.isAsync : false,
+		isAsync: 'true',
+		ZugferdCreatorAction,
 	};
-
-	// Add docContent only if provided
-	if (docContent && docContent.trim() !== '') {
-		payload.docContent = docContent;
-	}
 
 	// Apply advanced options if provided
 	if (advancedOptions.profiles) {
