@@ -66,6 +66,7 @@ import * as extractTextFromWord from './actions/extractTextFromWord';
 import * as findAndReplaceText from './actions/findAndReplaceText';
 import * as convertPdfToEditableOcr from './actions/convertPdfToEditableOcr';
 import * as createSwissQrBill from './actions/createSwissQrBill';
+import * as zugferdInvoice from './actions/zugferdInvoice';
 import * as replaceTextWithImageInWord from './actions/replaceTextWithImageInWord';
 import * as generateDocumentSingle from './actions/GenerateDocumentSingle';
 import * as generateDocumentsMultiple from './actions/GenerateDocumentsMultiple';
@@ -227,6 +228,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await convertPdfToEditableOcr.execute.call(this, i)));
 				} else if (action === ActionConstants.CreateSwissQrBill) {
 					operationResult.push(...(await createSwissQrBill.execute.call(this, i)));
+				} else if (action === ActionConstants.ZugferdInvoice) {
+					operationResult.push(...(await zugferdInvoice.execute.call(this, i)));
 				} else if (action === ActionConstants.ReplaceTextWithImageInWord) {
 					operationResult.push(...(await replaceTextWithImageInWord.execute.call(this, i)));
 				} else if (action === ActionConstants.GenerateDocumentSingle) {
