@@ -175,7 +175,7 @@ export const descriptions: INodeTypeDescription = {
 				{
 					name: 'PDF4me',
 					value: 'pdf4me',
-					description: 'PDF4me-specific operations: get documents and update hyperlinks',
+					description: 'PDF4me-specific operations: upload files, get documents, and update hyperlinks',
 				},
 				{
 					name: 'PDF',
@@ -855,6 +855,12 @@ export const descriptions: INodeTypeDescription = {
 				},
 			},
 			options: [
+				{
+					name: 'Upload File To PDF4me',
+					value: ActionConstants.UploadFile,
+					description: 'Upload a file to PDF4me storage for processing',
+					action: 'Upload file to PDF4me',
+				},
 				{
 					name: 'Get Document from PDF4me',
 					value: ActionConstants.GetDocumentFromPdf4me,

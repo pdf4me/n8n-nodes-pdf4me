@@ -101,12 +101,12 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Draft',
 				value: 'Draft',
-				description: 'Faster conversion, good for simple PDFs with clear tables',
+				description: 'Suitable for normal PDFs, consumes 1 API call per file',
 			},
 			{
-				name: 'Quality',
-				value: 'Quality',
-				description: 'Slower but more accurate, better for complex layouts',
+				name: 'High',
+				value: 'High',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
 			},
 		],
 
@@ -212,8 +212,8 @@ export const description: INodeProperties[] = [
  * PDF to Excel conversion extracts tables, text, and data from PDF into spreadsheet format
  *
  * About PDF to Excel conversion features:
- * - qualityType "Draft": Faster conversion, good for simple PDFs with clear tables
- * - qualityType "Quality": Slower but more accurate, better for complex layouts
+ * - qualityType "Draft": Suitable for normal PDFs, consumes 1 API call per file
+ * - qualityType "High": Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page
  * - mergeAllSheets: Useful when PDF has multiple pages with related data
  * - ocrWhenNeeded: Essential for scanned PDFs or PDFs with image-based text
  * - language: Improves OCR accuracy for non-English text

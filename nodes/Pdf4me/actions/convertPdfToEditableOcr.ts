@@ -106,7 +106,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'High',
 				value: 'High',
-				description: 'Suitable for PDFs from Images and scanned documents, consumes 2 API calls per page',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
 			},
 		],
 		hint: 'Convert PDF to editable PDF using OCR. See our <b><a href="https://docs.pdf4me.com/n8n/find-search/convert-pdf-to-editable-pdf-using-ocr/" target="_blank">complete guide</a></b> for detailed instructions and examples.',

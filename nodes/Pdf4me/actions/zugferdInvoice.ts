@@ -604,7 +604,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Call the PDF4me API to create Zugferd Invoice
-	const result = await pdf4meAsyncRequest.call(this, '/api/v2/ZugferdInvoice', payload);
+	const result = await pdf4meAsyncRequest.call(this, '/api/v2/CreateZugferdInvoice', payload);
 
 	// Determine file extension based on output mode
 	const fileExtension = outputMode === 'XmlOnly' ? 'xml' : 'pdf';
