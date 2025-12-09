@@ -130,12 +130,12 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Draft',
 				value: 'Draft',
-				description: 'Faster conversion, good for simple PDFs with clear text',
+				description: 'Suitable for normal PDFs, consumes 1 API call per file',
 			},
 			{
-				name: 'Quality',
-				value: 'Quality',
-				description: 'Slower but more accurate, better for complex layouts',
+				name: 'High',
+				value: 'High',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
 			},
 		],
 	},
