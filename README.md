@@ -90,6 +90,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 
 ### 2. PDF Processing & Manipulation
 - **Add Attachment to PDF**: Attach files to PDF documents
+- **Add Barcode to PDF**: Add barcodes to PDF documents for identification and tracking
 - **Add Form Fields to PDF**: Add interactive form fields to PDF documents
 - **Add HTML Header Footer**: Add custom HTML headers and footers to PDFs
 - **Add Image Stamp to PDF**: Add image stamps with positioning and opacity controls
@@ -97,7 +98,6 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Add Page Number to PDF**: Add page numbers to PDF documents
 - **Add Text Stamp to PDF**: Add text stamps with customizable formatting
 - **Compress PDF**: Optimize PDF files for web, print, or screen viewing
-- **Convert from PDF**: Convert PDFs to Word or Excel with OCR support
 - **Convert PDF to Editable OCR**: Convert PDFs to editable text using OCR
 - **Convert PDF to Excel**: Convert PDF tables to Excel spreadsheets
 - **Convert PDF to PowerPoint**: Convert PDF content to PowerPoint presentations
@@ -154,6 +154,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 
 ### 5. Barcode Operations
 - **Barcode Generator**: Generate various types of barcodes (QR, Code 128, EAN, UPC, etc.)
+- **Add Barcode to PDF**: Add barcodes directly to PDF documents for identification and tracking
 - **Read Barcode from Image**: Extract barcode data from images
 - **Read Barcode from PDF**: Extract barcode data from PDF documents
 - **Read Swiss QR Code**: Read Swiss QR codes from documents
@@ -178,6 +179,7 @@ This node provides comprehensive document processing capabilities through PDF4ME
 - **Generate Documents Multiple**: Generate multiple documents from templates
 - **Get Tracking Changes in Word**: Get tracking changes status from Word documents
 - **Upload File to PDF4ME**: Upload files to PDF4ME for further processing
+- **Zugferd Invoice**: Create compliant Zugferd invoices for standardized electronic invoicing
 
 ### 8. Advanced Features
 - **Create Images from PDF**: Extract and process images from PDF documents
@@ -266,6 +268,13 @@ The Convert HTML to PDF operation supports multiple input methods for maximum fl
 - Add billing information and unstructured messages
 - Generate bills with different separator line styles
 - Support for various reference types (QR Reference, Creditor Reference, No Reference)
+
+### Zugferd Invoice Generation
+- Create compliant Zugferd invoices for standardized electronic invoicing
+- Generate invoices following the Zugferd standard (ZUGFeRD/Factur-X)
+- Support for structured invoice data exchange
+- Compatible with European e-invoicing requirements
+- Generate PDF/A compliant invoices with embedded XML data
 
 ### Document Generation & Management
 - Generate documents from templates with dynamic data
