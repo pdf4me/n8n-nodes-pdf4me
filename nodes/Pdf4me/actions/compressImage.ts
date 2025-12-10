@@ -184,14 +184,24 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			fileName: item[0].binary[binaryPropertyName].fileName,
 		});
 
-		// Get binary data buffer - this is the actual file data from n8n
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
+		// Get binary data from n8n using the proper helper method
+		// Flow: Binary Data → Buffer/Stream (via getBinaryDataBuffer) → FormData → UploadBlob → blobId → CompressImage API
+		// Note: n8n Cloud uses Filesystem storage by default, which stores files on disk
+		// getBinaryDataBuffer() loads the file into memory, but FormData can handle this efficiently
+		// for filesystem-stored binary data in n8n Cloud
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || outputFileName;
 
-		console.log('[CompressImage] Binary data retrieved:', {
+		// Use n8n's helper to get binary data as Buffer
+		// In n8n Cloud with Filesystem storage, this efficiently reads from disk
+		// The buffer is then passed to FormData which streams it to the API
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		console.log('[CompressImage] File buffer created for UploadBlob:', {
 			docName,
-			bufferSize: buffer.length,
-			bufferSizeKB: Math.round(buffer.length / 1024),
+			fileType: 'Buffer',
+			bufferSize: fileBuffer.length,
+			bufferSizeKB: Math.round(fileBuffer.length / 1024),
 		});
 
 		// Extract input image type from filename for payload
@@ -199,9 +209,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		console.log('[CompressImage] Extracted image type from filename:', payloadImageType);
 
 		// Upload the file to UploadBlob endpoint and get blobId
-		// The buffer (file data) is sent directly to /api/V2/UploadBlob via FormData
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in CompressImage API payload
 		console.log('[CompressImage] Uploading file to UploadBlob...');
-		blobId = await uploadBlobToPdf4me.call(this, buffer, docName);
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
 		console.log('[CompressImage] UploadBlob completed, blobId received:', blobId);
 
 		useBlob = true;

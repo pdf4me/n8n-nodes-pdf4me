@@ -260,21 +260,53 @@ export function sanitizeProfiles(data: IDataObject): void {
  */
 export async function uploadBlobToPdf4me(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
-	buffer: Buffer,
+	fileStream: NodeJS.ReadableStream | Buffer,
 	filename: string,
 ): Promise<string> {
 	try {
+		// Determine file size for logging and validation
+		const isStream = !(fileStream instanceof Buffer);
+		const fileSize = fileStream instanceof Buffer ? fileStream.length : 'stream';
+		const fileSizeKB = fileStream instanceof Buffer ? Math.round(fileStream.length / 1024) : 'N/A';
+		const fileSizeMB = fileStream instanceof Buffer ? Math.round((fileStream.length / 1024 / 1024) * 100) / 100 : 'N/A';
+
+		// Note: n8n Cloud uses Filesystem storage by default, which stores binary data on disk
+		// This means files are not loaded into memory until getBinaryDataBuffer() is called
+		// FormData streams the buffer efficiently, so memory usage is reasonable even for larger files
+		// However, very large files (>500MB) may still cause issues depending on the n8n Cloud plan
+		if (fileStream instanceof Buffer) {
+			const sizeMB = fileStream.length / 1024 / 1024;
+			// Log file size for monitoring (no warning needed for Filesystem storage)
+			if (sizeMB > 100) {
+				console.log('[UploadBlob] Large file detected (Filesystem storage handles this efficiently):', {
+					filename,
+					sizeMB: Math.round(sizeMB * 100) / 100,
+				});
+			}
+			// Very large files might still hit memory limits during FormData serialization
+			// Set a reasonable upper limit based on typical n8n Cloud memory constraints
+			if (sizeMB > 500) {
+				throw new Error(
+					`File too large (${Math.round(sizeMB * 100) / 100}MB). Files larger than 500MB may exceed n8n Cloud memory limits. ` +
+					'Please use a smaller file or consider processing it in chunks.',
+				);
+			}
+		}
+
 		console.log('[UploadBlob] Starting file upload:', {
 			filename,
-			bufferSize: buffer.length,
-			bufferSizeKB: Math.round(buffer.length / 1024),
+			fileType: isStream ? 'ReadableStream' : 'Buffer',
+			fileSize: typeof fileSize === 'number' ? fileSize : 'stream',
+			fileSizeKB,
+			fileSizeMB,
 		});
 
 		// Create FormData for multipart/form-data upload to UploadBlob endpoint
-		// Match Postman: form-data with key 'file' and the binary buffer as the file value
-		// The buffer contains the actual file data that will be uploaded
+		// Match Postman: form-data with key 'file' and the file stream/data as the file value
+		// Note: In n8n Cloud with Filesystem storage, binary data is stored on disk
+		// FormData will stream the buffer/stream efficiently without loading entire file into memory twice
 		const formData = new FormData();
-		formData.append('file', buffer, filename); // Append buffer as file with filename
+		formData.append('file', fileStream, filename); // Append buffer/stream directly with filename
 
 		// Get FormData headers - this includes Content-Type with the proper boundary
 		const formHeaders = formData.getHeaders();
@@ -304,7 +336,7 @@ export async function uploadBlobToPdf4me(
 				'Authorization': `Basic ${apiKey}`, // Add auth after to ensure it's not overridden
 			},
 			returnFullResponse: true,
-			timeout: 60000,
+			timeout: 6000023,
 		});
 
 		console.log('[UploadBlob] Response received:', {
