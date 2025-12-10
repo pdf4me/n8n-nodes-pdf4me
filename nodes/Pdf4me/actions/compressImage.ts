@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -156,19 +157,59 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const compressionLevel = this.getNodeParameter('compressionLevel', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	// Main image content
-	let docContent: string;
+	// Helper function to extract image type from filename
+	const extractImageTypeFromFilename = (filename: string): string => {
+		const extension = filename.split('.').pop()?.toLowerCase() || '';
+		if (extension === 'png') return 'png';
+		if (extension === 'jpg' || extension === 'jpeg') return 'jpg';
+		return 'png'; // default
+	};
+
+	// Main image content and metadata
+	let docContent: string = '';
 	let docName: string = outputFileName;
+	let blobId: string = '';
+	let useBlob: boolean = false;
+	let payloadImageType: string = imageType.toLowerCase();
+
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
+
+		console.log('[CompressImage] Processing binary data input:', {
+			binaryPropertyName,
+			fileName: item[0].binary[binaryPropertyName].fileName,
+		});
+
+		// Get binary data buffer - this is the actual file data from n8n
+		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
+
+		console.log('[CompressImage] Binary data retrieved:', {
+			docName,
+			bufferSize: buffer.length,
+			bufferSizeKB: Math.round(buffer.length / 1024),
+		});
+
+		// Extract input image type from filename for payload
+		payloadImageType = extractImageTypeFromFilename(docName);
+		console.log('[CompressImage] Extracted image type from filename:', payloadImageType);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// The buffer (file data) is sent directly to /api/V2/UploadBlob via FormData
+		console.log('[CompressImage] Uploading file to UploadBlob...');
+		blobId = await uploadBlobToPdf4me.call(this, buffer, docName);
+		console.log('[CompressImage] UploadBlob completed, blobId received:', blobId);
+
+		useBlob = true;
+		docContent = ''; // Empty when using blob
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		useBlob = false;
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 		try {
@@ -181,6 +222,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const buffer = Buffer.from(response, 'binary');
 			docContent = buffer.toString('base64');
 			docName = imageUrl.split('/').pop() || outputFileName;
+			useBlob = false;
+			blobId = '';
 		} catch (error) {
 			throw new Error(`Failed to fetch image from URL: ${error.message}`);
 		}
@@ -192,13 +235,31 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent,
 		docName,
-		imageType,
+		blobId,
+		useBlob,
+		imageType: payloadImageType,
 		compressionLevel,
 		IsAsync: true,
 	};
 
+	console.log('[CompressImage] Request payload prepared:', {
+		docName,
+		blobId: blobId || '(empty)',
+		useBlob,
+		imageType: payloadImageType,
+		compressionLevel,
+		hasDocContent: !!docContent,
+		docContentLength: docContent?.length || 0,
+	});
+
 	// Make the API request
+	console.log('[CompressImage] Sending request to /api/v2/CompressImage');
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/CompressImage', body);
+	console.log('[CompressImage] CompressImage API response received:', {
+		resultType: typeof result,
+		resultLength: result?.length || 0,
+		isBuffer: Buffer.isBuffer(result),
+	});
 
 	// Return the result as binary data
 	const mimeType = imageType === 'PNG' ? 'image/png' : 'image/jpeg';

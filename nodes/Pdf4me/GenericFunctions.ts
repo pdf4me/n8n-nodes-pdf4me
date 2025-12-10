@@ -8,6 +8,7 @@ import type {
 	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
+import FormData from 'form-data';
 
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
@@ -245,6 +246,128 @@ export function sanitizeProfiles(data: IDataObject): void {
 			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
+	}
+}
+
+/**
+ * Uploads binary data to PDF4me's UploadBlob endpoint and returns the blobId.
+ * This is used when binary data is provided as input instead of base64 content.
+ *
+ * @param this - Execution context
+ * @param buffer - Binary data buffer to upload
+ * @param filename - Name of the file being uploaded
+ * @returns The blobId from the API response
+ */
+export async function uploadBlobToPdf4me(
+	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+	buffer: Buffer,
+	filename: string,
+): Promise<string> {
+	try {
+		console.log('[UploadBlob] Starting file upload:', {
+			filename,
+			bufferSize: buffer.length,
+			bufferSizeKB: Math.round(buffer.length / 1024),
+		});
+
+		// Create FormData for multipart/form-data upload to UploadBlob endpoint
+		// Match Postman: form-data with key 'file' and the binary buffer as the file value
+		// The buffer contains the actual file data that will be uploaded
+		const formData = new FormData();
+		formData.append('file', buffer, filename); // Append buffer as file with filename
+
+		// Get FormData headers - this includes Content-Type with the proper boundary
+		const formHeaders = formData.getHeaders();
+		console.log('[UploadBlob] FormData created:', {
+			hasContentType: !!formHeaders['content-type'],
+			contentType: formHeaders['content-type']?.substring(0, 50) + '...',
+		});
+
+		// Get authentication credentials
+		const credentials = await this.getCredentials('pdf4meApi');
+		const apiKey = credentials?.apiKey as string;
+		console.log('[UploadBlob] Authentication prepared:', {
+			hasApiKey: !!apiKey,
+			apiKeyLength: apiKey?.length || 0,
+		});
+
+		// Make the upload request
+		// Try letting FormData handle Content-Type completely by spreading its headers
+		// Only add Authorization manually
+		console.log('[UploadBlob] Sending request to /api/V2/UploadBlob');
+		const response = await this.helpers.httpRequest({
+			url: 'https://api.pdf4me.com/api/V2/UploadBlob',
+			method: 'POST',
+			body: formData, // FormData object
+			headers: {
+				...formHeaders, // Spread all FormData headers (includes content-type with boundary)
+				'Authorization': `Basic ${apiKey}`, // Add auth after to ensure it's not overridden
+			},
+			returnFullResponse: true,
+			timeout: 60000,
+		});
+
+		console.log('[UploadBlob] Response received:', {
+			statusCode: response.statusCode,
+			hasBody: !!response.body,
+			bodyType: typeof response.body,
+		});
+
+		// Check if response is successful
+		if (response.statusCode === 200 || response.statusCode === 201) {
+			// Parse JSON response manually since we didn't use json: true
+			let responseBody: IDataObject;
+			try {
+				if (typeof response.body === 'string') {
+					responseBody = JSON.parse(response.body);
+				} else if (Buffer.isBuffer(response.body)) {
+					responseBody = JSON.parse(response.body.toString('utf8'));
+				} else {
+					responseBody = response.body as IDataObject;
+				}
+				console.log('[UploadBlob] Response parsed successfully:', {
+					hasBlobId: !!responseBody?.blobId,
+					blobId: responseBody?.blobId,
+				});
+			} catch (parseError) {
+				console.error('[UploadBlob] Failed to parse response:', parseError);
+				throw new Error(`Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+			}
+
+			if (responseBody && responseBody.blobId) {
+				console.log('[UploadBlob] Upload successful, blobId:', responseBody.blobId);
+				return responseBody.blobId as string;
+			} else {
+				console.error('[UploadBlob] Response missing blobId:', responseBody);
+				throw new Error('UploadBlob response missing blobId field');
+			}
+		} else {
+			console.error('[UploadBlob] Request failed:', {
+				statusCode: response.statusCode,
+				body: typeof response.body === 'string' ? response.body.substring(0, 200) : response.body,
+			});
+			let errorMessage = `UploadBlob failed with status ${response.statusCode}`;
+			try {
+				let errorBody: IDataObject | string = response.body;
+				if (typeof response.body === 'string') {
+					errorBody = JSON.parse(response.body);
+				} else if (Buffer.isBuffer(response.body)) {
+					errorBody = JSON.parse(response.body.toString('utf8'));
+				}
+				if (typeof errorBody === 'object' && errorBody) {
+					errorMessage = (errorBody as any).message || (errorBody as any).error || errorMessage;
+				}
+			} catch {
+				// Ignore parsing errors
+			}
+			throw new Error(errorMessage);
+		}
+	} catch (error) {
+		console.error('[UploadBlob] Error occurred:', {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+		throw new NodeApiError(this.getNode(), error as JsonObject);
 	}
 }
 
