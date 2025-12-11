@@ -170,8 +170,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
-	let docName: string;
+	// Main document content and metadata
+	let docContent: string = '';
+	let docName: string = '';
 
 	// Handle different input types
 	if (inputDataType === 'binaryData') {
@@ -196,12 +197,23 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = inputFileName || binaryData.fileName || 'document';
+
+		console.log('[ConvertToPdf] Processing binary data input:', {
+			binaryPropertyName,
+			fileName: binaryData.fileName,
+		});
+
+		// Convert binary data to base64 - everything should be sent via docContent
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
 
-		// Use provided input filename or extract from binary data
-		const binaryData = item[0].binary[binaryPropertyName];
-		docName = inputFileName || binaryData.fileName || 'document';
+		console.log('[ConvertToPdf] Binary data converted to base64:', {
+			docName,
+			base64Length: docContent.length,
+			base64LengthKB: Math.round(docContent.length / 1024),
+		});
 	} else if (inputDataType === 'base64') {
 		// Base64 input
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -210,8 +222,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!docName) {
 			throw new Error('Input file name is required for base64 input type.');
 		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+
+		console.log('[ConvertToPdf] Processing base64 input:', {
+			base64Length: docContent.length,
+			base64LengthKB: Math.round(docContent.length / 1024),
+			docName,
+		});
 	} else if (inputDataType === 'url') {
-		// URL input
+		// URL input - send URL as string directly in docContent
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
 		docName = this.getNodeParameter('inputFileNameRequired', index) as string;
 
@@ -219,31 +242,56 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Input file name is required for URL input type.');
 		}
 
-		// Download the file from URL and convert to base64
-		try {
-			const options = {
+		console.log('[ConvertToPdf] Processing URL input:', {
+			fileUrl,
+			docName,
+		});
 
-				method: 'GET' as const,
-
-				url: fileUrl,
-
-				encoding: 'arraybuffer' as const,
-
-			};
-
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			docContent = Buffer.from(response).toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to download file from URL: ${fileUrl}. Error: ${error}`);
-		}
+		// Send URL as string directly in docContent - no conversion or modification
+		docContent = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Build the request body
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		try {
+			new URL(docContent);
+		} catch (error) {
+			throw new Error(`Invalid URL format: ${docContent}`);
+		}
+		// Ensure docContent remains as the original URL string (no trimming)
+		// docContent is already set to the URL string above
+	} else {
+		// For binary and base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Document content is required');
+		}
+		// Validate base64 format for binary and base64 inputs
+		if (inputDataType === 'binaryData' || inputDataType === 'base64') {
+			// Basic base64 validation - check if it can be decoded
+			try {
+				const testBuffer = Buffer.from(docContent, 'base64');
+				if (testBuffer.length === 0 && docContent.length > 0) {
+					throw new Error('Invalid base64 content: Unable to decode base64 string');
+				}
+			} catch (error) {
+				if (error instanceof Error && error.message.includes('Invalid base64')) {
+					throw error;
+				}
+				throw new Error('Invalid base64 content format');
+			}
+		}
+	}
+
+	// Build the request body - everything is sent via docContent
 	const body: IDataObject = {
-		docContent,
-		docName: docName,
+		docContent, // Binary and base64 are sent as base64 string, URL is sent as URL string (no conversion)
+		docName,
 		IsAsync: true,
 	};
 
@@ -255,7 +303,48 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	let responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertToPdf', body);
+	console.log('[ConvertToPdf] Request payload prepared:', {
+		docName,
+		hasDocContent: !!body.docContent,
+		docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
+		docContentLengthKB: typeof body.docContent === 'string' ? Math.round(body.docContent.length / 1024) : 0,
+		docContentPreview: typeof body.docContent === 'string'
+			? (body.docContent.startsWith('http')
+				? body.docContent
+				: `${body.docContent.substring(0, 50)}...`)
+			: '(empty)',
+	});
+
+	// Make the API request
+	console.log('[ConvertToPdf] Sending request to /api/v2/ConvertToPdf');
+	let responseData;
+	try {
+		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertToPdf', body);
+	} catch (error: unknown) {
+		// Provide better error messages with debugging information
+		const errorObj = error as { statusCode?: number; message?: string };
+		if (errorObj.statusCode === 500) {
+			throw new Error(
+				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docName}, ` +
+				`docContentLength=${docContent?.length || 0}, ` +
+				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : 'base64'}`
+			);
+		} else if (errorObj.statusCode === 400) {
+			throw new Error(
+				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docName}`
+			);
+		}
+		throw error;
+	}
+	console.log('[ConvertToPdf] ConvertToPdf API response received:', {
+		resultType: typeof responseData,
+		resultLength: responseData?.length || 0,
+		resultLengthKB: responseData?.length ? Math.round(responseData.length / 1024) : 0,
+		resultLengthMB: responseData?.length ? Math.round((responseData.length / 1024 / 1024) * 100) / 100 : 0,
+		isBuffer: Buffer.isBuffer(responseData),
+	});
 
 	// Handle the binary response (PDF data)
 	if (responseData) {
@@ -293,6 +382,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			fileName = `converted_${Date.now()}.pdf`;
 		}
 
+		console.log('[ConvertToPdf] Preparing binary data output:', {
+			outputFileName: fileName,
+			mimeType: 'application/pdf',
+			binaryDataName: binaryDataName || 'data',
+		});
+
 		// responseData is already binary data (Buffer)
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
@@ -302,6 +397,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Determine the binary data name
 		const binaryDataKey = binaryDataName || 'data';
+
+		console.log('[ConvertToPdf] PDF conversion completed successfully:', {
+			outputFileName: fileName,
+			mimeType: 'application/pdf',
+			fileSize: responseData.length,
+			fileSizeKB: Math.round(responseData.length / 1024),
+			fileSizeMB: Math.round((responseData.length / 1024 / 1024) * 100) / 100,
+			inputDataType,
+			sourceFileName: docName,
+		});
 
 		return [
 			{
