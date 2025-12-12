@@ -39,12 +39,26 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Binary Property Name',
+		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: true,
 		default: 'data',
+		required: true,
 		description: 'Name of the binary property containing the PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfByBarcode],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Input File Name',
+		name: 'inputFileName',
+		type: 'string',
+		default: '',
+		description: 'Name of the input file (including extension). If not provided, will use the filename from binary data.',
+		placeholder: 'document.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfByBarcode],
@@ -56,13 +70,9 @@ export const description: INodeProperties[] = [
 		displayName: 'Base64 Content',
 		name: 'base64Content',
 		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		required: true,
 		default: '',
-		description: 'Base64 encoded PDF content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
+		required: true,
+		description: 'Base64 encoded content of the PDF file',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfByBarcode],
@@ -71,12 +81,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
+		displayName: 'File URL',
+		name: 'fileUrl',
 		type: 'string',
-		required: true,
 		default: '',
-		description: 'URL to the PDF file',
+		required: true,
+		description: 'URL of the PDF file',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
@@ -84,7 +94,21 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-
+	},
+	{
+		displayName: 'Input File Name',
+		name: 'inputFileNameRequired',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'Name of the input file (including extension)',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfByBarcode],
+				inputDataType: ['base64', 'url'],
+			},
+		},
 	},
 	{
 		displayName: 'Barcode String',
@@ -305,45 +329,139 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let pdfContentBase64: string;
+	// Main document content and metadata
+	let pdfContentBase64: string = '';
+	let inputDocName: string = '';
 
+	// Handle different input types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
 		}
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
+		}
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = inputFileName || binaryData.fileName || 'document';
+
+		console.log('[SplitPdfByBarcode] Processing binary data input:', {
+			binaryPropertyName,
+			fileName: binaryData.fileName,
+		});
+
+		// Convert binary data to base64 - everything should be sent via docContent
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		pdfContentBase64 = buffer.toString('base64');
+
+		console.log('[SplitPdfByBarcode] Binary data converted to base64:', {
+			inputDocName,
+			base64Length: pdfContentBase64.length,
+			base64LengthKB: Math.round(pdfContentBase64.length / 1024),
+		});
 	} else if (inputDataType === 'base64') {
+		// Base64 input
 		pdfContentBase64 = this.getNodeParameter('base64Content', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for base64 input type.');
+		}
+
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
 			throw new Error('Base64 content is required');
 		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (pdfContentBase64.includes(',')) {
+			pdfContentBase64 = pdfContentBase64.split(',')[1];
+		}
 		pdfContentBase64 = pdfContentBase64.trim();
+
+		console.log('[SplitPdfByBarcode] Processing base64 input:', {
+			base64Length: pdfContentBase64.length,
+			base64LengthKB: Math.round(pdfContentBase64.length / 1024),
+			inputDocName,
+		});
 	} else if (inputDataType === 'url') {
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		if (!pdfUrl || pdfUrl.trim() === '') {
-			throw new Error('PDF URL is required');
+		// URL input - send URL as string directly in docContent
+		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for URL input type.');
 		}
-		try {
-			const options = {
-				method: 'GET' as const,
-				url: pdfUrl.trim(),
-				encoding: 'arraybuffer' as const,
-			};
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			pdfContentBase64 = Buffer.from(response).toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to download PDF from URL: ${error.message}`);
+
+		if (!fileUrl || fileUrl.trim() === '') {
+			throw new Error('File URL is required');
 		}
+
+		console.log('[SplitPdfByBarcode] Processing URL input:', {
+			fileUrl,
+			inputDocName,
+		});
+
+		// Send URL as string directly in pdfContentBase64 - no conversion or modification
+		pdfContentBase64 = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!pdfContentBase64 || typeof pdfContentBase64 !== 'string' || pdfContentBase64.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		try {
+			new URL(pdfContentBase64);
+		} catch (error) {
+			throw new Error(`Invalid URL format: ${pdfContentBase64}`);
+		}
+		// Ensure pdfContentBase64 remains as the original URL string (no trimming)
+		// pdfContentBase64 is already set to the URL string above
+	} else {
+		// For binary and base64, validate content is not empty
+		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
+			throw new Error('Document content is required');
+		}
+		// Validate base64 format for binary and base64 inputs
+		if (inputDataType === 'binaryData' || inputDataType === 'base64') {
+			// Basic base64 validation - check if it can be decoded
+			try {
+				const testBuffer = Buffer.from(pdfContentBase64, 'base64');
+				if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
+					throw new Error('Invalid base64 content: Unable to decode base64 string');
+				}
+			} catch (error) {
+				if (error instanceof Error && error.message.includes('Invalid base64')) {
+					throw error;
+				}
+				throw new Error('Invalid base64 content format');
+			}
+		}
+	}
+
+	// Use inputDocName for docName in the request
+	const docNameForRequest = inputDocName || 'output.pdf';
+
 	const body: IDataObject = {
-		docContent: pdfContentBase64,
-		docName: 'output.pdf',
+		docContent: pdfContentBase64, // Binary and base64 are sent as base64 string, URL is sent as URL string (no conversion)
+		docName: docNameForRequest,
 		barcodeString,
 		barcodeFilter,
 		barcodeType,
@@ -355,12 +473,53 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) body.profiles = profiles;
+	if (profiles) {
+		body.profiles = profiles;
+	}
 
 	sanitizeProfiles(body);
 
+	console.log('[SplitPdfByBarcode] Request payload prepared:', {
+		docName: docNameForRequest,
+		hasDocContent: !!body.docContent,
+		docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
+		docContentLengthKB: typeof body.docContent === 'string' ? Math.round(body.docContent.length / 1024) : 0,
+		docContentPreview: typeof body.docContent === 'string'
+			? (body.docContent.startsWith('http')
+				? body.docContent
+				: `${body.docContent.substring(0, 50)}...`)
+			: '(empty)',
+	});
+
 	// Call the PDF4me SplitPdfByBarcode endpoint
-	const response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode_old', body);
+	console.log('[SplitPdfByBarcode] Sending request to /api/v2/SplitPdfByBarcode_old');
+	let response;
+	try {
+		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode_old', body);
+	} catch (error: unknown) {
+		// Provide better error messages with debugging information
+		const errorObj = error as { statusCode?: number; message?: string };
+		if (errorObj.statusCode === 500) {
+			throw new Error(
+				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}, ` +
+				`docContentLength=${pdfContentBase64?.length || 0}, ` +
+				`docContentType=${typeof pdfContentBase64 === 'string' && pdfContentBase64.startsWith('http') ? 'URL' : 'base64'}`
+			);
+		} else if (errorObj.statusCode === 400) {
+			throw new Error(
+				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}`
+			);
+		}
+		throw error;
+	}
+	console.log('[SplitPdfByBarcode] SplitPdfByBarcode API response received:', {
+		resultType: typeof response,
+		resultLength: response?.length || 0,
+		resultLengthKB: response?.length ? Math.round(response.length / 1024) : 0,
+		isBuffer: Buffer.isBuffer(response),
+	});
 
 	// --- BEGIN: Buffer/String Response Parsing ---
 	let parsedResponse = response;
@@ -420,7 +579,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let totalFiles = 0;
 	let outputDirectory = '';
 	let folderName = '';
-	const sourcePdf = 'output.pdf';
+	const sourcePdf = inputDocName || docNameForRequest || 'output.pdf';
 	let responseType = '';
 
 	// If response is a ZIP (Buffer or base64 string)

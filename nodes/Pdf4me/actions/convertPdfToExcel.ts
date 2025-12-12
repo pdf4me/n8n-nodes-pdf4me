@@ -37,13 +37,12 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Input Binary Field',
+		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: true,
 		default: 'data',
-		description: 'Name of the binary property that contains the PDF file (usually "data" for file uploads)',
-		placeholder: 'data',
+		required: true,
+		description: 'Name of the binary property containing the file to convert',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToExcel],
@@ -52,16 +51,26 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Base64 PDF Content',
+		displayName: 'Input File Name',
+		name: 'inputFileName',
+		type: 'string',
+		default: '',
+		description: 'Name of the input file (including extension). If not provided, will use the filename from binary data.',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertPdfToExcel],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Content',
 		name: 'base64Content',
 		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		required: true,
 		default: '',
-		description: 'Base64 encoded PDF document content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
+		required: true,
+		description: 'Base64 encoded content of the file to convert',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToExcel],
@@ -70,12 +79,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
+		displayName: 'File URL',
+		name: 'fileUrl',
 		type: 'string',
-		required: true,
 		default: '',
-		description: 'URL to the PDF file to convert to Excel',
+		required: true,
+		description: 'URL of the file to convert to Excel',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
@@ -83,7 +92,21 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-
+	},
+	{
+		displayName: 'Input File Name',
+		name: 'inputFileNameRequired',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'Name of the input file (including extension)',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertPdfToExcel],
+				inputDataType: ['base64', 'url'],
+			},
+		},
 	},
 	{
 		displayName: 'Quality Type',
@@ -225,78 +248,181 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let docContent: string;
-	let originalFileName = docName;
+	// Main document content and metadata
+	let docContent: string = '';
+	let inputDocName: string = '';
 
-	// Handle different input data types
+	// Handle different input types
 	if (inputDataType === 'binaryData') {
-		// Get PDF content from binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
 
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
+		}
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
 		}
 
 		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = inputFileName || binaryData.fileName || 'document';
+
+		console.log('[ConvertPdfToExcel] Processing binary data input:', {
+			binaryPropertyName,
+			fileName: binaryData.fileName,
+		});
+
+		// Convert binary data to base64 - everything should be sent via docContent
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		docContent = buffer.toString('base64');
 
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
+		console.log('[ConvertPdfToExcel] Binary data converted to base64:', {
+			inputDocName,
+			base64Length: docContent.length,
+			base64LengthKB: Math.round(docContent.length / 1024),
+		});
+	} else if (inputDataType === 'base64') {
+		// Base64 input
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for base64 input type.');
 		}
 
-
-	} else if (inputDataType === 'base64') {
-		// Use base64 content directly
-		docContent = this.getNodeParameter('base64Content', index) as string;
-
-		// Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
+		// Handle data URLs (remove data: prefix if present)
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
 
-
+		console.log('[ConvertPdfToExcel] Processing base64 input:', {
+			base64Length: docContent.length,
+			base64LengthKB: Math.round(docContent.length / 1024),
+			inputDocName,
+		});
 	} else if (inputDataType === 'url') {
-		// Use PDF URL directly - download the file first
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+		// URL input - send URL as string directly in docContent
+		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
 
-		// Validate URL format
-		try {
-			new URL(pdfUrl);
-		} catch (error) {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		if (!inputDocName) {
+			throw new Error('Input file name is required for URL input type.');
 		}
 
+		console.log('[ConvertPdfToExcel] Processing URL input:', {
+			fileUrl,
+			inputDocName,
+		});
 
-		docContent = await downloadPdfFromUrl.call(this, this.helpers, pdfUrl);
-
+		// Send URL as string directly in docContent - no conversion or modification
+		docContent = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate content
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		try {
+			new URL(docContent);
+		} catch (error) {
+			throw new Error(`Invalid URL format: ${docContent}`);
+		}
+		// Ensure docContent remains as the original URL string (no trimming)
+		// docContent is already set to the URL string above
+	} else {
+		// For binary and base64, validate content is not empty
 	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
+			throw new Error('Document content is required');
+		}
+		// Validate base64 format for binary and base64 inputs
+		if (inputDataType === 'binaryData' || inputDataType === 'base64') {
+			// Basic base64 validation - check if it can be decoded
+			try {
+				const testBuffer = Buffer.from(docContent, 'base64');
+				if (testBuffer.length === 0 && docContent.length > 0) {
+					throw new Error('Invalid base64 content: Unable to decode base64 string');
+				}
+			} catch (error) {
+				if (error instanceof Error && error.message.includes('Invalid base64')) {
+					throw error;
+				}
+				throw new Error('Invalid base64 content format');
+			}
+		}
 	}
 
-	// Prepare the payload (data) to send to the API
-	// This payload configures the PDF to Excel conversion settings
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const originalFileName = docName || inputDocName || 'document.pdf';
+
+	// Build the request body - everything is sent via docContent
 	const body: IDataObject = {
-		docContent,									// Base64 encoded PDF document content
-		docName: originalFileName,					 // Name of the source PDF file for reference
+		docContent, // Binary and base64 are sent as base64 string, URL is sent as URL string (no conversion)
+		docName: originalFileName,
 		qualityType: this.getNodeParameter('qualityType', index) as string,
 		mergeAllSheets: this.getNodeParameter('mergeAllSheets', index) as boolean,
 		language: this.getNodeParameter('language', index) as string,
 		outputFormat: this.getNodeParameter('outputFormat', index) as boolean,
 		ocrWhenNeeded: this.getNodeParameter('ocrWhenNeeded', index) as boolean,
-		IsAsync: true,									// Enable asynchronous processing
+		IsAsync: true,
 	};
 
+	console.log('[ConvertPdfToExcel] Request payload prepared:', {
+		docName: originalFileName,
+		hasDocContent: !!body.docContent,
+		docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
+		docContentLengthKB: typeof body.docContent === 'string' ? Math.round(body.docContent.length / 1024) : 0,
+		docContentPreview: typeof body.docContent === 'string'
+			? (body.docContent.startsWith('http')
+				? body.docContent
+				: `${body.docContent.substring(0, 50)}...`)
+			: '(empty)',
+	});
 
-
-	// Send the conversion request to the API
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToExcel', body);
+	// Make the API request
+	console.log('[ConvertPdfToExcel] Sending request to /api/v2/ConvertPdfToExcel');
+	let responseData;
+	try {
+		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToExcel', body);
+	} catch (error: unknown) {
+		// Provide better error messages with debugging information
+		const errorObj = error as { statusCode?: number; message?: string };
+		if (errorObj.statusCode === 500) {
+			throw new Error(
+				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}, ` +
+				`docContentLength=${docContent?.length || 0}, ` +
+				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : 'base64'}`
+			);
+		} else if (errorObj.statusCode === 400) {
+			throw new Error(
+				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}`
+			);
+		}
+		throw error;
+	}
+	console.log('[ConvertPdfToExcel] ConvertPdfToExcel API response received:', {
+		resultType: typeof responseData,
+		resultLength: responseData?.length || 0,
+		resultLengthKB: responseData?.length ? Math.round(responseData.length / 1024) : 0,
+		resultLengthMB: responseData?.length ? Math.round((responseData.length / 1024 / 1024) * 100) / 100 : 0,
+		isBuffer: Buffer.isBuffer(responseData),
+	});
 
 	if (responseData) {
 
@@ -344,6 +470,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					fileName,
 					fileSize: excelBuffer.length,
 					success: true,
+					inputDataType,
+					sourceFileName: inputDocName,
 					originalFileName,
 					qualityType: body.qualityType,
 					language: body.language,
@@ -360,71 +488,3 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	throw new Error('No response data received from PDF4ME API');
 }
-
-/**
- * Download PDF from URL and convert to base64
- */
-const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl: string): Promise<string> => {
-	try {
-		const response = await helpers.httpRequest({
-			method: 'GET',
-			url: pdfUrl,
-			encoding: 'arraybuffer',
-			returnFullResponse: true,
-		});
-
-		if (response.statusCode >= 400) {
-			throw new Error(`Failed to download PDF from URL: ${response.statusCode} ${response.statusMessage}`);
-		}
-
-		// Check if response body exists and handle different formats
-		if (!response.body) {
-			throw new Error('No response body received from URL');
-		}
-
-		let buffer: Buffer;
-
-		// Handle different response body formats
-		if (response.body instanceof Buffer) {
-			buffer = response.body;
-		} else if (typeof response.body === 'string') {
-			// If it's a string, convert to buffer
-			buffer = Buffer.from(response.body, 'utf8');
-		} else if (response.body instanceof ArrayBuffer) {
-			// If it's an ArrayBuffer, convert to Buffer
-			buffer = Buffer.from(response.body);
-		} else if (ArrayBuffer.isView(response.body)) {
-			// If it's a TypedArray or DataView
-			buffer = Buffer.from(response.body.buffer, response.body.byteOffset, response.body.byteLength);
-		} else {
-			// Try to convert using Buffer.from with default encoding
-			try {
-				buffer = Buffer.from(response.body as any);
-			} catch (error) {
-				throw new Error(`Unable to convert response body to buffer. Body type: ${typeof response.body}, Body: ${String(response.body).substring(0, 100)}`);
-			}
-		}
-
-		// Validate the buffer
-		if (!buffer || buffer.length === 0) {
-			throw new Error('Downloaded file is empty');
-		}
-
-		const base64Content = buffer.toString('base64');
-
-		// Validate the downloaded content
-		if (base64Content.length < 100) {
-			throw new Error('Downloaded file appears to be too small. Please ensure the URL points to a valid PDF file.');
-		}
-
-		return base64Content;
-	} catch (error) {
-		if (error.message.includes('Failed to fetch')) {
-			throw new Error(`Network error downloading PDF from URL: ${error.message}`);
-		} else if (error.message.includes('Failed to download')) {
-			throw new Error(`HTTP error downloading PDF: ${error.message}`);
-		} else {
-			throw new Error(`Error downloading PDF from URL: ${error.message}`);
-		}
-	}
-};
