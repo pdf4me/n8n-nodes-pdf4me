@@ -170,7 +170,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let base64Content: string = '';
 	let docName: string = outputFileName;
 	let blobId: string = '';
-	let useBlob: boolean = false;
 	let payloadImageType: string = imageType.toLowerCase();
 
 	if (inputDataType === 'binaryData') {
@@ -179,11 +178,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-
-		console.log('[CompressImage] Processing binary data input:', {
-			binaryPropertyName,
-			fileName: item[0].binary[binaryPropertyName].fileName,
-		});
 
 		// Get binary data from n8n using the proper helper method
 		// Flow: Binary Data → Buffer/Stream (via getBinaryDataBuffer) → FormData → UploadBlob → blobId → CompressImage API
@@ -198,59 +192,28 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// The buffer is then passed to FormData which streams it to the API
 		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
-		console.log('[CompressImage] File buffer created for UploadBlob:', {
-			docName,
-			fileType: 'Buffer',
-			bufferSize: fileBuffer.length,
-			bufferSizeKB: Math.round(fileBuffer.length / 1024),
-		});
-
 		// Extract input image type from filename for payload
 		payloadImageType = extractImageTypeFromFilename(docName);
-		console.log('[CompressImage] Extracted image type from filename:', payloadImageType);
 
 		// Upload the file to UploadBlob endpoint and get blobId
 		// UploadBlob needs binary file (Buffer), not base64 string
 		// Returns blobId which is then used in CompressImage API payload
-		console.log('[CompressImage] Uploading file to UploadBlob...');
 		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
-		console.log('[CompressImage] UploadBlob completed, blobId received:', blobId);
 
-		useBlob = true;
-		docContent = `pdf4meblobid://${blobId}`; // Use blobId format when using blob
+		docContent = `${blobId}`; // Use blobId format when using blob
 	} else if (inputDataType === 'base64') {
 		base64Content = this.getNodeParameter('base64Content', index) as string;
-		useBlob = false;
 		blobId = '';
 		docContent = base64Content; // Use base64 data directly in docContent
-
-		console.log('[CompressImage] Processing base64 input:', {
-			base64Length: base64Content.length,
-			base64LengthKB: Math.round(base64Content.length / 1024),
-			docName,
-		});
 	} else if (inputDataType === 'url') {
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		console.log('[CompressImage] Processing URL input:', {
-			imageUrl,
-		});
 
 		docName = imageUrl.split('/').pop() || outputFileName;
 		// Extract input image type from URL for payload
 		payloadImageType = extractImageTypeFromFilename(docName);
-		console.log('[CompressImage] Extracted image type from URL:', payloadImageType);
 
-		useBlob = false;
 		blobId = '';
 		docContent = imageUrl; // Use URL string directly in docContent
-
-		console.log('[CompressImage] URL input processed successfully:', {
-			imageUrl,
-			docName,
-			payloadImageType,
-			urlLength: imageUrl.length,
-			useBlob,
-		});
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -264,55 +227,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		docContent, // Use docContent for all input types (blobId format for binaryData, base64 string for base64, URL string for url)
 	};
 
-	console.log('[CompressImage] Request payload prepared:', {
-		docName,
-		blobId: blobId || '(empty)',
-		useBlob,
-		imageType: payloadImageType,
-		compressionLevel,
-		hasDocContent: !!body.docContent,
-		docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
-		docContentPreview: typeof body.docContent === 'string'
-			? (body.docContent.startsWith('pdf4meblobid://')
-				? body.docContent
-				: `${body.docContent.substring(0, 50)}...`)
-			: '(empty)',
-	});
-
 	// Make the API request
-	console.log('[CompressImage] Sending request to /api/v2/CompressImage');
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/CompressImage', body);
-	console.log('[CompressImage] CompressImage API response received:', {
-		resultType: typeof result,
-		resultLength: result?.length || 0,
-		resultLengthKB: result?.length ? Math.round(result.length / 1024) : 0,
-		resultLengthMB: result?.length ? Math.round((result.length / 1024 / 1024) * 100) / 100 : 0,
-		isBuffer: Buffer.isBuffer(result),
-	});
 
 	// Return the result as binary data
 	const mimeType = imageType === 'PNG' ? 'image/png' : 'image/jpeg';
-	console.log('[CompressImage] Preparing binary data output:', {
-		outputFileName,
-		mimeType,
-		binaryDataName: binaryDataName || 'data',
-	});
 
 	const binaryData = await this.helpers.prepareBinaryData(
 		result,
 		outputFileName,
 		mimeType,
 	);
-
-	console.log('[CompressImage] Image compression completed successfully:', {
-		outputFileName,
-		mimeType,
-		fileSize: result.length,
-		fileSizeKB: Math.round(result.length / 1024),
-		fileSizeMB: Math.round((result.length / 1024 / 1024) * 100) / 100,
-		imageType,
-		compressionLevel,
-	});
 
 	return [
 		{

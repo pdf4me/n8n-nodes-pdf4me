@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -270,6 +271,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Main document content and metadata
 	let docContent: string = '';
 	let inputDocName: string = '';
+	let blobId: string = '';
 
 	// Handle different input types
 	if (inputDataType === 'binaryData') {
@@ -297,20 +299,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const binaryData = item[0].binary[binaryPropertyName];
 		inputDocName = inputFileName || binaryData.fileName || 'document';
 
-		console.log('[ConvertPdfToPowerpoint] Processing binary data input:', {
-			binaryPropertyName,
-			fileName: binaryData.fileName,
-		});
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
-		// Convert binary data to base64 - everything should be sent via docContent
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ConvertPdfToPowerPoint API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
 
-		console.log('[ConvertPdfToPowerpoint] Binary data converted to base64:', {
-			inputDocName,
-			base64Length: docContent.length,
-			base64LengthKB: Math.round(docContent.length / 1024),
-		});
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Base64 input
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -325,11 +323,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 
-		console.log('[ConvertPdfToPowerpoint] Processing base64 input:', {
-			base64Length: docContent.length,
-			base64LengthKB: Math.round(docContent.length / 1024),
-			inputDocName,
-		});
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		// URL input - send URL as string directly in docContent
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
@@ -339,12 +333,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Input file name is required for URL input type.');
 		}
 
-		console.log('[ConvertPdfToPowerpoint] Processing URL input:', {
-			fileUrl,
-			inputDocName,
-		});
-
 		// Send URL as string directly in docContent - no conversion or modification
+		blobId = '';
 		docContent = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
@@ -363,25 +353,27 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 		// Ensure docContent remains as the original URL string (no trimming)
 		// docContent is already set to the URL string above
-	} else {
-		// For binary and base64, validate content is not empty
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
 		if (!docContent || docContent.trim() === '') {
 			throw new Error('Document content is required');
 		}
-		// Validate base64 format for binary and base64 inputs
-		if (inputDataType === 'binaryData' || inputDataType === 'base64') {
-			// Basic base64 validation - check if it can be decoded
-			try {
-				const testBuffer = Buffer.from(docContent, 'base64');
-				if (testBuffer.length === 0 && docContent.length > 0) {
-					throw new Error('Invalid base64 content: Unable to decode base64 string');
-				}
-			} catch (error) {
-				if (error instanceof Error && error.message.includes('Invalid base64')) {
-					throw error;
-				}
-				throw new Error('Invalid base64 content format');
+		// Validate base64 format for base64 input
+		try {
+			const testBuffer = Buffer.from(docContent, 'base64');
+			if (testBuffer.length === 0 && docContent.length > 0) {
+				throw new Error('Invalid base64 content: Unable to decode base64 string');
 			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Invalid base64')) {
+				throw error;
+			}
+			throw new Error('Invalid base64 content format');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Document content is required');
 		}
 	}
 
@@ -390,7 +382,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Build the request body - everything is sent via docContent
 	const body: IDataObject = {
-		docContent, // Binary and base64 are sent as base64 string, URL is sent as URL string (no conversion)
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		docName: originalFileName,
 		qualityType,
 		language,
@@ -408,20 +400,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	console.log('[ConvertPdfToPowerpoint] Request payload prepared:', {
-		docName: originalFileName,
-		hasDocContent: !!body.docContent,
-		docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
-		docContentLengthKB: typeof body.docContent === 'string' ? Math.round(body.docContent.length / 1024) : 0,
-		docContentPreview: typeof body.docContent === 'string'
-			? (body.docContent.startsWith('http')
-				? body.docContent
-				: `${body.docContent.substring(0, 50)}...`)
-			: '(empty)',
-	});
-
 	// Make the API request
-	console.log('[ConvertPdfToPowerpoint] Sending request to /api/v2/ConvertPdfToPowerPoint');
 	let responseData;
 	try {
 		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToPowerPoint', body);
@@ -433,7 +412,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
 				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}, ` +
 				`docContentLength=${docContent?.length || 0}, ` +
-				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : 'base64'}`
+				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
 			);
 		} else if (errorObj.statusCode === 400) {
 			throw new Error(
@@ -443,13 +422,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 		throw error;
 	}
-	console.log('[ConvertPdfToPowerpoint] ConvertPdfToPowerPoint API response received:', {
-		resultType: typeof responseData,
-		resultLength: responseData?.length || 0,
-		resultLengthKB: responseData?.length ? Math.round(responseData.length / 1024) : 0,
-		resultLengthMB: responseData?.length ? Math.round((responseData.length / 1024 / 1024) * 100) / 100 : 0,
-		isBuffer: Buffer.isBuffer(responseData),
-	});
 
 	// Handle the binary response (PowerPoint document data)
 	if (responseData) {

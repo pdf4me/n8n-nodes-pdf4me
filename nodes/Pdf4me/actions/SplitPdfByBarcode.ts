@@ -4,6 +4,7 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -332,6 +333,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Main document content and metadata
 	let pdfContentBase64: string = '';
 	let inputDocName: string = '';
+	let blobId: string = '';
 
 	// Handle different input types
 	if (inputDataType === 'binaryData') {
@@ -359,20 +361,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const binaryData = item[0].binary[binaryPropertyName];
 		inputDocName = inputFileName || binaryData.fileName || 'document';
 
-		console.log('[SplitPdfByBarcode] Processing binary data input:', {
-			binaryPropertyName,
-			fileName: binaryData.fileName,
-		});
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
-		// Convert binary data to base64 - everything should be sent via docContent
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		pdfContentBase64 = buffer.toString('base64');
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in SplitPdfByBarcode API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
 
-		console.log('[SplitPdfByBarcode] Binary data converted to base64:', {
-			inputDocName,
-			base64Length: pdfContentBase64.length,
-			base64LengthKB: Math.round(pdfContentBase64.length / 1024),
-		});
+		// Use blobId in pdfContentBase64
+		pdfContentBase64 = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Base64 input
 		pdfContentBase64 = this.getNodeParameter('base64Content', index) as string;
@@ -392,11 +390,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 		pdfContentBase64 = pdfContentBase64.trim();
 
-		console.log('[SplitPdfByBarcode] Processing base64 input:', {
-			base64Length: pdfContentBase64.length,
-			base64LengthKB: Math.round(pdfContentBase64.length / 1024),
-			inputDocName,
-		});
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		// URL input - send URL as string directly in docContent
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
@@ -410,12 +404,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('File URL is required');
 		}
 
-		console.log('[SplitPdfByBarcode] Processing URL input:', {
-			fileUrl,
-			inputDocName,
-		});
-
 		// Send URL as string directly in pdfContentBase64 - no conversion or modification
+		blobId = '';
 		pdfContentBase64 = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
@@ -434,25 +424,27 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 		// Ensure pdfContentBase64 remains as the original URL string (no trimming)
 		// pdfContentBase64 is already set to the URL string above
-	} else {
-		// For binary and base64, validate content is not empty
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
 			throw new Error('Document content is required');
 		}
-		// Validate base64 format for binary and base64 inputs
-		if (inputDataType === 'binaryData' || inputDataType === 'base64') {
-			// Basic base64 validation - check if it can be decoded
-			try {
-				const testBuffer = Buffer.from(pdfContentBase64, 'base64');
-				if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
-					throw new Error('Invalid base64 content: Unable to decode base64 string');
-				}
-			} catch (error) {
-				if (error instanceof Error && error.message.includes('Invalid base64')) {
-					throw error;
-				}
-				throw new Error('Invalid base64 content format');
+		// Validate base64 format for base64 input
+		try {
+			const testBuffer = Buffer.from(pdfContentBase64, 'base64');
+			if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
+				throw new Error('Invalid base64 content: Unable to decode base64 string');
 			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Invalid base64')) {
+				throw error;
+			}
+			throw new Error('Invalid base64 content format');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
+			throw new Error('Document content is required');
 		}
 	}
 
@@ -460,7 +452,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docNameForRequest = inputDocName || 'output.pdf';
 
 	const body: IDataObject = {
-		docContent: pdfContentBase64, // Binary and base64 are sent as base64 string, URL is sent as URL string (no conversion)
+		docContent: pdfContentBase64, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		docName: docNameForRequest,
 		barcodeString,
 		barcodeFilter,
@@ -479,20 +471,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	console.log('[SplitPdfByBarcode] Request payload prepared:', {
-		docName: docNameForRequest,
-		hasDocContent: !!body.docContent,
-		docContentLength: typeof body.docContent === 'string' ? body.docContent.length : 0,
-		docContentLengthKB: typeof body.docContent === 'string' ? Math.round(body.docContent.length / 1024) : 0,
-		docContentPreview: typeof body.docContent === 'string'
-			? (body.docContent.startsWith('http')
-				? body.docContent
-				: `${body.docContent.substring(0, 50)}...`)
-			: '(empty)',
-	});
-
 	// Call the PDF4me SplitPdfByBarcode endpoint
-	console.log('[SplitPdfByBarcode] Sending request to /api/v2/SplitPdfByBarcode_old');
 	let response;
 	try {
 		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode_old', body);
@@ -504,7 +483,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
 				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}, ` +
 				`docContentLength=${pdfContentBase64?.length || 0}, ` +
-				`docContentType=${typeof pdfContentBase64 === 'string' && pdfContentBase64.startsWith('http') ? 'URL' : 'base64'}`
+				`docContentType=${typeof pdfContentBase64 === 'string' && pdfContentBase64.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
 			);
 		} else if (errorObj.statusCode === 400) {
 			throw new Error(
@@ -514,12 +493,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 		throw error;
 	}
-	console.log('[SplitPdfByBarcode] SplitPdfByBarcode API response received:', {
-		resultType: typeof response,
-		resultLength: response?.length || 0,
-		resultLengthKB: response?.length ? Math.round(response.length / 1024) : 0,
-		isBuffer: Buffer.isBuffer(response),
-	});
 
 	// --- BEGIN: Buffer/String Response Parsing ---
 	let parsedResponse = response;

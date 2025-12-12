@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Declare Node.js global
@@ -279,6 +280,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -298,8 +301,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in CreateImages API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
@@ -310,8 +324,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 
+		blobId = '';
+
 	} else if (inputDataType === 'url') {
-		// Use PDF URL directly - download the file first
+		// Use PDF URL directly - send URL as string directly in docContent
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 
 		// Validate URL format
@@ -321,30 +337,35 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
 
-
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			headers: {
-				'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-				'Accept': 'application/pdf,application/octet-stream,*/*',
-			},
-			timeout: 30000, // 30 seconds timeout
-			encoding: 'arraybuffer' as const,
-		};
-		docContent = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(pdfUrl);
 
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate content
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+		// Validate PDF content for base64
+		validatePdfContent(docContent);
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+		// blobId validation - just check it's not empty
 	}
-
-	// Validate PDF content
-	validatePdfContent(docContent);
 
 	// Get image settings
 	const settings = imageSettings.settings as IDataObject || {};
@@ -383,9 +404,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 
 	// Build the request body
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.pdf';
 	const body: IDataObject = {
-		docContent,
-		docName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		imageAction: {
 			WidthPixel: widthPixel.toString(),
 			ImageExtension: imageExtension,
@@ -603,6 +626,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'3. The input data type doesn\'t match the actual data\n\n' +
 				`Input Type: ${inputDataType}\n` +
 				`Content Length: ${body.docContent && typeof body.docContent === 'string' ? body.docContent.length : 0}\n` +
+				`Content Type: ${inputDataType === 'binaryData' ? 'blobId' : inputDataType === 'url' ? 'URL' : 'base64'}\n` +
 				`Has Content: ${!!body.docContent}`,
 			);
 		}
@@ -611,7 +635,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 }
 
 /**
- * Validate PDF content
+ * Validate PDF content (for base64 input only)
  */
 function validatePdfContent(docContent: string): void {
 	if (!docContent || docContent.trim() === '') {
@@ -635,7 +659,7 @@ function validatePdfContent(docContent: string): void {
 			);
 		}
 	} catch (error) {
-		if (error.message.includes('PDF files should start with')) {
+		if (error instanceof Error && error.message.includes('PDF files should start with')) {
 			throw error;
 		}
 		throw new Error('Invalid base64 content. Please ensure the PDF content is properly base64 encoded.');

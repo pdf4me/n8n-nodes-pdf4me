@@ -358,20 +358,22 @@ export async function uploadBlobToPdf4me(
 					responseBody = response.body as IDataObject;
 				}
 				console.log('[UploadBlob] Response parsed successfully:', {
-					hasBlobId: !!responseBody?.blobId,
-					blobId: responseBody?.blobId,
+					hasBlobId: !!(responseBody?.BlobId || responseBody?.blobId),
+					BlobId: responseBody?.BlobId || responseBody?.blobId,
 				});
 			} catch (parseError) {
 				console.error('[UploadBlob] Failed to parse response:', parseError);
 				throw new Error(`Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
 			}
 
-			if (responseBody && responseBody.blobId) {
-				console.log('[UploadBlob] Upload successful, blobId:', responseBody.blobId);
-				return responseBody.blobId as string;
+			// Check for BlobId (capital B) first, then fallback to blobId for backward compatibility
+			const blobId = responseBody?.BlobId || responseBody?.blobId;
+			if (responseBody && blobId) {
+				console.log('[UploadBlob] Upload successful, BlobId:', blobId);
+				return blobId as string;
 			} else {
-				console.error('[UploadBlob] Response missing blobId:', responseBody);
-				throw new Error('UploadBlob response missing blobId field');
+				console.error('[UploadBlob] Response missing BlobId:', responseBody);
+				throw new Error('UploadBlob response missing BlobId field');
 			}
 		} else {
 			console.error('[UploadBlob] Request failed:', {
