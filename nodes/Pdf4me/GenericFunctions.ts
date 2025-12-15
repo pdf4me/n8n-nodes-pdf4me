@@ -8,6 +8,7 @@ import type {
 	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
+import FormData from 'form-data';
 
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
@@ -42,8 +43,6 @@ export async function pdf4meApiRequest(
 	}
 
 	try {
-		// Debug: Log authentication info (without exposing the full key)
-
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 			url: `${options.baseURL}${options.url}`,
 			method: options.method,
@@ -102,19 +101,12 @@ export async function pdf4meApiRequest(
 async function delayAsync(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 ): Promise<void> {
-	// const startTime = Date.now();
-	// console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
-
 	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 		url: 'https://api.pdf4me.com/api/v2/AddDelay',
 		method: 'GET',
 		returnFullResponse: true,
 		ignoreHttpStatusErrors: true,
 	});
-
-	// const endTime = Date.now();
-	// const actualDelay = endTime - startTime;
-	// console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
 }
 
 export async function pdf4meAsyncRequest(
@@ -245,6 +237,111 @@ export function sanitizeProfiles(data: IDataObject): void {
 			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
+	}
+}
+
+/**
+ * Uploads binary data to PDF4me's UploadBlob endpoint and returns the blobId.
+ * This is used when binary data is provided as input instead of base64 content.
+ *
+ * @param this - Execution context
+ * @param buffer - Binary data buffer to upload
+ * @param filename - Name of the file being uploaded
+ * @returns The blobId from the API response
+ */
+export async function uploadBlobToPdf4me(
+	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+	fileStream: NodeJS.ReadableStream | Buffer,
+	filename: string,
+): Promise<string> {
+	try {
+		// Note: n8n Cloud uses Filesystem storage by default, which stores binary data on disk
+		// This means files are not loaded into memory until getBinaryDataBuffer() is called
+		// FormData streams the buffer efficiently, so memory usage is reasonable even for larger files
+		// However, very large files (>500MB) may still cause issues depending on the n8n Cloud plan
+		if (fileStream instanceof Buffer) {
+			const sizeMB = fileStream.length / 1024 / 1024;
+			// Very large files might still hit memory limits during FormData serialization
+			// Set a reasonable upper limit based on typical n8n Cloud memory constraints
+			if (sizeMB > 500) {
+				throw new Error(
+					`File too large (${Math.round(sizeMB * 100) / 100}MB). Files larger than 500MB may exceed n8n Cloud memory limits. ` +
+					'Please use a smaller file or consider processing it in chunks.',
+				);
+			}
+		}
+
+		// Create FormData for multipart/form-data upload to UploadBlob endpoint
+		// Match Postman: form-data with key 'file' and the file stream/data as the file value
+		// Note: In n8n Cloud with Filesystem storage, binary data is stored on disk
+		// FormData will stream the buffer/stream efficiently without loading entire file into memory twice
+		const formData = new FormData();
+		formData.append('file', fileStream, filename); // Append buffer/stream directly with filename
+
+		// Get FormData headers - this includes Content-Type with the proper boundary
+		const formHeaders = formData.getHeaders();
+
+		// Get authentication credentials
+		const credentials = await this.getCredentials('pdf4meApi');
+		const apiKey = credentials?.apiKey as string;
+
+		// Make the upload request
+		// Try letting FormData handle Content-Type completely by spreading its headers
+		// Only add Authorization manually
+		const response = await this.helpers.httpRequest({
+			url: 'https://api.pdf4me.com/api/V2/UploadBlob',
+			method: 'POST',
+			body: formData, // FormData object
+			headers: {
+				...formHeaders, // Spread all FormData headers (includes content-type with boundary)
+				'Authorization': `Basic ${apiKey}`, // Add auth after to ensure it's not overridden
+			},
+			returnFullResponse: true,
+			timeout: 6000023,
+		});
+
+		// Check if response is successful
+		if (response.statusCode === 200 || response.statusCode === 201) {
+			// Parse JSON response manually since we didn't use json: true
+			let responseBody: IDataObject;
+			try {
+				if (typeof response.body === 'string') {
+					responseBody = JSON.parse(response.body);
+				} else if (Buffer.isBuffer(response.body)) {
+					responseBody = JSON.parse(response.body.toString('utf8'));
+				} else {
+					responseBody = response.body as IDataObject;
+				}
+			} catch (parseError) {
+				throw new Error(`Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+			}
+
+			// Check for BlobId (capital B) first, then fallback to blobId for backward compatibility
+			const blobId = responseBody?.BlobId || responseBody?.blobId;
+			if (responseBody && blobId) {
+				return blobId as string;
+			} else {
+				throw new Error('UploadBlob response missing BlobId field');
+			}
+		} else {
+			let errorMessage = `UploadBlob failed with status ${response.statusCode}`;
+			try {
+				let errorBody: IDataObject | string = response.body;
+				if (typeof response.body === 'string') {
+					errorBody = JSON.parse(response.body);
+				} else if (Buffer.isBuffer(response.body)) {
+					errorBody = JSON.parse(response.body.toString('utf8'));
+				}
+				if (typeof errorBody === 'object' && errorBody) {
+					errorMessage = (errorBody as any).message || (errorBody as any).error || errorMessage;
+				}
+			} catch {
+				// Ignore parsing errors
+			}
+			throw new Error(errorMessage);
+		}
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject);
 	}
 }
 
