@@ -129,7 +129,7 @@ export const description: INodeProperties[] = [
 /**
  * Get PDF Metadata - Extract metadata information from PDF documents using PDF4ME
  * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return metadata
- * 
+ *
  * This action extracts metadata from PDF documents:
  * - Returns structured JSON data with PDF metadata (title, author, creation date, etc.)
  * - Supports various PDF document formats
@@ -208,7 +208,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Create binary data from the JSON response
 	const jsonString = JSON.stringify(jsonResponse, null, 2);
 	const jsonBuffer = Buffer.from(jsonString, 'utf8');
-	
+
 	// Generate filename for the JSON file
 	let jsonFileName = outputFileName;
 	if (!jsonFileName.toLowerCase().endsWith('.json')) {
