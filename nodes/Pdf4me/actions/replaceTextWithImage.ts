@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -255,63 +256,82 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	// PDF input
 	const pdfInputDataType = this.getNodeParameter('pdfInputDataType', index) as string;
-	let docContent: string;
+	let docContent: string = '';
 	let docName: string = 'input.pdf';
+	let pdfBlobId: string = '';
+
 	if (pdfInputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('pdfBinaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || 'input.pdf';
+
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || 'input.pdf';
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		pdfBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+
+		// 5. Use blobId in docContent
+		docContent = `${pdfBlobId}`;
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
+		pdfBlobId = '';
 	} else if (pdfInputDataType === 'url') {
+		// 1. Get URL parameter
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		try {
-			const options = {
-				method: 'GET' as const,
-				url: pdfUrl,
-				encoding: 'arraybuffer' as const,
-			};
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			const buffer = Buffer.from(response, 'binary');
-			docContent = buffer.toString('base64');
-			docName = pdfUrl.split('/').pop() || 'input.pdf';
-		} catch (error) {
-			throw new Error(`Failed to fetch PDF from URL: ${error.message}`);
-		}
+
+		// 2. Extract filename from URL
+		docName = pdfUrl.split('/').pop() || 'input.pdf';
+
+		// 3. Use URL directly in docContent
+		pdfBlobId = '';
+		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported PDF input data type: ${pdfInputDataType}`);
 	}
 
 	// Image input
 	const imageInputDataType = this.getNodeParameter('imageInputDataType', index) as string;
-	let imageContent: string;
+	let imageContent: string = '';
+	let imageBlobId: string = '';
+
 	if (imageInputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		imageContent = item[0].binary[binaryPropertyName].data;
+
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		const imageFileName = binaryData.fileName || 'image.png';
+
+		// 3. Convert to Buffer
+		const imageFileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		imageBlobId = await uploadBlobToPdf4me.call(this, imageFileBuffer, imageFileName);
+
+		// 5. Use blobId in imageContent
+		imageContent = `${imageBlobId}`;
 	} else if (imageInputDataType === 'base64') {
 		imageContent = this.getNodeParameter('imageBase64Content', index) as string;
+		imageBlobId = '';
 	} else if (imageInputDataType === 'url') {
+		// 1. Get URL parameter
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		try {
-			const options = {
-				method: 'GET' as const,
-				url: imageUrl,
-				encoding: 'arraybuffer' as const,
-			};
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			const buffer = Buffer.from(response, 'binary');
-			imageContent = buffer.toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to fetch image from URL: ${error.message}`);
-		}
+
+		// 2. Use URL directly in imageContent
+		imageBlobId = '';
+		imageContent = imageUrl;
 	} else {
 		throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
 	}

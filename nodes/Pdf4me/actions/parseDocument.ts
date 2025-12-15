@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -207,12 +208,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let docContent: string;
-	let originalFileName = docName;
+	let docContent: string = '';
+	let originalFileName: string = docName;
+	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
-		// Get document content from binary data
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
@@ -220,14 +222,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
+		// 2. Get binary data metadata
 		const binaryData = item[0].binary[binaryPropertyName];
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		originalFileName = binaryData.fileName || docName;
 
-		// Use the original filename if available
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, originalFileName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -236,16 +242,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+		blobId = '';
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const documentUrl = this.getNodeParameter('documentUrl', index) as string;
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			method: 'GET' as const,
-			url: documentUrl,
-			encoding: 'arraybuffer' as const,
-		});
-		const buffer = await this.helpers.binaryToBuffer(response);
-		docContent = buffer.toString('base64');
-		originalFileName = documentUrl.split('/').pop() || 'document.pdf';
+
+		// 2. Extract filename from URL
+		originalFileName = documentUrl.split('/').pop() || docName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = documentUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -278,7 +285,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
-	
+
 	// Debug: Log the result to understand what we're getting
 	// console.log('ParseDocument API result type:', typeof result);
 	// console.log('ParseDocument API result:', JSON.stringify(result, null, 2));
@@ -299,14 +306,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				parsedData = JSON.parse(result);
 			} catch (error) {
 				// If not valid JSON, treat as raw text
-				parsedData = { 
+				parsedData = {
 					rawContent: result,
 					contentType: 'text/plain',
 				};
 			}
 		} else {
 			// Fallback for other types
-			parsedData = { 
+			parsedData = {
 				rawContent: result,
 				contentType: typeof result,
 			};
@@ -319,7 +326,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (outputFormat === 'text') {
 			// Get outputFileName only when needed
 			const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-			
+
 			// Create formatted text output similar to Python implementation
 			outputText = 'Document Parsing Results\n';
 			outputText += '========================\n';
@@ -370,7 +377,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			if (!parsedData || (typeof parsedData === 'object' && Object.keys(parsedData).length === 0)) {
 				throw new Error('No parsed data received from PDF4ME API');
 			}
-			
+
 			return [
 				{
 					json: parsedData, // Return the actual parsed data from API directly

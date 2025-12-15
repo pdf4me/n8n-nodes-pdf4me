@@ -1,5 +1,5 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
-import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
+import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
 	{
@@ -264,13 +264,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const searchText = this.getNodeParameter('searchText', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let docContent: string;
+	let docContent: string = '';
 	let docName: string;
-	let imageContent: string;
+	let imageContent: string = '';
 	let imageFileName: string;
+	let docBlobId: string = '';
+	let imageBlobId: string = '';
 
 	// Handle Word document input types
 	if (wordInputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('wordBinaryPropertyName', index) as string;
 		const documentName = this.getNodeParameter('wordDocumentName', index) as string;
 		const item = this.getInputData(index);
@@ -279,25 +282,37 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// 2. Get binary data metadata
 		const binaryData = item[0].binary[binaryPropertyName];
 		docName = documentName || binaryData.fileName || 'document.docx';
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		docBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+
+		// 5. Use blobId in docContent
+		docContent = `${docBlobId}`;
 	} else if (wordInputDataType === 'base64') {
 		docContent = this.getNodeParameter('wordBase64Content', index) as string;
 		docName = this.getNodeParameter('wordDocumentNameRequired', index) as string;
+		docBlobId = '';
 	} else if (wordInputDataType === 'url') {
+		// 1. Get URL parameter
 		const documentUrl = this.getNodeParameter('wordDocumentUrl', index) as string;
 		docName = this.getNodeParameter('wordDocumentNameRequired', index) as string;
-		const options = { method: 'GET' as const, url: documentUrl, encoding: 'arraybuffer' as const };
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		docContent = Buffer.from(response).toString('base64');
+
+		// 2. Use URL directly in docContent
+		docBlobId = '';
+		docContent = documentUrl;
 	} else {
 		throw new Error(`Unsupported Word document input type: ${wordInputDataType}`);
 	}
 
 	// Handle image input types
 	if (imageInputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
 		const inputImageName = this.getNodeParameter('imageFileName', index) as string;
 		const item = this.getInputData(index);
@@ -306,19 +321,30 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		imageContent = buffer.toString('base64');
+		// 2. Get binary data metadata
 		const binaryData = item[0].binary[binaryPropertyName];
 		imageFileName = inputImageName || binaryData.fileName || 'image.png';
+
+		// 3. Convert to Buffer
+		const imageFileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		imageBlobId = await uploadBlobToPdf4me.call(this, imageFileBuffer, imageFileName);
+
+		// 5. Use blobId in imageContent
+		imageContent = `${imageBlobId}`;
 	} else if (imageInputDataType === 'base64') {
 		imageContent = this.getNodeParameter('imageBase64Content', index) as string;
 		imageFileName = this.getNodeParameter('imageFileNameRequired', index) as string;
+		imageBlobId = '';
 	} else if (imageInputDataType === 'url') {
+		// 1. Get URL parameter
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 		imageFileName = this.getNodeParameter('imageFileNameRequired', index) as string;
-		const options = { method: 'GET' as const, url: imageUrl, encoding: 'arraybuffer' as const };
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		imageContent = Buffer.from(response).toString('base64');
+
+		// 2. Use URL directly in imageContent
+		imageBlobId = '';
+		imageContent = imageUrl;
 	} else {
 		throw new Error(`Unsupported image input type: ${imageInputDataType}`);
 	}
