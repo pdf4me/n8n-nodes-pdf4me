@@ -336,6 +336,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Send URL as string directly in docContent - no conversion or modification
 		blobId = '';
 		docContent = String(fileUrl);
+		console.log('URL Input - docContent:', docContent);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

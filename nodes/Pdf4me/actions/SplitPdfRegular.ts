@@ -4,6 +4,7 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -228,53 +229,93 @@ export const description: INodeProperties[] = [
 
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-	const docName = this.getNodeParameter('docName', index) as string;
 	const splitAction = this.getNodeParameter('splitAction', index) as string;
 	const fileNaming = this.getNodeParameter('fileNaming', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let pdfContentBase64: string;
+	// Main document content and metadata
+	let docContent: string = '';
+	let inputDocName: string = '';
+	let blobId: string = '';
 
+	// Handle different input types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
 		}
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		pdfContentBase64 = buffer.toString('base64');
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
+		}
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || 'document.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
-		pdfContentBase64 = this.getNodeParameter('base64Content', index) as string;
-		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
+		// Base64 input
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		if (!docContent || docContent.trim() === '') {
 			throw new Error('Base64 content is required');
 		}
-		pdfContentBase64 = pdfContentBase64.trim();
+		docContent = docContent.trim();
+
+		// Handle data URLs (remove data: prefix if present)
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+
+		// Extract filename from docName parameter or use default
+		inputDocName = this.getNodeParameter('docName', index) as string;
+		blobId = '';
 	} else if (inputDataType === 'url') {
+		// URL input - send URL as string directly in docContent
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		const options = {
 
-			method: 'GET' as const,
+		// Extract filename from URL or use docName parameter
+		inputDocName = pdfUrl.split('/').pop() || this.getNodeParameter('docName', index) as string;
+		if (!inputDocName || inputDocName === '') {
+			inputDocName = 'document.pdf';
+		}
 
-			url: pdfUrl.trim(),
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		pdfContentBase64 = Buffer.from(response).toString('base64');
+		// Send URL as string directly in docContent - no conversion or modification
+		blobId = '';
+		docContent = String(pdfUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Use inputDocName if docName is not provided, otherwise use docName parameter
+	const docName = this.getNodeParameter('docName', index) as string;
+	const finalDocName = docName || inputDocName || 'document.pdf';
+
 	// Build the request body
 	const body: IDataObject = {
-		docContent: pdfContentBase64,
-		docName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		splitAction,
 		fileNaming,
 		IsAsync: true,
@@ -323,7 +364,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	let totalFiles = 0;
 	let outputDirectory = '';
 	let folderName = '';
-	const sourcePdf = docName;
+	const sourcePdf = finalDocName;
 	let responseType = '';
 
 	if (Array.isArray(parsedResponse)) {
@@ -392,7 +433,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	}
 
 	// Compose output directory and folder name (for compatibility, not actually used here)
-	folderName = `${docName.replace(/\.pdf$/i, '')}_split_outputs`;
+	folderName = `${finalDocName.replace(/\.pdf$/i, '')}_split_outputs`;
 	outputDirectory = `/tmp/${folderName}`;
 
 	// Compose the output summary
