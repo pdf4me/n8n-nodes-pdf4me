@@ -391,25 +391,44 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let pageNrsString = '';
 
 	if (pageSelection === 'specific') {
-		// Parse specific page numbers
-		pageNrs = pageNumbers.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+		// Parse specific page numbers - supports formats like "1,3,5" or "1, 2, 3"
+		const parts = pageNumbers.split(',').map(p => p.trim()).filter(p => p.length > 0);
+		pageNrs = parts.map(p => {
+			const num = parseInt(p);
+			if (isNaN(num)) {
+				throw new Error(`Invalid page number format: '${p}'. Please provide valid page numbers (e.g., '1,3,5')`);
+			}
+			return num;
+		});
 		if (pageNrs.length === 0) {
-			throw new Error('Please provide valid page numbers (e.g., "1,3,5")');
+			throw new Error('Please provide valid page numbers (e.g., \'1,3,5\')');
 		}
-		pageNrsString = pageNumbers;
+		// Remove duplicates and sort
+		pageNrs = [...new Set(pageNrs)].sort((a, b) => a - b);
+		pageNrsString = pageNumbers.trim();
 	} else if (pageSelection === 'range') {
-		// Parse page range
-		const rangeMatch = pageNumbers.match(/^(\d+)-(\d+)$/);
+		// Parse page range - supports formats like "1-5" or "2-" (to end)
+		const trimmed = pageNumbers.trim();
+		const rangeMatch = trimmed.match(/^(\d+)-(\d*)$/);
 		if (!rangeMatch) {
-			throw new Error('Please provide a valid page range (e.g., "1-5")');
+			throw new Error('Please provide a valid page range (e.g., \'1-5\' or \'2-\' for from page 2 to end)');
 		}
 		const start = parseInt(rangeMatch[1]);
-		const end = parseInt(rangeMatch[2]);
-		if (start > end) {
-			throw new Error('Start page number must be less than or equal to end page number');
+		const endStr = rangeMatch[2];
+
+		if (endStr === '') {
+			// Format like '2-' means from page 2 to end - we can't determine end, so use start only
+			// The API will handle 'to end' format in the pageNrs string
+			pageNrs = [start];
+			pageNrsString = trimmed; // Keep the '2-' format for API
+		} else {
+			const end = parseInt(endStr);
+			if (start > end) {
+				throw new Error('Start page number must be less than or equal to end page number');
+			}
+			pageNrs = Array.from({length: end - start + 1}, (_, i) => start + i);
+			pageNrsString = trimmed;
 		}
-		pageNrs = Array.from({length: end - start + 1}, (_, i) => start + i);
-		pageNrsString = pageNumbers;
 	} else {
 		// All pages - use empty string to indicate all pages
 		pageNrsString = '';
@@ -690,8 +709,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Provide more context for 500 errors
 		if (errorMessage && (errorMessage.includes('500') || errorMessage.includes('service was not able to process'))) {
 			throw new Error(
-				`PDF4ME API Error (500): The service was not able to process your request.\n\n` +
-				`Debug Information:\n` +
+				'PDF4ME API Error (500): The service was not able to process your request.\n\n' +
+				'Debug Information:\n' +
 				`- Input Type: ${inputDataType}\n` +
 				`- Document Name: ${finalDocName}\n` +
 				`- Content Length: ${docContent?.length || 0}\n` +
@@ -700,11 +719,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				`- Image Format: ${imageExtension}\n` +
 				`- Page Selection: ${pageSelection}\n` +
 				`- Page Numbers: ${body.pageNrs || 'all pages'}\n\n` +
-				`Please check:\n` +
-				`1. The PDF file is valid and not corrupted\n` +
-				`2. The blobId/URL is accessible (for binary data/URL inputs)\n` +
-				`3. The page numbers are valid for the document\n` +
-				`4. The image settings are within acceptable ranges\n\n` +
+				'Please check:\n' +
+				'1. The PDF file is valid and not corrupted\n' +
+				'2. The blobId/URL is accessible (for binary data/URL inputs)\n' +
+				'3. The page numbers are valid for the document\n' +
+				'4. The image settings are within acceptable ranges\n\n' +
 				`Original Error: ${errorMessage}`,
 			);
 		}
