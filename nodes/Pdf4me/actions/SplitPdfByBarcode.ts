@@ -431,17 +431,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Document content is required');
 		}
 		// Validate base64 format for base64 input
-		try {
-			const testBuffer = Buffer.from(pdfContentBase64, 'base64');
-			if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
-				throw new Error('Invalid base64 content: Unable to decode base64 string');
+			try {
+				const testBuffer = Buffer.from(pdfContentBase64, 'base64');
+				if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
+					throw new Error('Invalid base64 content: Unable to decode base64 string');
+				}
+			} catch (error) {
+				if (error instanceof Error && error.message.includes('Invalid base64')) {
+					throw error;
+				}
+				throw new Error('Invalid base64 content format');
 			}
-		} catch (error) {
-			if (error instanceof Error && error.message.includes('Invalid base64')) {
-				throw error;
-			}
-			throw new Error('Invalid base64 content format');
-		}
 	} else if (inputDataType === 'binaryData') {
 		// For binary data, validate blobId is set
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
