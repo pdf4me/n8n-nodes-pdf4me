@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Buffer and other Node.js globals available
@@ -226,14 +227,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 		// Get PDF contents based on input data types
-		const { basePdfBase64, layerPdfBase64 } = await getPdfContents.call(this, index, baseInputType, layerInputType);
+		// Returns: blobId (for binary), base64 string (for base64), or URL string (for URL)
+		const { baseDocContent, layerDocContent, baseDocName, layerDocName } = await getPdfContents.call(this, index, baseInputType, layerInputType);
 
 		// Build the request body for overlay merging
+		// baseDocContent and layerDocContent can be: blobId (for binary), base64 string (for base64), or URL string (for URL)
 		const body: IDataObject = {
-			baseDocContent: basePdfBase64,
-			baseDocName: 'base.pdf',
-			layerDocContent: layerPdfBase64,
-			layerDocName: 'layer.pdf',
+			baseDocContent,
+			baseDocName: baseDocName || 'base.pdf',
+			layerDocContent,
+			layerDocName: layerDocName || 'layer.pdf',
 			IsAsync: true,
 		};
 
@@ -290,9 +293,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 }
 
-async function getPdfContents(this: IExecuteFunctions, index: number, baseInputType: string, layerInputType: string): Promise<{ basePdfBase64: string; layerPdfBase64: string }> {
-	let basePdfBase64: string;
-	let layerPdfBase64: string;
+async function getPdfContents(
+	this: IExecuteFunctions,
+	index: number,
+	baseInputType: string,
+	layerInputType: string,
+): Promise<{ baseDocContent: string; layerDocContent: string; baseDocName: string; layerDocName: string }> {
+	let baseDocContent: string;
+	let layerDocContent: string;
+	let baseDocName: string = 'base.pdf';
+	let layerDocName: string = 'layer.pdf';
 
 	// Get base PDF content
 	if (baseInputType === 'binaryData') {
@@ -302,32 +312,69 @@ async function getPdfContents(this: IExecuteFunctions, index: number, baseInputT
 		if (!item[0].binary || !item[0].binary[baseBinaryPropertyName]) {
 			throw new Error(`No binary data found in property '${baseBinaryPropertyName}'`);
 		}
-		const baseBuffer = await this.helpers.getBinaryDataBuffer(index, baseBinaryPropertyName);
-		basePdfBase64 = baseBuffer.toString('base64');
+
+		const binaryData = item[0].binary[baseBinaryPropertyName];
+		baseDocName = binaryData.fileName || 'base.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, baseBinaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in MergeOverlay API payload
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, baseDocName);
+
+		// Use blobId in baseDocContent
+		baseDocContent = `${blobId}`;
 	} else if (baseInputType === 'base64') {
-		basePdfBase64 = this.getNodeParameter('baseBase64Content', index) as string;
-		if (!basePdfBase64) {
+		baseDocContent = this.getNodeParameter('baseBase64Content', index) as string;
+		if (!baseDocContent || baseDocContent.trim() === '') {
 			throw new Error('Base PDF base64 content is required');
 		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (baseDocContent.includes(',')) {
+			baseDocContent = baseDocContent.split(',')[1];
+		}
+		baseDocContent = baseDocContent.trim();
 	} else if (baseInputType === 'url') {
 		const basePdfUrl = this.getNodeParameter('basePdfUrl', index) as string;
-		if (!basePdfUrl) {
+		if (!basePdfUrl || basePdfUrl.trim() === '') {
 			throw new Error('Base PDF URL is required');
 		}
-		const options = {
 
-			method: 'GET' as const,
+		// Validate URL format
+		try {
+			new URL(basePdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the base PDF file.');
+		}
 
-			url: basePdfUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		basePdfBase64 = Buffer.from(response).toString('base64');
+		// Send URL as string directly in baseDocContent - no download or conversion
+		baseDocContent = String(basePdfUrl);
+		// Extract filename from URL
+		baseDocName = basePdfUrl.split('/').pop() || 'base.pdf';
 	} else {
 		throw new Error(`Unsupported base PDF input type: ${baseInputType}`);
+	}
+
+	// Validate base PDF content based on input type
+	if (baseInputType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!baseDocContent || typeof baseDocContent !== 'string' || baseDocContent.trim() === '') {
+			throw new Error('Base PDF URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (baseInputType === 'base64') {
+		// For base64, validate content is not empty
+		if (!baseDocContent || baseDocContent.trim() === '') {
+			throw new Error('Base PDF content is required');
+		}
+	} else if (baseInputType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!baseDocContent || baseDocContent.trim() === '') {
+			throw new Error('Base PDF content is required');
+		}
 	}
 
 	// Get layer PDF content
@@ -338,34 +385,71 @@ async function getPdfContents(this: IExecuteFunctions, index: number, baseInputT
 		if (!item[0].binary || !item[0].binary[layerBinaryPropertyName]) {
 			throw new Error(`No binary data found in property '${layerBinaryPropertyName}'`);
 		}
-		const layerBuffer = await this.helpers.getBinaryDataBuffer(index, layerBinaryPropertyName);
-		layerPdfBase64 = layerBuffer.toString('base64');
+
+		const binaryData = item[0].binary[layerBinaryPropertyName];
+		layerDocName = binaryData.fileName || 'layer.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, layerBinaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in MergeOverlay API payload
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, layerDocName);
+
+		// Use blobId in layerDocContent
+		layerDocContent = `${blobId}`;
 	} else if (layerInputType === 'base64') {
-		layerPdfBase64 = this.getNodeParameter('layerBase64Content', index) as string;
-		if (!layerPdfBase64) {
+		layerDocContent = this.getNodeParameter('layerBase64Content', index) as string;
+		if (!layerDocContent || layerDocContent.trim() === '') {
 			throw new Error('Layer PDF base64 content is required');
 		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (layerDocContent.includes(',')) {
+			layerDocContent = layerDocContent.split(',')[1];
+		}
+		layerDocContent = layerDocContent.trim();
 	} else if (layerInputType === 'url') {
 		const layerPdfUrl = this.getNodeParameter('layerPdfUrl', index) as string;
-		if (!layerPdfUrl) {
+		if (!layerPdfUrl || layerPdfUrl.trim() === '') {
 			throw new Error('Layer PDF URL is required');
 		}
-		const options = {
 
-			method: 'GET' as const,
+		// Validate URL format
+		try {
+			new URL(layerPdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the layer PDF file.');
+		}
 
-			url: layerPdfUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		layerPdfBase64 = Buffer.from(response).toString('base64');
+		// Send URL as string directly in layerDocContent - no download or conversion
+		layerDocContent = String(layerPdfUrl);
+		// Extract filename from URL
+		layerDocName = layerPdfUrl.split('/').pop() || 'layer.pdf';
 	} else {
 		throw new Error(`Unsupported layer PDF input type: ${layerInputType}`);
 	}
 
-	return { basePdfBase64, layerPdfBase64 };
+	// Validate layer PDF content based on input type
+	if (layerInputType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!layerDocContent || typeof layerDocContent !== 'string' || layerDocContent.trim() === '') {
+			throw new Error('Layer PDF URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (layerInputType === 'base64') {
+		// For base64, validate content is not empty
+		if (!layerDocContent || layerDocContent.trim() === '') {
+			throw new Error('Layer PDF content is required');
+		}
+	} else if (layerInputType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!layerDocContent || layerDocContent.trim() === '') {
+			throw new Error('Layer PDF content is required');
+		}
+	}
+
+	return { baseDocContent, layerDocContent, baseDocName, layerDocName };
 }
 

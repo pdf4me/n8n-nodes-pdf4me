@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -196,6 +197,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	let docContent: string;
 	let originalFileName: string = 'markdown_file';
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -210,13 +213,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		const binaryData = item[0].binary[binaryPropertyName];
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		inputDocName = binaryData.fileName || 'markdown_file.md';
+		originalFileName = inputDocName;
 
-		// Use the original filename if available
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ConvertMdToPdf API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = operation === ActionConstants.ConvertToPdf
@@ -245,10 +254,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`Invalid base64 content: ${error.message}`);
 		}
 
-		// Remove data URL prefix if present (e.g., "data:text/markdown;base64,")
+		// Handle data URLs (remove data: prefix if present)
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+
+		blobId = '';
 	} else if (inputDataType === 'markdownCode') {
 		// Use raw Markdown code and convert to base64
 		const markdownCode = operation === ActionConstants.ConvertToPdf
@@ -267,8 +278,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Fallback: try with different encoding
 			docContent = Buffer.from(markdownCode, 'latin1').toString('base64');
 		}
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
-		// Use Markdown URL directly - download the file first
+		// Use Markdown URL directly - send URL as string directly in docContent
 		const markdownUrl = operation === ActionConstants.ConvertToPdf
 			? this.getNodeParameter('mdUrl', index) as string
 			: this.getNodeParameter('markdownUrl', index) as string;
@@ -276,24 +289,42 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Validate URL format
 		try {
 			new URL(markdownUrl);
-		} catch (error) {
+		} catch {
 			throw new Error('Invalid URL format. Please provide a valid URL to the Markdown file.');
 		}
 
-		docContent = await downloadMarkdownFromUrl(markdownUrl);
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(markdownUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate base64 content
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('Markdown content is required');
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64' || inputDataType === 'markdownCode') {
+		// For base64/markdownCode, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Markdown content is required');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Markdown content is required');
+		}
 	}
 
 	// Build the request body
+	// Use inputDocName if originalFileName is not provided, otherwise use originalFileName
+	const finalDocName = originalFileName || inputDocName || 'markdown_file.md';
 	const body: IDataObject = {
-		docContent,
-		docName: originalFileName,
+		docContent, // Binary data uses blobId format, base64/markdownCode uses base64 string, URL uses URL string
+		docName: finalDocName,
 		IsAsync: true, // Asynchronous processing as per Python sample
 	};
 
@@ -364,51 +395,4 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case
 	throw new Error('No response data received from PDF4ME API');
-}
-
-async function downloadMarkdownFromUrl(markdownUrl: string): Promise<string> {
-	/**
-	 * Download Markdown from URL and convert to base64
-	 * Process: Download file → Convert to base64 → Validate content
-	 *
-	 * Args:
-	 *   markdownUrl (str): URL to the Markdown file
-	 *
-	 * Returns:
-	 *   str: Base64 encoded Markdown content
-	 *
-	 * Raises:
-	 *   Error: For download or encoding errors
-	 */
-	try {
-		// Download the Markdown file
-		const response = await fetch(markdownUrl);
-
-		if (!response.ok) {
-			throw new Error(`Failed to download Markdown from URL: ${response.status} ${response.statusText}`);
-		}
-
-		// Get the file as array buffer
-		const arrayBuffer = await response.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
-
-		// Convert to base64
-		const base64Content = buffer.toString('base64');
-
-		// Validate the content
-		if (base64Content.length < 50) {
-			throw new Error('Downloaded file appears to be too small. Please ensure the URL points to a valid Markdown file.');
-		}
-
-		return base64Content;
-
-	} catch (error) {
-		if (error.message.includes('Failed to fetch')) {
-			throw new Error(`Network error downloading Markdown from URL: ${error.message}`);
-		} else if (error.message.includes('Failed to download')) {
-			throw new Error(`HTTP error downloading Markdown: ${error.message}`);
-		} else {
-			throw new Error(`Error downloading Markdown from URL: ${error.message}`);
-		}
-	}
 }

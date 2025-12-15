@@ -404,7 +404,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('File URL is required');
 		}
 
-		// Send URL as string directly in pdfContentBase64 - no conversion or modification
+		// Validate URL format
+		try {
+			new URL(fileUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
+
+		// Send URL as string directly in pdfContentBase64 - no download or conversion
 		blobId = '';
 		pdfContentBase64 = String(fileUrl);
 	} else {
@@ -417,13 +424,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!pdfContentBase64 || typeof pdfContentBase64 !== 'string' || pdfContentBase64.trim() === '') {
 			throw new Error('URL is required and must be a non-empty string');
 		}
-		try {
-			new URL(pdfContentBase64);
-		} catch (error) {
-			throw new Error(`Invalid URL format: ${pdfContentBase64}`);
-		}
-		// Ensure pdfContentBase64 remains as the original URL string (no trimming)
-		// pdfContentBase64 is already set to the URL string above
+		// URL validation already done above
 	} else if (inputDataType === 'base64') {
 		// For base64, validate content is not empty
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {

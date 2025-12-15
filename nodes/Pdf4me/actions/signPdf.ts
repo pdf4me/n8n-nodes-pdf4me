@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -480,6 +481,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
+	let pdfBlobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -491,38 +494,70 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in SignPdf API payload
+		pdfBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${pdfBlobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
 
-		// Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
+		// Handle data URLs (remove data: prefix if present)
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+
+		pdfBlobId = '';
 	} else if (inputDataType === 'url') {
-		// Download PDF from URL
+		// URL input - send URL as string directly in docContent
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response, 'binary');
-		docContent = buffer.toString('base64');
+
+		// Validate URL format
+		try {
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
+
+		// Send URL as string directly in docContent - no download or conversion
+		pdfBlobId = '';
+		docContent = String(pdfUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate PDF content
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
+	// Validate PDF content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
 	}
 
 	// Handle signature image input
 	let imageFile: string;
+	let imageBlobId: string = '';
+	let inputImageName: string = '';
 
 	if (signatureImageInputType === 'binaryData') {
 		// Get signature image from binary data
@@ -533,42 +568,76 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${signatureBinaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, signatureBinaryPropertyName);
-		imageFile = buffer.toString('base64');
+		const binaryData = item[0].binary[signatureBinaryPropertyName];
+		inputImageName = binaryData.fileName || imageName || 'signature.png';
+
+		// Get binary data as Buffer
+		const imageBuffer = await this.helpers.getBinaryDataBuffer(index, signatureBinaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in SignPdf API payload
+		imageBlobId = await uploadBlobToPdf4me.call(this, imageBuffer, inputImageName);
+
+		// Use blobId in imageFile
+		imageFile = `${imageBlobId}`;
 	} else if (signatureImageInputType === 'base64') {
 		// Use base64 content directly
 		imageFile = this.getNodeParameter('signatureBase64Content', index) as string;
 
-		// Remove data URL prefix if present (e.g., "data:image/png;base64,")
+		// Handle data URLs (remove data: prefix if present)
 		if (imageFile.includes(',')) {
 			imageFile = imageFile.split(',')[1];
 		}
+
+		imageBlobId = '';
 	} else if (signatureImageInputType === 'url') {
-		// Download signature image from URL
+		// URL input - send URL as string directly in imageFile
 		const signatureImageUrl = this.getNodeParameter('signatureImageUrl', index) as string;
-		const options = {
-			method: 'GET' as const,
-			url: signatureImageUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response, 'binary');
-		imageFile = buffer.toString('base64');
+
+		// Validate URL format
+		try {
+			new URL(signatureImageUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the signature image file.');
+		}
+
+		// Send URL as string directly in imageFile - no download or conversion
+		imageBlobId = '';
+		imageFile = String(signatureImageUrl);
 	} else {
 		throw new Error(`Unsupported signature image input type: ${signatureImageInputType}`);
 	}
 
-	// Validate signature image content
-	if (!imageFile || imageFile.trim() === '') {
-		throw new Error('Signature image content is required');
+	// Validate signature image content based on input type
+	if (signatureImageInputType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!imageFile || typeof imageFile !== 'string' || imageFile.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (signatureImageInputType === 'base64') {
+		// For base64, validate content is not empty
+		if (!imageFile || imageFile.trim() === '') {
+			throw new Error('Signature image content is required');
+		}
+	} else if (signatureImageInputType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!imageFile || imageFile.trim() === '') {
+			throw new Error('Signature image content is required');
+		}
 	}
 
 	// Build the request body
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.pdf';
+	// Use inputImageName if imageName is not provided, otherwise use imageName
+	const finalImageName = imageName || inputImageName || 'signature.png';
 	const body: IDataObject = {
-		docContent,
-		docName,
-		imageFile,
-		imageName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
+		imageFile, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		imageName: finalImageName,
 		pages,
 		alignX,
 		alignY,

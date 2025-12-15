@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -251,6 +252,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const pdfInputDataType = this.getNodeParameter('pdfInputDataType', index) as string;
 	let docContent: string;
 	let docName: string = 'template.pdf';
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	if (pdfInputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('pdfBinaryPropertyName', index) as string;
@@ -258,28 +261,65 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || 'template.pdf';
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || 'template.pdf';
+		docName = inputDocName;
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in FillPdfForm API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (pdfInputDataType === 'base64') {
 		docContent = this.getNodeParameter('pdfBase64Content', index) as string;
+
+		// Handle data URLs (remove data: prefix if present)
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+
+		blobId = '';
 	} else if (pdfInputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const options = {
 
-			method: 'GET' as const,
+		// Validate URL format
+		try {
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
 
-			url: pdfUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response as Buffer);
-		docContent = buffer.toString('base64');
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(pdfUrl);
 		docName = pdfUrl.split('/').pop() || 'template.pdf';
 	} else {
 		throw new Error(`Unsupported PDF input data type: ${pdfInputDataType}`);
+	}
+
+	// Validate content based on input type
+	if (pdfInputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (pdfInputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	} else if (pdfInputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
 	}
 
 	// Other parameters
@@ -338,9 +378,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Build the request body
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'template.pdf';
 	const body: IDataObject = {
-		templateDocName: docName,
-		templateDocContent: docContent,
+		templateDocName: finalDocName,
+		templateDocContent: docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		dataArray,
 		outputType,
 		inputDataType,

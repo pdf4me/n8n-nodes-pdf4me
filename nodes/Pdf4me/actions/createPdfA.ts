@@ -3,6 +3,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -228,6 +229,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	let docContent: string;
 	let originalFileName = docName;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
@@ -235,36 +238,71 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
+
 		const binaryData = item[0].binary[binaryPropertyName];
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
+		inputDocName = binaryData.fileName || docName || 'document';
+		originalFileName = inputDocName;
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in PdfA API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+
+		// Handle data URLs (remove data: prefix if present)
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
+		// Validate URL format
 		try {
 			new URL(pdfUrl);
-		} catch (error) {
+		} catch {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
-		docContent = await downloadPdfFromUrl.call(this, this.helpers, pdfUrl);
+
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(pdfUrl);
 	} else {
 		throw new Error('Unsupported input data type: ' + inputDataType);
 	}
 
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
 	}
 
+	// Use inputDocName if originalFileName is not provided, otherwise use originalFileName
+	const finalDocName = originalFileName || inputDocName || docName || 'document.pdf';
 	const body: IDataObject = {
-		docContent,
-		docName: originalFileName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		compliance,
 		allowUpgrade: advancedOptions?.allowUpgrade !== undefined ? advancedOptions.allowUpgrade : true,
 		allowDowngrade: advancedOptions?.allowDowngrade !== undefined ? advancedOptions.allowDowngrade : true,
@@ -322,62 +360,3 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 	throw new Error('No response data received from PDF4ME API');
 }
-
-const downloadPdfFromUrl = async (helpers: IExecuteFunctions['helpers'], pdfUrl: string): Promise<string> => {
-	try {
-		const response = await helpers.httpRequest({
-			method: 'GET',
-			url: pdfUrl,
-			encoding: 'arraybuffer',
-			returnFullResponse: true,
-		});
-		
-		// Check if response body exists and handle different formats
-		if (!response.body) {
-			throw new Error('No response body received from URL');
-		}
-
-		let buffer: Buffer;
-		
-		// Handle different response body formats
-		if (response.body instanceof Buffer) {
-			buffer = response.body;
-		} else if (typeof response.body === 'string') {
-			// If it's a string, convert to buffer
-			buffer = Buffer.from(response.body, 'utf8');
-		} else if (response.body instanceof ArrayBuffer) {
-			// If it's an ArrayBuffer, convert to Buffer
-			buffer = Buffer.from(response.body);
-		} else if (ArrayBuffer.isView(response.body)) {
-			// If it's a TypedArray or DataView
-			buffer = Buffer.from(response.body.buffer, response.body.byteOffset, response.body.byteLength);
-		} else {
-			// Try to convert using Buffer.from with default encoding
-			try {
-				buffer = Buffer.from(response.body as any);
-			} catch (error) {
-				throw new Error(`Unable to convert response body to buffer. Body type: ${typeof response.body}, Body: ${String(response.body).substring(0, 100)}`);
-			}
-		}
-
-		// Validate the buffer
-		if (!buffer || buffer.length === 0) {
-			throw new Error('Downloaded file is empty');
-		}
-
-		const base64Content = buffer.toString('base64');
-		
-		if (base64Content.length < 100) {
-			throw new Error('Downloaded file appears to be too small. Please ensure the URL points to a valid PDF file.');
-		}
-		return base64Content;
-	} catch (error) {
-		if (error.message.includes('Failed to fetch')) {
-			throw new Error(`Network error downloading PDF from URL: ${error.message}`);
-		} else if (error.message.includes('Failed to download')) {
-			throw new Error(`HTTP error downloading PDF: ${error.message}`);
-		} else {
-			throw new Error(`Error downloading PDF from URL: ${error.message}`);
-		}
-	}
-};

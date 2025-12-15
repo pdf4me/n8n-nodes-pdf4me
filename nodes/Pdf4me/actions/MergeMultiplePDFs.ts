@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Buffer and other Node.js globals available
@@ -183,16 +184,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 		// Get PDF contents from mixed input types
-		const pdfContentsBase64 = await getPdfContents.call(this, index);
+		// Returns array of: blobId (for binary), base64 string (for base64), or URL string (for URL)
+		const pdfContents = await getPdfContents.call(this, index);
 
 		// Validate that we have at least 2 PDFs to merge
-		if (pdfContentsBase64.length < 2) {
+		if (pdfContents.length < 2) {
 			throw new Error('At least 2 PDF files are required for merging');
 		}
 
 		// Build the request body for merging multiple PDFs
+		// docContent can contain mix of: blobId (for binary), base64 string (for base64), or URL string (for URL)
 		const body: IDataObject = {
-			docContent: pdfContentsBase64,
+			docContent: pdfContents,
 			docName,
 			IsAsync: true,
 		};
@@ -234,7 +237,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						mimeType: 'application/pdf',
 						fileSize: responseData.length,
 						success: true,
-						inputFileCount: pdfContentsBase64.length,
+						inputFileCount: pdfContents.length,
 					},
 					binary: {
 						[binaryDataName || 'data']: binaryData,
@@ -261,12 +264,13 @@ async function getPdfContents(this: IExecuteFunctions, index: number): Promise<s
 		throw new Error('At least one PDF file is required');
 	}
 
-	const pdfContentsBase64: string[] = [];
+	// Array can contain: blobId (for binary), base64 string (for base64), or URL string (for URL)
+	const pdfContents: string[] = [];
 	const item = this.getInputData(index);
 
 	for (const pdfFile of pdfFileArray) {
 		const inputType = pdfFile.inputType as string;
-		const fileName = pdfFile.fileName as string || 'unnamed';
+		const fileName = pdfFile.fileName as string || 'unnamed.pdf';
 
 		if (inputType === 'binaryData') {
 			// Get PDF content from binary data
@@ -276,39 +280,54 @@ async function getPdfContents(this: IExecuteFunctions, index: number): Promise<s
 				throw new Error(`No binary data found in property '${binaryPropertyName}' for file '${fileName}'`);
 			}
 
-			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-			const base64Content = buffer.toString('base64');
-			pdfContentsBase64.push(base64Content);
+			const binaryData = item[0].binary[binaryPropertyName];
+			const inputDocName = binaryData.fileName || fileName;
+
+			// Get binary data as Buffer
+			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+			// Upload the file to UploadBlob endpoint and get blobId
+			// UploadBlob needs binary file (Buffer), not base64 string
+			// Returns blobId which is then used in Merge API payload
+			const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+			// Use blobId in pdfContents
+			pdfContents.push(`${blobId}`);
 		} else if (inputType === 'base64') {
 			// Get PDF content from base64 string
-			const base64Content = pdfFile.base64Content as string;
+			let base64Content = pdfFile.base64Content as string;
 			if (!base64Content || base64Content.trim() === '') {
 				throw new Error(`Base64 content is required for file '${fileName}'`);
 			}
-			pdfContentsBase64.push(base64Content.trim());
+
+			// Handle data URLs (remove data: prefix if present)
+			if (base64Content.includes(',')) {
+				base64Content = base64Content.split(',')[1];
+			}
+
+			pdfContents.push(base64Content.trim());
 		} else if (inputType === 'url') {
-			// Get PDF content from URL
+			// Get PDF URL
 			const pdfUrl = pdfFile.pdfUrl as string;
 			if (!pdfUrl || pdfUrl.trim() === '') {
 				throw new Error(`PDF URL is required for file '${fileName}'`);
 			}
 
-			const options = {
-				method: 'GET' as const,
-				url: pdfUrl.trim(),
-				encoding: 'arraybuffer' as const,
-			};
+			// Validate URL format
+			try {
+				new URL(pdfUrl);
+			} catch {
+				throw new Error(`Invalid URL format for file '${fileName}'. Please provide a valid URL to the PDF file.`);
+			}
 
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			const buffer = Buffer.from(response as Buffer);
-			const base64Content = buffer.toString('base64');
-			pdfContentsBase64.push(base64Content);
+			// Send URL as string directly - no download or conversion
+			pdfContents.push(String(pdfUrl));
 		} else {
 			throw new Error(`Unsupported input type '${inputType}' for file '${fileName}'`);
 		}
 	}
 
-	return pdfContentsBase64;
+	return pdfContents;
 }
 
 

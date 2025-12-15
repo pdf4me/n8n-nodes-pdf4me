@@ -4,6 +4,7 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -192,6 +193,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let pdfContentBase64: string;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
@@ -199,37 +202,75 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		pdfContentBase64 = buffer.toString('base64');
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || 'sample.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in SplitByText API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in pdfContentBase64
+		pdfContentBase64 = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		pdfContentBase64 = this.getNodeParameter('base64Content', index) as string;
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
 			throw new Error('Base64 content is required');
 		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (pdfContentBase64.includes(',')) {
+			pdfContentBase64 = pdfContentBase64.split(',')[1];
+		}
 		pdfContentBase64 = pdfContentBase64.trim();
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
+
+		// Validate URL format
 		try {
-			const options = {
-				method: 'GET' as const,
-				url: pdfUrl.trim(),
-				encoding: 'arraybuffer' as const,
-			};
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			pdfContentBase64 = Buffer.from(response).toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to download PDF from URL: ${error.message}`);
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
+
+		// Send URL as string directly in pdfContentBase64 - no download or conversion
+		blobId = '';
+		pdfContentBase64 = String(pdfUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!pdfContentBase64 || typeof pdfContentBase64 !== 'string' || pdfContentBase64.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty (already validated above)
+		// Additional validation could be added here if needed
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	}
+
+	// Use inputDocName if available, otherwise use default
+	const finalDocName = inputDocName || 'sample.pdf';
 	const body: IDataObject = {
-		docContent: pdfContentBase64,
-		docName: 'sample.pdf',
+		docContent: pdfContentBase64, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		text: textToSearch,
 		splitTextPage,
 		fileNaming,
