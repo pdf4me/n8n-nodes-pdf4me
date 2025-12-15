@@ -1,5 +1,5 @@
 import { IExecuteFunctions, INodeExecutionData, INodeProperties, IDataObject } from 'n8n-workflow';
-import { pdf4meAsyncRequest, ActionConstants } from '../GenericFunctions';
+import { pdf4meAsyncRequest, ActionConstants, uploadBlobToPdf4me } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
 	{
@@ -113,34 +113,43 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main document content
-	let docContent: string;
+	let docContent: string = '';
 	let docName: string = outputFileName;
+	let blobId: string = '';
+
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
+
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || outputFileName;
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		blobId = '';
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const docUrl = this.getNodeParameter('docUrl', index) as string;
-		const options = {
 
-			method: 'GET' as const,
-
-			url: docUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response, 'binary');
-		docContent = buffer.toString('base64');
+		// 2. Extract filename from URL
 		docName = docUrl.split('/').pop() || outputFileName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = docUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}

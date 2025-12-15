@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -128,7 +129,7 @@ export const description: INodeProperties[] = [
 /**
  * Extract Attachment from PDF - Extract embedded attachments from PDF documents using PDF4ME
  * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return attachment data
- * 
+ *
  * This action extracts embedded attachments from PDF documents:
  * - Returns structured JSON data with all extracted attachments
  * - Supports various PDF document formats
@@ -140,10 +141,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const docName = this.getNodeParameter('docName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
+	let docContent: string = '';
+	let inputDocName: string = docName;
+	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 
 		// Get binary data from previous node
@@ -161,13 +165,31 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName;
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		blobId = '';
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
+
+		// 2. Extract filename from URL
+		inputDocName = pdfUrl.split('/').pop() || docName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -175,7 +197,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Prepare request body
 	const body: IDataObject = {
 		docContent,
-		docName,
+		docName: inputDocName,
 		IsAsync: true, // Enable asynchronous processing
 	};
 
@@ -200,7 +222,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						message: 'Attachments extracted successfully',
 						processingTimestamp: new Date().toISOString(),
-						sourceFileName: docName,
+						sourceFileName: inputDocName,
 						operation: 'extractAttachmentFromPdf',
 					},
 				},
@@ -210,20 +232,5 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case - no response received
 	throw new Error('No attachment extraction results received from PDF4ME API');
-}
-
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
-	try {
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
 }
 

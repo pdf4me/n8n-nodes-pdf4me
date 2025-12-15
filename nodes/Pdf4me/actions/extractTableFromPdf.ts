@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -127,8 +128,8 @@ export const description: INodeProperties[] = [
 
 /**
  * Extract Table from PDF - Extract table data from PDF documents using PDF4ME
- * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return table data
- * 
+ * Process: Read PDF document → Upload/Prepare content → Send API request → Poll for completion → Return table data
+ *
  * This action extracts table data from PDF documents:
  * - Returns structured JSON data with all extracted table information
  * - Supports various PDF document formats
@@ -137,16 +138,16 @@ export const description: INodeProperties[] = [
  */
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-	const docName = this.getNodeParameter('docName', index) as string;
+	let docName = this.getNodeParameter('docName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
+	let docContent: string = '';
+	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-
-		// Get binary data from previous node
 		const item = this.getInputData(index);
 
 		if (!item[0].binary) {
@@ -161,13 +162,34 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		const inputDocName = binaryData.fileName || docName || 'document.pdf';
+		docName = inputDocName;
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		blobId = '';
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
+
+		// 2. Extract filename from URL if docName not provided
+		if (!docName || docName === 'document.pdf') {
+			docName = pdfUrl.split('/').pop() || 'document.pdf';
+		}
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -210,25 +232,5 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case - no response received
 	throw new Error('No table extraction results received from PDF4ME API');
-}
-
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
-	try {
-		const options = {
-
-			method: 'GET' as const,
-
-			url: pdfUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
 }
 
