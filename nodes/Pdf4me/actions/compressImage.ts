@@ -180,16 +180,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 
 		// Get binary data from n8n using the proper helper method
-		// Flow: Binary Data → Buffer/Stream (via getBinaryDataBuffer) → FormData → UploadBlob → blobId → CompressImage API
+		// Flow: Binary Data → Buffer/Stream (via getBinaryDataBuffer) → Native multipart/form-data → UploadBlob → blobId → CompressImage API
 		// Note: n8n Cloud uses Filesystem storage by default, which stores files on disk
-		// getBinaryDataBuffer() loads the file into memory, but FormData can handle this efficiently
+		// getBinaryDataBuffer() loads the file into memory, which is then used to create native multipart/form-data
 		// for filesystem-stored binary data in n8n Cloud
 		const binaryData = item[0].binary[binaryPropertyName];
 		docName = binaryData.fileName || outputFileName;
 
 		// Use n8n's helper to get binary data as Buffer
 		// In n8n Cloud with Filesystem storage, this efficiently reads from disk
-		// The buffer is then passed to FormData which streams it to the API
+		// The buffer is then used to create native multipart/form-data for the API upload
 		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
 		// Extract input image type from filename for payload

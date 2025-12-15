@@ -8,7 +8,6 @@ import type {
 	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
-import FormData from 'form-data';
 
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
@@ -241,11 +240,50 @@ export function sanitizeProfiles(data: IDataObject): void {
 }
 
 /**
+ * Creates a multipart/form-data body manually without external dependencies.
+ * This is a native implementation to comply with n8n community node guidelines.
+ *
+ * @param fieldName - The form field name
+ * @param fileBuffer - The file buffer to upload
+ * @param filename - The filename
+ * @returns Object with body (Buffer) and boundary string
+ */
+function createMultipartFormData(fieldName: string, fileBuffer: Buffer, filename: string): { body: Buffer; boundary: string } {
+	// Generate a unique boundary
+	const boundary = `----n8n-pdf4me-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+	const CRLF = '\r\n';
+
+	// Build the multipart/form-data body
+	const parts: Buffer[] = [];
+
+	// Opening boundary
+	parts.push(Buffer.from(`--${boundary}${CRLF}`));
+
+	// Content-Disposition header
+	const disposition = `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"${CRLF}`;
+	parts.push(Buffer.from(disposition));
+
+	// Content-Type header (use application/octet-stream for binary files)
+	parts.push(Buffer.from(`Content-Type: application/octet-stream${CRLF}${CRLF}`));
+
+	// File content
+	parts.push(fileBuffer);
+
+	// Closing boundary
+	parts.push(Buffer.from(`${CRLF}--${boundary}--${CRLF}`));
+
+	// Combine all parts
+	const body = Buffer.concat(parts);
+
+	return { body, boundary };
+}
+
+/**
  * Uploads binary data to PDF4me's UploadBlob endpoint and returns the blobId.
  * This is used when binary data is provided as input instead of base64 content.
  *
  * @param this - Execution context
- * @param buffer - Binary data buffer to upload
+ * @param fileStream - Binary data stream or buffer to upload
  * @param filename - Name of the file being uploaded
  * @returns The blobId from the API response
  */
@@ -255,46 +293,51 @@ export async function uploadBlobToPdf4me(
 	filename: string,
 ): Promise<string> {
 	try {
-		// Note: n8n Cloud uses Filesystem storage by default, which stores binary data on disk
-		// This means files are not loaded into memory until getBinaryDataBuffer() is called
-		// FormData streams the buffer efficiently, so memory usage is reasonable even for larger files
-		// However, very large files (>500MB) may still cause issues depending on the n8n Cloud plan
+		// Convert stream to buffer if needed
+		let fileBuffer: Buffer;
 		if (fileStream instanceof Buffer) {
-			const sizeMB = fileStream.length / 1024 / 1024;
-			// Very large files might still hit memory limits during FormData serialization
-			// Set a reasonable upper limit based on typical n8n Cloud memory constraints
-			if (sizeMB > 500) {
-				throw new Error(
-					`File too large (${Math.round(sizeMB * 100) / 100}MB). Files larger than 500MB may exceed n8n Cloud memory limits. ` +
-					'Please use a smaller file or consider processing it in chunks.',
-				);
+			fileBuffer = fileStream;
+		} else {
+			// Read stream into buffer
+			const chunks: Buffer[] = [];
+			for await (const chunk of fileStream) {
+				// Ensure chunk is a Buffer - handle different chunk types
+				if (Buffer.isBuffer(chunk)) {
+					chunks.push(chunk);
+				} else {
+					// Convert other types (string, Uint8Array, etc.) to Buffer
+					chunks.push(Buffer.from(chunk as string | ArrayLike<number>));
+				}
 			}
+			fileBuffer = Buffer.concat(chunks);
 		}
 
-		// Create FormData for multipart/form-data upload to UploadBlob endpoint
-		// Match Postman: form-data with key 'file' and the file stream/data as the file value
-		// Note: In n8n Cloud with Filesystem storage, binary data is stored on disk
-		// FormData will stream the buffer/stream efficiently without loading entire file into memory twice
-		const formData = new FormData();
-		formData.append('file', fileStream, filename); // Append buffer/stream directly with filename
+		// Check file size
+		const sizeMB = fileBuffer.length / 1024 / 1024;
+		// Very large files might hit memory limits
+		// Set a reasonable upper limit based on typical n8n Cloud memory constraints
+		if (sizeMB > 500) {
+			throw new Error(
+				`File too large (${Math.round(sizeMB * 100) / 100}MB). Files larger than 500MB may exceed n8n Cloud memory limits. ` +
+				'Please use a smaller file or consider processing it in chunks.',
+			);
+		}
 
-		// Get FormData headers - this includes Content-Type with the proper boundary
-		const formHeaders = formData.getHeaders();
+		// Create multipart/form-data body manually (native implementation, no external dependencies)
+		const { body, boundary } = createMultipartFormData('file', fileBuffer, filename);
 
 		// Get authentication credentials
 		const credentials = await this.getCredentials('pdf4meApi');
 		const apiKey = credentials?.apiKey as string;
 
-		// Make the upload request
-		// Try letting FormData handle Content-Type completely by spreading its headers
-		// Only add Authorization manually
+		// Make the upload request with manually constructed multipart/form-data
 		const response = await this.helpers.httpRequest({
 			url: 'https://api.pdf4me.com/api/V2/UploadBlob',
 			method: 'POST',
-			body: formData, // FormData object
+			body: body, // Native Buffer with multipart/form-data
 			headers: {
-				...formHeaders, // Spread all FormData headers (includes content-type with boundary)
-				'Authorization': `Basic ${apiKey}`, // Add auth after to ensure it's not overridden
+				'Content-Type': `multipart/form-data; boundary=${boundary}`,
+				'Authorization': `Basic ${apiKey}`,
 			},
 			returnFullResponse: true,
 			timeout: 6000023,
