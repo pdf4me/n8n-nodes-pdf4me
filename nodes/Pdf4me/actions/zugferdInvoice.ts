@@ -1,6 +1,7 @@
 import type { INodeProperties, INodeExecutionData, IDataObject } from 'n8n-workflow';
 import type { IExecuteFunctions } from 'n8n-workflow';
 import {
+	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
@@ -589,11 +590,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		ZugferdCreatorAction.InvoiceCsvData = invoiceDataBase64;
 	}
 
-	// Prepare payload
+	// Prepare payload - XmlOnly uses sync request, XmlWithPdf uses async
 	const payload: IDataObject = {
 		docContent: docContent || '',
 		docName: fileName,
-		isAsync: 'true',
+		isAsync: outputMode === 'XmlOnly' ? 'false' : 'true',
 		ZugferdCreatorAction,
 	};
 
@@ -603,9 +604,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		sanitizeProfiles(payload);
 	}
 
-	// Call the PDF4me API to create Zugferd Invoice
-	const result = await pdf4meAsyncRequest.call(this, '/api/v2/CreateZugferdInvoice', payload);
-
 	// Determine file extension based on output mode
 	const fileExtension = outputMode === 'XmlOnly' ? 'xml' : 'pdf';
 	let finalOutputFileName = outputFileName;
@@ -614,6 +612,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (!finalOutputFileName.includes('.')) {
 		finalOutputFileName = `${finalOutputFileName}.${fileExtension}`;
 	}
+	// Ensure .xml extension for XmlOnly mode
+	if (outputMode === 'XmlOnly' && !finalOutputFileName.endsWith('.xml')) {
+		finalOutputFileName = finalOutputFileName.replace(/\.[^.]+$/, '.xml');
+	}
+
+	// Call the PDF4me API to create Zugferd Invoice
+	// XmlOnly uses sync request (pdf4meApiRequest), XmlWithPdf uses async (pdf4meAsyncRequest)
+	const result = outputMode === 'XmlOnly'
+		? await pdf4meApiRequest.call(this, '/api/v2/CreateZugferdInvoice', payload)
+		: await pdf4meAsyncRequest.call(this, '/api/v2/CreateZugferdInvoice', payload);
 
 	// Return the result
 	const returnData: INodeExecutionData[] = [
