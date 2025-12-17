@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -105,30 +106,42 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const hours = this.getNodeParameter('hours', index) as number;
 
-	let docContent: string;
-	let docName: string;
+	let docContent: string = '';
+	let docName: string = 'uploaded_file';
 
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || 'uploaded_file';
+
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || 'uploaded_file';
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob and use blobId in docContent
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+		docContent = `${blobId}`;
+
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 		docName = 'uploaded_file';
+
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			method: 'GET' as const,
-			url: fileUrl,
-			encoding: 'arraybuffer' as const,
-		});
-		const buffer = await this.helpers.binaryToBuffer(response);
-		docContent = buffer.toString('base64');
+
+		// 2. Extract filename from URL
 		docName = fileUrl.split('/').pop() || 'uploaded_file';
+
+		// 3. Use URL directly in docContent (no upload needed)
+		docContent = fileUrl;
+
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
