@@ -1,9 +1,11 @@
 import type { INodeProperties, INodeExecutionData, IDataObject } from 'n8n-workflow';
 import type { IExecuteFunctions } from 'n8n-workflow';
 import {
+	pdf4meApiRequest,
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
@@ -461,6 +463,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle different input types (optional - only if rendering on PDF)
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
@@ -476,24 +479,38 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
-		fileName = item[0].binary[binaryPropertyName].fileName || docName;
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		fileName = binaryData.fileName || docName;
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob and use blobId in docContent
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, fileName);
+		docContent = `${blobId}`;
+
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
 		fileName = docName;
+
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
 		try {
 			new URL(fileUrl);
 		} catch (error) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the file.');
 		}
-		docContent = await downloadPdfFromUrl.call(this, fileUrl);
-		fileName = docName;
+
+		// 2. Extract filename from URL
+		fileName = fileUrl.split('/').pop() || docName;
+
+		// 3. Use URL directly in docContent (no download needed)
+		docContent = fileUrl;
 	}
 
 	// Get invoice data input type and handle accordingly
@@ -589,11 +606,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		ZugferdCreatorAction.InvoiceCsvData = invoiceDataBase64;
 	}
 
-	// Prepare payload
+	// Prepare payload - XmlOnly uses sync request, XmlWithPdf uses async
 	const payload: IDataObject = {
 		docContent: docContent || '',
 		docName: fileName,
-		isAsync: 'true',
+		isAsync: outputMode === 'XmlOnly' ? 'false' : 'true',
 		ZugferdCreatorAction,
 	};
 
@@ -603,9 +620,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		sanitizeProfiles(payload);
 	}
 
-	// Call the PDF4me API to create Zugferd Invoice
-	const result = await pdf4meAsyncRequest.call(this, '/api/v2/CreateZugferdInvoice', payload);
-
 	// Determine file extension based on output mode
 	const fileExtension = outputMode === 'XmlOnly' ? 'xml' : 'pdf';
 	let finalOutputFileName = outputFileName;
@@ -614,6 +628,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (!finalOutputFileName.includes('.')) {
 		finalOutputFileName = `${finalOutputFileName}.${fileExtension}`;
 	}
+	// Ensure .xml extension for XmlOnly mode
+	if (outputMode === 'XmlOnly' && !finalOutputFileName.endsWith('.xml')) {
+		finalOutputFileName = finalOutputFileName.replace(/\.[^.]+$/, '.xml');
+	}
+
+	// Call the PDF4me API to create Zugferd Invoice
+	// XmlOnly uses sync request (pdf4meApiRequest), XmlWithPdf uses async (pdf4meAsyncRequest)
+	const result = outputMode === 'XmlOnly'
+		? await pdf4meApiRequest.call(this, '/api/v2/CreateZugferdInvoice', payload)
+		: await pdf4meAsyncRequest.call(this, '/api/v2/CreateZugferdInvoice', payload);
 
 	// Return the result
 	const returnData: INodeExecutionData[] = [
@@ -628,20 +652,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	];
 
 	return returnData;
-}
-
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
-	try {
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		});
-
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download file from URL: ${(error as Error).message}`);
-	}
 }
 
 async function downloadInvoiceDataFromUrl(this: IExecuteFunctions, dataUrl: string): Promise<string> {
