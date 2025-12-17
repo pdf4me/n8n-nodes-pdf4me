@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 	ActionConstants,
 } from '../GenericFunctions';
 
@@ -313,57 +314,61 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
-	let docContent: string;
+	let docContent: string = '';
 	let docName: string = outputFileName;
+
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
+
+		// Get binary data metadata for filename
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || outputFileName;
+
+		// Convert to Buffer and upload to UploadBlob
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'url') {
+		// Use URL directly in docContent - no upload required
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const options = {
-			method: 'GET' as const,
-			url: imageUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response as Buffer);
-		docContent = buffer.toString('base64');
 		docName = imageUrl.split('/').pop() || outputFileName;
+		docContent = imageUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
 	// Watermark image content
-	let watermarkContent: string;
+	let watermarkContent: string = '';
 	let watermarkFileName: string = 'watermark.png';
+
 	if (watermarkDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('watermarkBinaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}' for watermark`);
 		}
-		watermarkContent = item[0].binary[binaryPropertyName].data;
-		watermarkFileName = item[0].binary[binaryPropertyName].fileName || 'watermark.png';
+
+		// Get binary data metadata for filename
+		const binaryData = item[0].binary[binaryPropertyName];
+		watermarkFileName = binaryData.fileName || 'watermark.png';
+
+		// Convert to Buffer and upload to UploadBlob
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, watermarkFileName);
+		watermarkContent = `${blobId}`;
 	} else if (watermarkDataType === 'base64') {
 		watermarkContent = this.getNodeParameter('watermarkBase64Content', index) as string;
 	} else if (watermarkDataType === 'url') {
+		// Use URL directly - no upload required
 		const watermarkImageUrl = this.getNodeParameter('watermarkImageUrl', index) as string;
-		const options = {
-			method: 'GET' as const,
-			url: watermarkImageUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response as Buffer);
-		watermarkContent = buffer.toString('base64');
 		watermarkFileName = watermarkImageUrl.split('/').pop() || 'watermark.png';
+		watermarkContent = watermarkImageUrl;
 	} else {
 		throw new Error(`Unsupported watermark data type: ${watermarkDataType}`);
 	}

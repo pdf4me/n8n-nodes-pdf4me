@@ -289,7 +289,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Process pages option and filter PDF content if needed
 	// Note: filterPdfPages now accepts blobId, base64, or URL - API handles all types
 	if (pagesOption !== 'all') {
-		docContent = await filterPdfPages.call(this, docContent, pagesOption, inputDataType);
+		docContent = await filterPdfPages.call(this, docContent, pagesOption);
 	}
 
 	// Prepare request body
@@ -350,7 +350,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
  * @param inputDataType - Original input data type (binaryData, base64, or url) - for reference
  * @returns Filtered PDF content as base64 string (ExtractPages always returns base64 PDF)
  */
-async function filterPdfPages(this: IExecuteFunctions, docContent: string, pagesOption: string, inputDataType: string): Promise<string> {
+async function filterPdfPages(this: IExecuteFunctions, docContent: string, pagesOption: string): Promise<string> {
 	try {
 		// Parse pages option
 		const pageNumbers = parsePagesOption(pagesOption);

@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { sanitizeProfiles, ActionConstants } from '../GenericFunctions';
-import { pdf4meAsyncRequest } from '../GenericFunctions';
+import { sanitizeProfiles, ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 // Make Node.js globals available
 // declare const URL: any;
@@ -155,7 +154,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let docContent: string;
+	let docContent: string = '';
+	let inputDocName: string = docName;
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -171,13 +171,22 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'Common property names are "data" for file uploads or the filename without extension.',
 			);
 		}
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+
+		// Get binary data metadata for filename
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName;
+
+		// Convert to Buffer and upload to UploadBlob
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'url') {
+		// Use URL directly in docContent - no upload required
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
+		inputDocName = pdfUrl.split('/').pop() || docName;
+		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -185,7 +194,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Prepare request body
 	const body: IDataObject = {
 		docContent,
-		docName,
+		docName: inputDocName,
 		pageNumbers,
 		IsAsync: true, // Enable asynchronous processing
 	};
@@ -202,7 +211,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the response
 	if (responseData) {
-		const fileName = docName || `output_${Date.now()}.pdf`;
+		const fileName = inputDocName || `output_${Date.now()}.pdf`;
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
 			fileName,
@@ -216,7 +225,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					fileSize: responseData.length,
 					success: true,
 					message: 'Unwanted pages deleted successfully',
-					docName,
+					docName: inputDocName,
 				},
 				binary: {
 					[binaryDataName || 'data']: binaryData,
@@ -227,20 +236,5 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Error case
 	throw new Error('No response received from PDF4me API');
-}
-
-// Helper functions for downloading and reading files
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
-	try {
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
 }
 
