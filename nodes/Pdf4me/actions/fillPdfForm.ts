@@ -421,6 +421,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataName || 'data']: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	} else {
@@ -455,6 +456,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					binary: {
 						[binaryDataName || 'data']: binaryData,
 					},
+					pairedItem: { item: index },
 				});
 			}
 			return results;
@@ -482,6 +484,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					binary: {
 						[binaryDataName || 'data']: binaryData,
 					},
+					pairedItem: { item: index },
 				},
 			];
 		}

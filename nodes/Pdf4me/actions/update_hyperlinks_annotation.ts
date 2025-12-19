@@ -266,6 +266,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				[binaryDataKey]: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/pdf'),
 			},
 			json: {},
+			pairedItem: { item: index },
 		},
 	];
 }

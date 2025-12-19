@@ -451,6 +451,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			files: filesSummary,
 		},
 		binary: binaryData,
+		pairedItem: { item: index },
 	};
 
 	return [output];

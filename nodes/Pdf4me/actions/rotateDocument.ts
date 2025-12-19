@@ -416,6 +416,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataKey]: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

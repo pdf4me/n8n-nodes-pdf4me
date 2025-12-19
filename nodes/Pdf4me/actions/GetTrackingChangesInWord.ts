@@ -186,6 +186,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						operation: 'getTrackingChangesInWord',
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

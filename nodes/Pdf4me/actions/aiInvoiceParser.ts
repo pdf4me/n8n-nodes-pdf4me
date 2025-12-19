@@ -287,6 +287,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					...processedData, // Raw API response data
 					_metadata: metadata,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

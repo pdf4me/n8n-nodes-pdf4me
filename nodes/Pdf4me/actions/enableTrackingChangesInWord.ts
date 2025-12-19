@@ -172,6 +172,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				[binaryDataKey]: await this.helpers.prepareBinaryData(responseData, outputFileName, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
 			},
 			json: {},
+			pairedItem: { item: index },
 		},
 	];
 }

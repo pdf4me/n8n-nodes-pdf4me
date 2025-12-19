@@ -469,6 +469,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			files: filesSummary,
 		},
 		binary: binaryData,
+		pairedItem: { item: index },
 	};
 
 	return [output];

@@ -230,6 +230,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				docName,
 				swissQrData: parsedResult,
 			},
+			pairedItem: { item: index },
 		},
 	];
 }

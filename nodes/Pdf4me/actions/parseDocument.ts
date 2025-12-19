@@ -369,6 +369,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					binary: {
 						[binaryDataName || 'data']: binaryData,
 					},
+					pairedItem: { item: index },
 				},
 			];
 		} else {
@@ -381,6 +382,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			return [
 				{
 					json: parsedData, // Return the actual parsed data from API directly
+					pairedItem: { item: index },
 				},
 			];
 		}

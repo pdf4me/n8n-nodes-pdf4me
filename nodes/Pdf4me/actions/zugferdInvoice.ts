@@ -648,6 +648,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			binary: {
 				[binaryDataName || 'data']: await this.helpers.prepareBinaryData(result, finalOutputFileName),
 			},
+			pairedItem: { item: index },
 		},
 	];
 

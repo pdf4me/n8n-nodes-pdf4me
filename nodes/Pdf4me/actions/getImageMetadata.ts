@@ -214,6 +214,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					imageType: imageType,
 				},
 			},
+			pairedItem: { item: index },
 		},
 	];
 }

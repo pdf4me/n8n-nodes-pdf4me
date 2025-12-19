@@ -259,6 +259,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						pageSequence: pageSequence,
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

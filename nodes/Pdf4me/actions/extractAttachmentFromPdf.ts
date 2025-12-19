@@ -226,6 +226,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						operation: 'extractAttachmentFromPdf',
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

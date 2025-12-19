@@ -226,6 +226,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			binary: {
 				[binaryDataName || 'data']: binaryData,
 			},
+			pairedItem: { item: index },
 		},
 	];
 }

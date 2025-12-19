@@ -326,6 +326,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					operation: 'extractResources',
 				},
 			},
+			pairedItem: { item: index },
 		};
 
 		// Process images as binary data if requested

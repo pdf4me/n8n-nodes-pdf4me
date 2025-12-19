@@ -213,6 +213,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						operation: 'extractFormDataFromPdf',
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

@@ -239,6 +239,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						operation: 'classifyDocument',
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

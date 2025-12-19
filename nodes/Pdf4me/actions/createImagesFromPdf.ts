@@ -586,6 +586,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						binary: {
 							[`${binaryDataName || 'data'}_${i + 1}`]: binaryData,
 						},
+						pairedItem: { item: index },
 					});
 
 				} else {
@@ -628,13 +629,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						binary: {
 							[`${binaryDataName || 'data'}_${i + 1}`]: binaryData,
 						},
+						pairedItem: { item: index },
 					});
 
 				} else {
-					// Save problematic document for debugging
-					// This.helpers.fs is not available, so we'll skip file writing for now.
-					// If debugging is critical, this needs to be refactored.
-					// Removed console.warn for compliance with n8n guidelines
+				// Save problematic document for debugging
+				// This.helpers.fs is not available, so we'll skip file writing for now.
+				// If debugging is critical, this needs to be refactored.
+				// Removed console.warn for compliance with n8n guidelines
 				}
 			}
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
@@ -663,6 +665,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[fileName]: binaryData,
 				},
+				pairedItem: { item: index },
 			});
 
 		} else {

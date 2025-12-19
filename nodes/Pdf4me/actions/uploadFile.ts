@@ -185,6 +185,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			json: {
 				documentUrl: documentUrl,
 			},
+			pairedItem: { item: index },
 		},
 	];
 }

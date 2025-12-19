@@ -1,4 +1,4 @@
-﻿import type { INodeProperties } from 'n8n-workflow';
+import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -690,6 +690,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			binary: {
 				[binaryDataName || 'data']: binaryData,
 			},
+			pairedItem: { item: index },
 		};
 
 		logger.log('info', 'Add Attachment to PDF operation completed successfully', {

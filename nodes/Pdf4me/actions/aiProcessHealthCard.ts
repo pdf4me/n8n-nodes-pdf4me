@@ -220,6 +220,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						operation: 'aiProcessHealthCard',
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}
