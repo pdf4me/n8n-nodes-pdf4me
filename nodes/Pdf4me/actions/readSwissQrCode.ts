@@ -119,87 +119,54 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 
 	// Main PDF content
-	let docContent: string;
+	let docContent: string = '';
 	let docName: string = outputFileName.endsWith('.pdf') ? outputFileName : 'input.pdf';
 	let blobId: string = '';
-	let inputDocName: string = '';
 
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
+		// 2. Get binary data metadata
 		const binaryData = item[0].binary[binaryPropertyName];
-		inputDocName = binaryData.fileName || docName;
-		docName = inputDocName;
+		docName = binaryData.fileName || docName;
 
-		// Get binary data as Buffer
+		// 3. Convert to Buffer
 		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
-		// Upload the file to UploadBlob endpoint and get blobId
-		// UploadBlob needs binary file (Buffer), not base64 string
-		// Returns blobId which is then used in ReadSwissQrBill API payload
-		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
 
-		// Use blobId in docContent
+		// 5. Use blobId in docContent
 		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
-
-		// Handle data URLs (remove data: prefix if present)
-		if (docContent.includes(',')) {
-			docContent = docContent.split(',')[1];
-		}
-
 		blobId = '';
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
 
-		// Validate URL format
-		try {
-			new URL(pdfUrl);
-		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
-		}
+		// 2. Set docName to GetDocument.pdf for URL input
+		docName = 'GetDocument.pdf';
 
-		// Send URL as string directly in docContent - no download or conversion
+		// 3. Use URL directly in docContent
 		blobId = '';
-		docContent = String(pdfUrl);
-		docName = pdfUrl.split('/').pop() || docName;
+		docContent = pdfUrl.trim();
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate content based on input type
-	if (inputDataType === 'url') {
-		// For URLs, validate URL format (but don't modify the URL string)
-		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
-			throw new Error('URL is required and must be a non-empty string');
-		}
-		// URL validation already done above
-	} else if (inputDataType === 'base64') {
-		// For base64, validate content is not empty
-		if (!docContent || docContent.trim() === '') {
-			throw new Error('PDF content is required');
-		}
-	} else if (inputDataType === 'binaryData') {
-		// For binary data, validate blobId is set
-		if (!docContent || docContent.trim() === '') {
-			throw new Error('PDF content is required');
-		}
-	}
-
 	// Build the request body
-	// Use inputDocName if docName is not provided, otherwise use docName
-	const finalDocName = docName || inputDocName || 'input.pdf';
 	const body: IDataObject = {
-		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
-		docName: finalDocName,
+		docContent,
+		docName,
 		IsAsync: true,
 	};
 
@@ -230,7 +197,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				docName,
 				swissQrData: parsedResult,
 			},
-			pairedItem: { item: index },
 		},
 	];
 }

@@ -320,8 +320,29 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
+		}
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary);
+			const availablePropertiesStr = availableProperties.join(', ');
+			let suggestion = '';
+			if (availableProperties.length === 1) {
+				suggestion = ` Did you mean '${availableProperties[0]}'?`;
+			} else if (availableProperties.length > 0) {
+				suggestion = ` Available properties: ${availablePropertiesStr}.`;
+			}
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found for input image.${suggestion} ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
 		}
 
 		// Get binary data metadata for filename
@@ -348,18 +369,39 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let watermarkFileName: string = 'watermark.png';
 
 	if (watermarkDataType === 'binaryData') {
-		const binaryPropertyName = this.getNodeParameter('watermarkBinaryPropertyName', index) as string;
+		const watermarkBinaryPropertyName = this.getNodeParameter('watermarkBinaryPropertyName', index) as string;
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}' for watermark`);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
+		}
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[watermarkBinaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary);
+			const availablePropertiesStr = availableProperties.join(', ');
+			let suggestion = '';
+			if (availableProperties.length === 1) {
+				suggestion = ` Did you mean '${availableProperties[0]}'?`;
+			} else if (availableProperties.length > 0) {
+				suggestion = ` Available properties: ${availablePropertiesStr}.`;
+			}
+			throw new Error(
+				`Watermark binary property '${watermarkBinaryPropertyName}' not found.${suggestion} ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
 		}
 
 		// Get binary data metadata for filename
-		const binaryData = item[0].binary[binaryPropertyName];
+		const binaryData = item[0].binary[watermarkBinaryPropertyName];
 		watermarkFileName = binaryData.fileName || 'watermark.png';
 
 		// Convert to Buffer and upload to UploadBlob
-		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, watermarkBinaryPropertyName);
 		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, watermarkFileName);
 		watermarkContent = `${blobId}`;
 	} else if (watermarkDataType === 'base64') {

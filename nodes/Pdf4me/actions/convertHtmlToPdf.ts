@@ -381,13 +381,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Try to decode to verify it's valid base64
 		try {
 			const decoded = Buffer.from(base64Content, 'base64').toString('utf8');
-			// console.log(`Base64 Content Length: ${base64Content.length}`);
-			// console.log(`Decoded Content Length: ${decoded.length}`);
-			// console.log(`Decoded Content Preview: ${decoded.substring(0, 100)}...`);
 
 			// Check if decoded content looks like HTML
 			if (!decoded.includes('<') || !decoded.includes('>')) {
-				// console.log('Warning: Decoded base64 content does not appear to be HTML');
+				// Warning: Decoded base64 content does not appear to be HTML
 			}
 		} catch (error) {
 			throw new Error(`Invalid base64 content: ${error.message}`);
@@ -405,24 +402,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Ensure HTML has basic structure
 		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
-			// console.log('Warning: HTML code may not have proper HTML structure');
 			// Try to wrap the content in basic HTML structure if it's missing
 			if (!htmlCode.includes('<html')) {
 				htmlCode = `<!DOCTYPE html><html><head><title>Converted HTML</title></head><body>${htmlCode}</body></html>`;
-				// console.log('Wrapped HTML content in basic HTML structure');
 			}
 		}
-
-		// Debug: Log the HTML code length and first 100 characters
-		// console.log(`HTML Code Length: ${htmlCode.length}`);
-		// console.log(`HTML Code Preview: ${htmlCode.substring(0, 100)}...`);
 
 		// Convert HTML to base64
 		// Ensure proper UTF-8 encoding and handle any potential encoding issues
 		try {
 			docContent = Buffer.from(htmlCode, 'utf8').toString('base64');
 		} catch (error) {
-			// console.log('Error converting HTML to base64:', error);
 			// Fallback: try with different encoding
 			docContent = Buffer.from(htmlCode, 'latin1').toString('base64');
 		}

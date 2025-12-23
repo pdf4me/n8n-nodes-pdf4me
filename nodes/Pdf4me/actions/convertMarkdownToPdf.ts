@@ -248,7 +248,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const decoded = Buffer.from(docContent, 'base64').toString('utf8');
 			// Check if decoded content looks like Markdown
 			if (!decoded.includes('#') && !decoded.includes('*') && !decoded.includes('-')) {
-				// console.log('Warning: Decoded base64 content does not appear to be Markdown');
+				// Warning: Decoded base64 content does not appear to be Markdown
 			}
 		} catch (error) {
 			throw new Error(`Invalid base64 content: ${error.message}`);
@@ -325,7 +325,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const body: IDataObject = {
 		docContent, // Binary data uses blobId format, base64/markdownCode uses base64 string, URL uses URL string
 		docName: finalDocName,
-		IsAsync: true, // Asynchronous processing as per Python sample
+		IsAsync: false, // Asynchronous processing as per Python sample
 	};
 
 	// Add profiles if provided

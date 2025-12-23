@@ -286,10 +286,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/ParseDocument', body);
 
-	// Debug: Log the result to understand what we're getting
-	// console.log('ParseDocument API result type:', typeof result);
-	// console.log('ParseDocument API result:', JSON.stringify(result, null, 2));
-
 	// Process the response
 	if (result) {
 		let parsedData: any;
@@ -318,9 +314,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				contentType: typeof result,
 			};
 		}
-
-		// Debug: Log the parsed data
-		// console.log('ParseDocument parsed data:', JSON.stringify(parsedData, null, 2));
 
 		// Format output based on user preference
 		if (outputFormat === 'text') {

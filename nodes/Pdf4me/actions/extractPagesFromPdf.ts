@@ -184,7 +184,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		// Use URL directly in docContent - no upload required
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		inputDocName = pdfUrl.split('/').pop() || docName;
+		// Extract filename from URL and clean it (remove query parameters)
+		const urlFilename = pdfUrl.split('/').pop() || '';
+		const cleanedFilename = urlFilename.split('?')[0].split('#')[0]; // Remove query params and hash
+		inputDocName = cleanedFilename || docName;
 		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
@@ -210,7 +213,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle the response
 	if (responseData) {
-		const fileName = inputDocName || `output_${Date.now()}.pdf`;
+		// Determine output filename: prefer user-provided docName, fallback to inputDocName
+		let fileName = docName && docName !== 'output.pdf' ? docName : inputDocName;
+
+		// If still no filename, generate one
+		if (!fileName || fileName.trim() === '') {
+			fileName = `output_${Date.now()}.pdf`;
+		}
+
+		// Ensure filename has .pdf extension
+		if (!fileName.toLowerCase().endsWith('.pdf')) {
+			fileName = fileName.replace(/\.[^.]*$/, '') + '.pdf';
+		}
+
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
 			fileName,

@@ -103,6 +103,19 @@ export const description: INodeProperties[] = [
 		hint: 'Extract attachment from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-attachment-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
+		displayName: 'Binary Data Output Name',
+		name: 'binaryDataName',
+		type: 'string',
+		default: 'data',
+		description: 'Custom name for the binary data in n8n output',
+		placeholder: 'attachment',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ExtractAttachmentFromPdf],
+			},
+		},
+	},
+	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -139,6 +152,7 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string = '';
@@ -211,20 +225,130 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Make API call
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ExtractAttachmentFromPdf', body);
 
-	// Handle the response (extracted attachments)
+	// Handle the response (extracted attachment file as stream/binary)
 	if (responseData) {
-		// Return both raw data and metadata
+		// Define response structure types
+		interface OutputDocument {
+			fileName?: string;
+			streamFile: string;
+		}
+
+		interface ResponseItem {
+			documents?: unknown;
+			outputDocuments?: OutputDocument[];
+		}
+
+		// Parse response - it should be JSON with outputDocuments array
+		let parsedResponse: ResponseItem | ResponseItem[];
+
+		if (Buffer.isBuffer(responseData)) {
+			// If it's a buffer, parse as JSON string
+			try {
+				parsedResponse = JSON.parse(responseData.toString('utf8')) as ResponseItem | ResponseItem[];
+			} catch (error) {
+				throw new Error(`Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			}
+		} else if (typeof responseData === 'string') {
+			// If it's a string, parse as JSON
+			try {
+				parsedResponse = JSON.parse(responseData) as ResponseItem | ResponseItem[];
+			} catch (error) {
+				throw new Error(`Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			}
+		} else {
+			// Already parsed JSON object
+			parsedResponse = responseData as ResponseItem | ResponseItem[];
+		}
+
+		// Handle array response (response is an array with objects containing outputDocuments)
+		const responseArray = Array.isArray(parsedResponse) ? parsedResponse : [parsedResponse];
+
+		// Extract outputDocuments from the response
+		const outputDocuments: OutputDocument[] = [];
+		for (const item of responseArray) {
+			if (item && item.outputDocuments && Array.isArray(item.outputDocuments)) {
+				outputDocuments.push(...item.outputDocuments);
+			}
+		}
+
+		if (outputDocuments.length === 0) {
+			throw new Error('No attachments found in the PDF document');
+		}
+
+		// Process the first attachment
+		const attachment = outputDocuments[0];
+
+		if (!attachment || !attachment.streamFile) {
+			throw new Error('No streamFile found in attachment data');
+		}
+
+		// Use the fileName from the response (e.g., "Test.txt")
+		const fileName = attachment.fileName || `extracted_attachment_${Date.now()}.txt`;
+
+		// Convert base64 streamFile to Buffer (binary data)
+		let fileBuffer: Buffer;
+		try {
+			// Ensure streamFile is a string
+			const streamFileData = typeof attachment.streamFile === 'string'
+				? attachment.streamFile
+				: String(attachment.streamFile);
+
+			// Remove any whitespace that might be in the base64 string
+			const cleanBase64 = streamFileData.trim().replace(/\s/g, '');
+
+			// Validate base64 string is not empty
+			if (!cleanBase64 || cleanBase64.length === 0) {
+				throw new Error('streamFile is empty');
+			}
+
+			// Decode base64 to Buffer
+			fileBuffer = Buffer.from(cleanBase64, 'base64');
+
+			// Validate buffer was created successfully
+			if (!fileBuffer || fileBuffer.length === 0) {
+				throw new Error('Failed to create buffer from base64 data');
+			}
+		} catch (error) {
+			throw new Error(`Failed to decode base64 streamFile to binary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		}
+
+		// Determine MIME type based on file extension (respect the original fileName)
+		let mimeType = 'application/octet-stream';
+		const fileExtension = fileName.split('.').pop()?.toLowerCase();
+		if (fileExtension === 'txt') {
+			mimeType = 'text/plain';
+		} else if (fileExtension === 'pdf') {
+			mimeType = 'application/pdf';
+		} else if (fileExtension === 'jpg' || fileExtension === 'jpeg') {
+			mimeType = 'image/jpeg';
+		} else if (fileExtension === 'png') {
+			mimeType = 'image/png';
+		} else if (fileExtension === 'zip') {
+			mimeType = 'application/zip';
+		}
+
+		// Convert Buffer (decoded from base64) to n8n binary data format
+		const binaryData = await this.helpers.prepareBinaryData(
+			fileBuffer,
+			fileName, // Use the original fileName from response (e.g., "Test.txt")
+			mimeType,
+		);
+
+		// Return binary data - streamFile converted to binary
 		return [
 			{
 				json: {
-					...responseData, // Raw API response data
-					_metadata: {
-						success: true,
-						message: 'Attachments extracted successfully',
-						processingTimestamp: new Date().toISOString(),
-						sourceFileName: inputDocName,
-						operation: 'extractAttachmentFromPdf',
-					},
+					success: true,
+					message: 'Attachment extracted successfully and converted to binary',
+					fileName,
+					mimeType,
+					fileSize: fileBuffer.length,
+					sourceFileName: inputDocName,
+					processingTimestamp: new Date().toISOString(),
+					totalAttachments: outputDocuments.length,
+				},
+				binary: {
+					[binaryDataName || 'data']: binaryData, // The streamFile converted from base64 to binary
 				},
 				pairedItem: { item: index },
 			},

@@ -287,10 +287,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
-		console.log('[createImagesFromPdf] Processing binary data input');
 		// Get PDF content from binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-		console.log(`[createImagesFromPdf] Binary property name: ${binaryPropertyName}`);
 		const item = this.getInputData(index);
 
 		if (!item[0].binary) {
@@ -307,23 +305,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		const binaryData = item[0].binary[binaryPropertyName];
 		inputDocName = binaryData.fileName || docName || 'document';
-		console.log(`[createImagesFromPdf] Input document name: ${inputDocName}`);
-		console.log(`[createImagesFromPdf] Binary data file size: ${binaryData.data?.length || 'unknown'} bytes`);
 
 		// Get binary data as Buffer
 		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		console.log(`[createImagesFromPdf] File buffer size: ${fileBuffer.length} bytes`);
 
 		// Upload the file to UploadBlob endpoint and get blobId
 		// UploadBlob needs binary file (Buffer), not base64 string
 		// Returns blobId which is then used in CreateImages API payload
-		console.log('[createImagesFromPdf] Uploading file to PDF4me blob storage...');
 		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
-		console.log(`[createImagesFromPdf] Blob ID obtained: ${blobId}`);
 
 		// Use blobId in docContent
 		docContent = `${blobId}`;
-		console.log(`[createImagesFromPdf] Using blobId as docContent: ${docContent}`);
 
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
@@ -337,15 +329,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		blobId = '';
 
 	} else if (inputDataType === 'url') {
-		console.log('[createImagesFromPdf] Processing URL input');
 		// Use PDF URL directly - send URL as string directly in docContent
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		console.log(`[createImagesFromPdf] PDF URL: ${pdfUrl}`);
 
 		// Validate URL format
 		try {
 			new URL(pdfUrl);
-			console.log('[createImagesFromPdf] URL validation passed');
 		} catch {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
@@ -353,7 +342,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Send URL as string directly in docContent - no download or conversion
 		blobId = '';
 		docContent = String(pdfUrl);
-		console.log(`[createImagesFromPdf] Using URL as docContent: ${docContent}`);
 
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
@@ -457,36 +445,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body.pageNrs = pageNrsString;
 	}
 
-	// Log request body structure for debugging
-	console.log('[createImagesFromPdf] Request body structure:', JSON.stringify({
-		docContent: typeof docContent === 'string'
-			? (docContent.length > 100 ? `${docContent.substring(0, 100)}...` : docContent)
-			: typeof docContent,
-		docname: finalDocName,
-		imageAction: body.imageAction,
-		pageNrs: body.pageNrs || 'all pages',
-		IsAsync: body.IsAsync,
-	}, null, 2));
-	console.log('[createImagesFromPdf] Page selection:', pageSelection);
-	console.log('[createImagesFromPdf] Page numbers array:', pageNrs);
-	console.log('[createImagesFromPdf] Image settings:', { widthPixel, imageExtension });
-	console.log('[createImagesFromPdf] Input data type:', inputDataType);
-	console.log('[createImagesFromPdf] Full docContent length:', docContent?.length || 0);
-	if (inputDataType === 'binaryData') {
-		console.log('[createImagesFromPdf] docContent type: blobId/URL');
-		console.log('[createImagesFromPdf] docContent value:', docContent);
-	} else if (inputDataType === 'url') {
-		console.log('[createImagesFromPdf] docContent type: URL');
-		console.log('[createImagesFromPdf] docContent value:', docContent);
-	} else if (inputDataType === 'base64') {
-		console.log('[createImagesFromPdf] docContent type: base64');
-		console.log('[createImagesFromPdf] docContent preview:', docContent?.substring(0, 50) + '...');
-	}
-
 	try {
 		// Use async processing for CreateImages endpoint
-		console.log('[createImagesFromPdf] Sending request to /api/v2/CreateImages');
-		console.log('[createImagesFromPdf] Full request body:', JSON.stringify(body, null, 2));
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/CreateImages', body);
 
 		// --- BEGIN: Buffer/String Response Parsing ---
@@ -542,7 +502,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// This.helpers.fs is not available, so we'll skip file writing for now.
 			// If debugging is critical, this needs to be refactored to use this.helpers.request
 			// or a different method to fetch the response for logging.
-			// For now, we'll just log to console.
 		} catch (e) {
 			// Ignore file write errors for debugging
 		}
@@ -681,20 +640,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		// Enhanced error handling with detailed debugging information
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.error('[createImagesFromPdf] Error occurred:', {
-			errorMessage,
-			inputDataType,
-			docName: finalDocName,
-			docContentLength: docContent?.length || 0,
-			docContentType: inputDataType === 'binaryData' ? 'blobId/URL' : inputDataType === 'url' ? 'URL' : 'base64',
-			docContentPreview: typeof docContent === 'string'
-				? (docContent.length > 200 ? `${docContent.substring(0, 200)}...` : docContent)
-				: typeof docContent,
-			imageAction: body.imageAction,
-			pageSelection,
-			pageNrs: body.pageNrs || 'all pages',
-			requestBody: JSON.stringify(body, null, 2),
-		});
 
 		if (errorMessage && errorMessage.includes('File is Empty')) {
 			throw new Error(

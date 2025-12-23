@@ -213,8 +213,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// 1. Get URL parameter
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 
-		// 2. Extract filename from URL
-		inputDocName = pdfUrl.split('/').pop() || docName;
+		// 2. Extract filename from URL, handling query parameters and fragments
+		// Remove query parameters (?key=value) and fragments (#section) first
+		const urlPath = pdfUrl.split('?')[0].split('#')[0];
+		const extractedName = urlPath.split('/').pop() || '';
+
+		// Use extracted filename from URL, fallback to docName parameter if extraction fails
+		inputDocName = extractedName || docName;
 
 		// 3. Use URL directly in docContent
 		blobId = '';

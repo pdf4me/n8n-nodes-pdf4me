@@ -175,7 +175,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} else if (inputDataType === 'url') {
 		// Use URL directly in docContent - no upload required
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		inputDocName = pdfUrl.split('/').pop() || docName;
+
+		// Extract filename from URL, handling query parameters and fragments
+		// Remove query parameters (?key=value) and fragments (#section) first
+		const urlPath = pdfUrl.split('?')[0].split('#')[0];
+		const extractedName = urlPath.split('/').pop() || '';
+
+		// Use extracted filename from URL, fallback to docName parameter if extraction fails
+		inputDocName = extractedName || docName;
 		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
