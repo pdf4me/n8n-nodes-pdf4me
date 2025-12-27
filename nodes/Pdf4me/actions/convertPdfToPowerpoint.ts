@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -40,13 +41,12 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Input Binary Field',
+		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: true,
 		default: 'data',
-		description: 'Name of the binary property that contains the PDF file (usually "data" for file uploads)',
-		placeholder: 'data',
+		required: true,
+		description: 'Name of the binary property containing the file to convert',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToPowerpoint],
@@ -55,16 +55,26 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Base64 PDF Content',
+		displayName: 'Input File Name',
+		name: 'inputFileName',
+		type: 'string',
+		default: '',
+		description: 'Name of the input file (including extension). If not provided, will use the filename from binary data.',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertPdfToPowerpoint],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Content',
 		name: 'base64Content',
 		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		required: true,
 		default: '',
-		description: 'Base64 encoded PDF document content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
+		required: true,
+		description: 'Base64 encoded content of the file to convert',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToPowerpoint],
@@ -73,12 +83,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
+		displayName: 'File URL',
+		name: 'fileUrl',
 		type: 'string',
-		required: true,
 		default: '',
-		description: 'URL to the PDF file to convert',
+		required: true,
+		description: 'URL of the file to convert',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
@@ -86,7 +96,21 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-
+	},
+	{
+		displayName: 'Input File Name',
+		name: 'inputFileNameRequired',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'Name of the input file (including extension)',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ConvertPdfToPowerpoint],
+				inputDataType: ['base64', 'url'],
+			},
+		},
 	},
 	{
 		displayName: 'Output File Name',
@@ -244,13 +268,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const language = this.getNodeParameter('language', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
-	let originalFileName = docName;
+	// Main document content and metadata
+	let docContent: string = '';
+	let inputDocName: string = '';
+	let blobId: string = '';
 
 	// Handle different input types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
+		}
 
 		if (!item[0].binary) {
 			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
@@ -264,53 +296,93 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
-
-		// Use provided input filename or extract from binary data
 		const binaryData = item[0].binary[binaryPropertyName];
-		originalFileName = docName || binaryData.fileName || 'document';
+		inputDocName = inputFileName || binaryData.fileName || 'document';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ConvertPdfToPowerPoint API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Base64 input
 		docContent = this.getNodeParameter('base64Content', index) as string;
-		originalFileName = this.getNodeParameter('docName', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
 
-		if (!originalFileName) {
-			throw new Error('Document name is required for base64 input type.');
+		if (!inputDocName) {
+			throw new Error('Input file name is required for base64 input type.');
 		}
 
-		// Handle data URLs
+		// Handle data URLs (remove data: prefix if present)
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
-		// URL input
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		originalFileName = this.getNodeParameter('docName', index) as string;
+		// URL input - send URL as string directly in docContent
+		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
 
-		if (!originalFileName) {
-			throw new Error('Document name is required for URL input type.');
+		if (!inputDocName) {
+			throw new Error('Input file name is required for URL input type.');
 		}
 
-		// Download the file from URL and convert to base64
-		try {
-			const options = {
-				method: 'GET' as const,
-				url: pdfUrl,
-				encoding: 'arraybuffer' as const,
-			};
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			docContent = Buffer.from(response).toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to download file from URL: ${pdfUrl}. Error: ${error}`);
-		}
+		// Send URL as string directly in docContent - no conversion or modification
+		blobId = '';
+		docContent = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Build the request body based on the Python code structure
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		try {
+			new URL(docContent);
+		} catch (error) {
+			throw new Error(`Invalid URL format: ${docContent}`);
+		}
+		// Ensure docContent remains as the original URL string (no trimming)
+		// docContent is already set to the URL string above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Document content is required');
+		}
+		// Validate base64 format for base64 input
+		try {
+			const testBuffer = Buffer.from(docContent, 'base64');
+			if (testBuffer.length === 0 && docContent.length > 0) {
+				throw new Error('Invalid base64 content: Unable to decode base64 string');
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Invalid base64')) {
+				throw error;
+			}
+			throw new Error('Invalid base64 content format');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Document content is required');
+		}
+	}
+
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const originalFileName = docName || inputDocName || 'document.pdf';
+
+	// Build the request body - everything is sent via docContent
 	const body: IDataObject = {
-		docContent,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		docName: originalFileName,
 		qualityType,
 		language,
@@ -328,8 +400,28 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	// Make the API request using the shared function
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToPowerPoint', body);
+	// Make the API request
+	let responseData;
+	try {
+		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertPdfToPowerPoint', body);
+	} catch (error: unknown) {
+		// Provide better error messages with debugging information
+		const errorObj = error as { statusCode?: number; message?: string };
+		if (errorObj.statusCode === 500) {
+			throw new Error(
+				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}, ` +
+				`docContentLength=${docContent?.length || 0}, ` +
+				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
+			);
+		} else if (errorObj.statusCode === 400) {
+			throw new Error(
+				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}`
+			);
+		}
+		throw error;
+	}
 
 	// Handle the binary response (PowerPoint document data)
 	if (responseData) {
@@ -362,13 +454,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					fileSize: responseData.length,
 					success: true,
 					inputDataType,
-					sourceFileName: originalFileName,
+					sourceFileName: inputDocName,
+					originalFileName,
 					qualityType,
 					language,
 				},
 				binary: {
 					[binaryDataKey]: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

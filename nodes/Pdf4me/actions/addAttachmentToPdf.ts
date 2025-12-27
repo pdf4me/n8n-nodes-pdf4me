@@ -1,9 +1,10 @@
-﻿import type { INodeProperties } from 'n8n-workflow';
+import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 /**
@@ -376,12 +377,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	});
 
 	try {
-		let docContent: string;
+		let docContent: string = '';
+		let docName: string = '';
+		let blobId: string = '';
 
 		// Handle different input data types for the main PDF
 		if (inputDataType === 'binaryData') {
 			logger.log('debug', 'Processing binary data input');
-			// Get PDF content from binary data
+			// 1. Validate binary data
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 			const item = this.getInputData(index);
 
@@ -403,52 +406,63 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				);
 			}
 
-			// Get binary data buffer and convert to base64
-			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-			docContent = buffer.toString('base64');
-			logger.log('debug', 'Binary data extracted', {
-				contentLength: docContent.length,
-				contentPreview: docContent.substring(0, 100) + '...',
+			// 2. Get binary data metadata
+			const binaryData = item[0].binary[binaryPropertyName];
+			docName = binaryData.fileName || 'document.pdf';
+
+			// 3. Convert to Buffer
+			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+			// 4. Upload to UploadBlob
+			blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+
+			// 5. Use blobId in docContent
+			docContent = `${blobId}`;
+			logger.log('debug', 'Binary data uploaded to blob', {
+				blobId: blobId,
+				fileName: docName,
 			});
 		} else if (inputDataType === 'base64') {
 			logger.log('debug', 'Processing base64 input');
 			// Get PDF content from base64 string
 			docContent = this.getNodeParameter('base64Content', index) as string;
+			docName = this.getNodeParameter('docName', index) as string || 'document.pdf';
+			blobId = '';
 			logger.log('debug', 'Base64 content received', {
 				contentLength: docContent.length,
 				contentPreview: docContent.substring(0, 100) + '...',
 			});
 		} else if (inputDataType === 'url') {
 			logger.log('debug', 'Processing URL input');
-			// Download PDF from URL
+			// 1. Get URL parameter
 			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-			logger.log('debug', 'Downloading PDF from URL', { url: pdfUrl });
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-				method: 'GET' as const,
+
+			// 2. Extract filename from URL
+			docName = pdfUrl.split('/').pop() || 'document.pdf';
+
+			// 3. Use URL directly in docContent
+			blobId = '';
+			docContent = pdfUrl;
+			logger.log('debug', 'Using URL directly', {
 				url: pdfUrl,
-				encoding: 'arraybuffer' as const,
-			});
-			const buffer = Buffer.from(response as Buffer);
-			docContent = buffer.toString('base64');
-			logger.log('debug', 'PDF downloaded successfully', {
-				contentLength: docContent.length,
-				contentPreview: docContent.substring(0, 100) + '...',
+				fileName: docName,
 			});
 		} else {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
 
-		// Validate PDF content
-		validatePdfContent(docContent, inputDataType, logger);
+		// Ensure docName has .pdf extension
+		validateFileExtension(docName, '.pdf', logger);
 
 		// Additional validation for API request
 		if (!docContent || docContent.trim() === '') {
 			throw new Error('PDF content is empty or invalid');
 		}
 
-		// Ensure docName has .pdf extension
-		const docName = this.getNodeParameter('docName', index) as string || 'document.pdf';
-		validateFileExtension(docName, '.pdf', logger);
+		// Validate PDF content (skip for blobId and URL formats)
+		if (inputDataType === 'base64') {
+			validatePdfContent(docContent, inputDataType, logger);
+		}
 
 		// Process attachments
 		const attachmentArray: IDataObject[] = [];
@@ -473,7 +487,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 				if (attachmentContentType === 'binaryData') {
 					logger.log('debug', 'Processing attachment as binary data');
-					// Get attachment from binary data
+					// 1. Validate binary data
 					const binaryFieldName = attachment.attachmentBinaryField as string;
 					const item = this.getInputData(index);
 
@@ -487,12 +501,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						throw new Error(`Attachment binary field '${binaryFieldName}' not found.`);
 					}
 
-					// Get attachment binary data buffer and convert to base64
-					const attachmentBuffer = await this.helpers.getBinaryDataBuffer(index, binaryFieldName);
-					attachmentContent = attachmentBuffer.toString('base64');
-					logger.log('debug', 'Attachment binary data extracted', {
-						contentLength: attachmentContent.length,
-						contentPreview: attachmentContent.substring(0, 100) + '...',
+					// 2. Get binary data metadata
+					const attachmentBinaryData = item[0].binary[binaryFieldName];
+					const attachmentFileName = attachmentName || attachmentBinaryData.fileName || 'attachment';
+
+					// 3. Convert to Buffer
+					const attachmentFileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryFieldName);
+
+					// 4. Upload to UploadBlob
+					const attachmentBlobId = await uploadBlobToPdf4me.call(this, attachmentFileBuffer, attachmentFileName);
+
+					// 5. Use blobId in attachmentContent
+					attachmentContent = `${attachmentBlobId}`;
+					logger.log('debug', 'Attachment binary data uploaded to blob', {
+						blobId: attachmentBlobId,
+						fileName: attachmentFileName,
 					});
 				} else if (attachmentContentType === 'base64') {
 					logger.log('debug', 'Processing attachment as base64');
@@ -504,19 +527,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					});
 				} else if (attachmentContentType === 'url') {
 					logger.log('debug', 'Processing attachment as URL');
-					// Download attachment from URL
+					// 1. Get URL parameter
 					const attachmentUrl = attachment.attachmentUrl as string;
-					logger.log('debug', 'Downloading attachment from URL', { url: attachmentUrl });
-					const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-						method: 'GET' as const,
+
+					// 2. Use URL directly in attachmentContent
+					attachmentContent = attachmentUrl;
+					logger.log('debug', 'Using attachment URL directly', {
 						url: attachmentUrl,
-						encoding: 'arraybuffer' as const,
-					});
-					const buffer = Buffer.from(response as Buffer);
-					attachmentContent = buffer.toString('base64');
-					logger.log('debug', 'Attachment downloaded successfully', {
-						contentLength: attachmentContent.length,
-						contentPreview: attachmentContent.substring(0, 100) + '...',
 					});
 				} else {
 					throw new Error(`Unsupported attachment content type: ${attachmentContentType}`);
@@ -530,22 +547,29 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					throw new Error(`Empty attachment content for: ${attachmentName}`);
 				}
 
-				// Basic validation for attachment base64 content
-				try {
-					const attachmentBuffer = Buffer.from(attachmentContent, 'base64');
-					if (attachmentBuffer.length === 0) {
-						throw new Error(`Attachment content is empty for: ${attachmentName}`);
+				// Basic validation for attachment base64 content (only for base64 input type)
+				if (attachmentContentType === 'base64') {
+					try {
+						const attachmentBuffer = Buffer.from(attachmentContent, 'base64');
+						if (attachmentBuffer.length === 0) {
+							throw new Error(`Attachment content is empty for: ${attachmentName}`);
+						}
+						logger.log('debug', 'Attachment content validation passed', {
+							name: attachmentName,
+							decodedSize: attachmentBuffer.length,
+						});
+					} catch (error) {
+						logger.log('error', 'Invalid attachment base64 content', {
+							name: attachmentName,
+							error: error.message,
+						});
+						throw new Error(`Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`);
 					}
-					logger.log('debug', 'Attachment content validation passed', {
+				} else {
+					logger.log('debug', 'Attachment content validation passed (blobId or URL)', {
 						name: attachmentName,
-						decodedSize: attachmentBuffer.length,
+						contentType: attachmentContentType,
 					});
-				} catch (error) {
-					logger.log('error', 'Invalid attachment base64 content', {
-						name: attachmentName,
-						error: error.message,
-					});
-					throw new Error(`Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`);
 				}
 
 				attachmentArray.push({
@@ -666,6 +690,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			binary: {
 				[binaryDataName || 'data']: binaryData,
 			},
+			pairedItem: { item: index },
 		};
 
 		logger.log('info', 'Add Attachment to PDF operation completed successfully', {

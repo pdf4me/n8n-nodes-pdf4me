@@ -114,20 +114,49 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
+
+		// Get binary data as Buffer and convert to base64
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		docContent = fileBuffer.toString('base64');
 		docName = item[0].binary[binaryPropertyName].fileName || 'uploaded_file';
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+
+		// Handle data URLs (remove data: prefix if present)
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+
 		docName = 'uploaded_file';
 	} else if (inputDataType === 'url') {
 		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			method: 'GET' as const,
+
+		// Validate URL format
+		try {
+			new URL(fileUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the file.');
+		}
+
+		// Download file from URL using regular httpRequest (not authenticated, as it's external)
+		const response = await this.helpers.httpRequest({
+			method: 'GET',
 			url: fileUrl,
 			encoding: 'arraybuffer' as const,
+			returnFullResponse: true,
 		});
-		const buffer = await this.helpers.binaryToBuffer(response);
-		docContent = buffer.toString('base64');
+
+		// Convert response to Buffer and then to base64
+		let fileBuffer: Buffer;
+		if (response.body instanceof Buffer) {
+			fileBuffer = response.body;
+		} else if (typeof response.body === 'string') {
+			fileBuffer = Buffer.from(response.body, 'binary');
+		} else {
+			fileBuffer = Buffer.from(response.body);
+		}
+
+		docContent = fileBuffer.toString('base64');
 		docName = fileUrl.split('/').pop() || 'uploaded_file';
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
@@ -172,6 +201,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			json: {
 				documentUrl: documentUrl,
 			},
+			pairedItem: { item: index },
 		},
 	];
 }

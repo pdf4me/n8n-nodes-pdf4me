@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
@@ -334,12 +335,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 
 	let docContent: string;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types:
-	// - binaryData: HTML file from previous node (converted to base64)
+	// - binaryData: HTML file from previous node (uses UploadBlob → blobId)
 	// - base64: HTML content already encoded in base64 (used as-is)
-	// - htmlCode: Raw HTML code (converted to base64)
-	// - url: HTML file from URL (downloaded and converted to base64)
+	// - htmlCode: Raw HTML code (converted to base64) - unchanged
+	// - url: HTML file from URL (uses URL directly, no download)
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
@@ -348,8 +351,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document.html';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ConvertHtmlToPdf API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		const base64Content = this.getNodeParameter('base64Content', index) as string;
 
@@ -367,19 +381,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Try to decode to verify it's valid base64
 		try {
 			const decoded = Buffer.from(base64Content, 'base64').toString('utf8');
-			// console.log(`Base64 Content Length: ${base64Content.length}`);
-			// console.log(`Decoded Content Length: ${decoded.length}`);
-			// console.log(`Decoded Content Preview: ${decoded.substring(0, 100)}...`);
 
 			// Check if decoded content looks like HTML
 			if (!decoded.includes('<') || !decoded.includes('>')) {
-				// console.log('Warning: Decoded base64 content does not appear to be HTML');
+				// Warning: Decoded base64 content does not appear to be HTML
 			}
 		} catch (error) {
 			throw new Error(`Invalid base64 content: ${error.message}`);
 		}
 
 		docContent = base64Content;
+		blobId = '';
 	} else if (inputDataType === 'htmlCode') {
 		let htmlCode = this.getNodeParameter('htmlCode', index) as string;
 
@@ -390,42 +402,62 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Ensure HTML has basic structure
 		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
-			// console.log('Warning: HTML code may not have proper HTML structure');
 			// Try to wrap the content in basic HTML structure if it's missing
 			if (!htmlCode.includes('<html')) {
 				htmlCode = `<!DOCTYPE html><html><head><title>Converted HTML</title></head><body>${htmlCode}</body></html>`;
-				// console.log('Wrapped HTML content in basic HTML structure');
 			}
 		}
-
-		// Debug: Log the HTML code length and first 100 characters
-		// console.log(`HTML Code Length: ${htmlCode.length}`);
-		// console.log(`HTML Code Preview: ${htmlCode.substring(0, 100)}...`);
 
 		// Convert HTML to base64
 		// Ensure proper UTF-8 encoding and handle any potential encoding issues
 		try {
 			docContent = Buffer.from(htmlCode, 'utf8').toString('base64');
 		} catch (error) {
-			// console.log('Error converting HTML to base64:', error);
 			// Fallback: try with different encoding
 			docContent = Buffer.from(htmlCode, 'latin1').toString('base64');
 		}
 
-		// Debug: Log the base64 length and first 100 characters
-		// console.log(`Base64 Length: ${docContent.length}`);
-		// console.log(`Base64 Preview: ${docContent.substring(0, 100)}...`);
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		const htmlUrl = this.getNodeParameter('htmlUrl', index) as string;
-		docContent = await downloadHtmlFromUrl(this.helpers, htmlUrl);
+
+		// Validate URL format
+		try {
+			new URL(htmlUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the HTML file.');
+		}
+
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(htmlUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty (already validated above)
+		// Additional validation could be added here if needed
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('HTML content is required');
+		}
+	}
+
 	// Build the request body according to API specification
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.html';
 	const body: IDataObject = {
-		docContent,
-		docName,
+		docContent, // Binary data uses blobId format, base64/htmlCode uses base64 string, URL uses URL string
+		docName: finalDocName,
 		indexFilePath,
 		layout,
 		format,
@@ -442,34 +474,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	sanitizeProfiles(body);
 
-	// Debug: Log the request body (excluding docContent for brevity)
-	const debugBody = { ...body };
-	if (debugBody.docContent && typeof debugBody.docContent === 'string' && debugBody.docContent.length > 100) {
-		debugBody.docContent = `${debugBody.docContent.substring(0, 100)}... (truncated, total length: ${debugBody.docContent.length})`;
-	}
-	// console.log('Request Body:', JSON.stringify(debugBody, null, 2));
-
 	// Call the PDF4ME API
 	let responseData;
 	try {
 		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertHtmlToPdf', body);
 	} catch (error) {
-		// console.log('API call failed:', error);
 		throw new Error(`Failed to convert HTML to PDF: ${error.message}`);
-	}
-
-	// Debug: Log the response data type and size
-	// console.log('Response Data Type:', typeof responseData);
-	if (responseData) {
-		if (Buffer.isBuffer(responseData)) {
-			// console.log('Response is Buffer, size:', responseData.length);
-		} else if (typeof responseData === 'string') {
-			// console.log('Response is String, length:', responseData.length);
-		} else {
-			// console.log('Response is other type:', typeof responseData);
-		}
-	} else {
-		// console.log('No response data received');
 	}
 
 	// Handle the binary response
@@ -520,30 +530,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataKey]: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}
 
 	throw new Error('No response data received from PDF4ME API');
 }
-
-const downloadHtmlFromUrl = async (helpers: IExecuteFunctions['helpers'], htmlUrl: string): Promise<string> => {
-	try {
-		// helpers.httpRequest returns the response body directly when encoding is specified
-		const responseBody = await helpers.httpRequest({
-			method: 'GET',
-			url: htmlUrl,
-			encoding: 'arraybuffer',
-		});
-
-		// Convert the response to a Buffer
-		// responseBody should be an ArrayBuffer when encoding is 'arraybuffer'
-		const buffer = Buffer.isBuffer(responseBody)
-			? responseBody
-			: Buffer.from(responseBody as ArrayBuffer);
-
-		return buffer.toString('base64');
-	} catch (error) {
-		throw new Error(`Error downloading HTML from URL: ${error.message}`);
-	}
-};

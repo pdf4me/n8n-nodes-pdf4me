@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -186,7 +187,7 @@ export const description: INodeProperties[] = [
 /**
  * Extract Resources - Extract text, images, and other resources from PDF documents using PDF4ME
  * Process: Read PDF document → Encode to base64 → Send API request → Poll for completion → Return extracted resources data
- * 
+ *
  * This action extracts various resources from PDF documents:
  * - Returns structured JSON data with all extracted resources (text, images, etc.)
  * - Optionally returns extracted images as binary data for direct use in n8n
@@ -205,6 +206,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const pagesOption = advancedOptions?.pages as string || 'all';
 
 	let docContent: string;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -225,26 +228,76 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ExtractResources API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+
+		// Handle data URLs (remove data: prefix if present)
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
+
+		// Validate URL format
+		try {
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
+
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(pdfUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	}
+
 	// Process pages option and filter PDF content if needed
+	// Note: filterPdfPages now accepts blobId, base64, or URL - API handles all types
 	if (pagesOption !== 'all') {
 		docContent = await filterPdfPages.call(this, docContent, pagesOption);
 	}
 
 	// Prepare request body
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.pdf';
 	const body: IDataObject = {
-		docContent,
-		docName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		extractText: extractText || false,
 		extractImages: extractImage || false,
 		IsAsync: true, // Enable asynchronous processing
@@ -273,6 +326,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					operation: 'extractResources',
 				},
 			},
+			pairedItem: { item: index },
 		};
 
 		// Process images as binary data if requested
@@ -290,40 +344,26 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	throw new Error('No resource extraction results received from PDF4ME API');
 }
 
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
-	try {
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
-}
-
 /**
  * Filter PDF content to include only specified pages using PDF4ME ExtractPages API
- * @param base64Content - Base64 encoded PDF content
+ * @param docContent - PDF content (blobId, base64 string, or URL string)
  * @param pagesOption - Pages specification (e.g., "1,2", "2-5", "all")
- * @returns Filtered base64 PDF content
+ * @param inputDataType - Original input data type (binaryData, base64, or url) - for reference
+ * @returns Filtered PDF content as base64 string (ExtractPages always returns base64 PDF)
  */
-async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pagesOption: string): Promise<string> {
+async function filterPdfPages(this: IExecuteFunctions, docContent: string, pagesOption: string): Promise<string> {
 	try {
 		// Parse pages option
 		const pageNumbers = parsePagesOption(pagesOption);
-		
+
 		if (pageNumbers.length === 0) {
 			throw new Error('Invalid pages specification. Please use format: "1,2", "2-5", or "all"');
 		}
 
 		// Use PDF4ME ExtractPages API to get filtered PDF
+		// API accepts blobId, base64, or URL - pass through the same format
 		const extractPagesBody = {
-			docContent: base64Content,
+			docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 			docName: 'temp_filtered.pdf',
 			pageNumbers: pageNumbers.join(','),
 			IsAsync: true,
@@ -332,7 +372,7 @@ async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pa
 		// Make API call to ExtractPages endpoint using the existing pdf4meAsyncRequest function
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Extract', extractPagesBody);
 
-		// Convert response to base64
+		// Convert response to base64 (ExtractPages always returns base64 PDF)
 		if (responseData && responseData instanceof Buffer) {
 			return responseData.toString('base64');
 		} else if (typeof responseData === 'string') {
@@ -341,11 +381,11 @@ async function filterPdfPages(this: IExecuteFunctions, base64Content: string, pa
 		} else {
 			// Fallback: return original content if extraction fails
 			// Note: Page filtering failed, using original PDF content
-			return base64Content;
+			return docContent;
 		}
 	} catch (error) {
 		// Note: Failed to filter PDF pages, using original content
-		return base64Content;
+		return docContent;
 	}
 }
 
@@ -378,7 +418,7 @@ async function processImagesAsBinary(this: IExecuteFunctions, responseData: any,
 							if (imageBuffer) {
 								const fileName = imageItem.fileName || imageItem.name || `extracted_image_${imageIndex}.png`;
 								const mimeType = getImageMimeType(fileName, imageItem.mimeType);
-								
+
 								const binaryDataItem = await this.helpers.prepareBinaryData(
 									imageBuffer,
 									fileName,
@@ -397,7 +437,7 @@ async function processImagesAsBinary(this: IExecuteFunctions, responseData: any,
 						if (imageBuffer) {
 							const fileName = imageSource.fileName || imageSource.name || `extracted_image_${imageIndex}.png`;
 							const mimeType = getImageMimeType(fileName, imageSource.mimeType);
-							
+
 							const binaryDataItem = await this.helpers.prepareBinaryData(
 								imageBuffer,
 								fileName,

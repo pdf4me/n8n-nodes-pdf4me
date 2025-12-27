@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 /**
@@ -146,7 +147,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-		
+
 	},
 	{
 		displayName: 'HTML Content',
@@ -373,39 +374,54 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		logger.log('info', `Skip first page: ${skipFirstPage}`);
 
 		// Get PDF content based on input type
-		let docContent: string;
-		let actualDocName: string;
-		let pdfUrl: string | undefined;
+		let docContent: string = '';
+		let actualDocName: string = docName;
+		let blobId: string = '';
 
 		switch (inputDataType) {
 		case 'binaryData': {
+			// 1. Validate binary data
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 			const item = this.getInputData(index);
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 				throw new Error(`Binary property "${binaryPropertyName}" not found in input data`);
 			}
+
+			// 2. Get binary data metadata
 			const binaryData = item[0].binary[binaryPropertyName];
-			if (!binaryData.data) {
-				throw new Error(`Binary data not found in property "${binaryPropertyName}"`);
-			}
-			docContent = binaryData.data;
 			actualDocName = binaryData.fileName || docName;
-			logger.log('info', `Using binary data with filename: ${actualDocName}`);
+
+			// 3. Convert to Buffer
+			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+			// 4. Upload to UploadBlob
+			blobId = await uploadBlobToPdf4me.call(this, fileBuffer, actualDocName);
+
+			// 5. Use blobId in docContent
+			docContent = `${blobId}`;
+			logger.log('info', `Using binary data with filename: ${actualDocName}, blobId: ${blobId}`);
 			break;
 		}
 
 		case 'base64': {
 			docContent = this.getNodeParameter('base64Content', index) as string;
 			actualDocName = docName;
+			blobId = '';
 			logger.log('info', 'Using base64 content');
 			break;
 		}
 
 		case 'url': {
-			pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-			docContent = await downloadPdfFromUrl.call(this, pdfUrl, logger);
-			actualDocName = docName;
-			logger.log('info', `Downloaded PDF from URL: ${pdfUrl}`);
+			// 1. Get URL parameter
+			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
+			// 2. Extract filename from URL
+			actualDocName = pdfUrl.split('/').pop() || docName;
+
+			// 3. Use URL directly in docContent
+			blobId = '';
+			docContent = pdfUrl;
+			logger.log('info', `Using PDF URL directly: ${pdfUrl}`);
 			break;
 		}
 
@@ -413,8 +429,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`Unsupported input data type: ${inputDataType}`);
 		}
 
-		// Validate PDF content
-		validatePdfContent(docContent, inputDataType, logger);
+		// Validate PDF content (skip for blobId and URL formats)
+		if (inputDataType === 'base64') {
+			validatePdfContent(docContent, inputDataType, logger);
+		}
 
 		// Prepare the API request payload
 		const payload: IDataObject = {
@@ -477,6 +495,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			binary: {
 				[binaryDataName || 'data']: binaryData,
 			},
+			pairedItem: { item: index },
 		};
 
 		logger.log('info', 'Operation completed successfully');
@@ -485,56 +504,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		logger.log('error', 'Operation failed', error);
 		throw error;
-	}
-}
-
-/**
- * Download PDF from URL and return as base64 string
- */
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string, logger?: DebugLogger): Promise<string> {
-	try {
-		logger?.log('info', `Downloading PDF from URL: ${pdfUrl}`);
-
-		// Validate URL
-		if (!pdfUrl || typeof pdfUrl !== 'string') {
-			throw new Error('Invalid PDF URL provided');
-		}
-
-		try {
-			new URL(pdfUrl);
-		} catch {
-			throw new Error(`Invalid URL format: ${pdfUrl}`);
-		}
-
-		// Download the PDF using n8n helpers
-		const options = {
-
-			method: 'GET' as const,
-
-			url: pdfUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-
-		const buffer = Buffer.from(response);
-
-		// Validate that it's actually a PDF
-		const pdfHeader = buffer.toString('ascii', 0, 4);
-		if (pdfHeader !== '%PDF') {
-			throw new Error('Downloaded file does not appear to be a valid PDF (missing PDF header)');
-		}
-
-		const base64Content = buffer.toString('base64');
-		logger?.log('info', `Successfully downloaded PDF: ${buffer.length} bytes`);
-
-		return base64Content;
-
-	} catch (error) {
-		logger?.log('error', 'Failed to download PDF from URL', error);
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
 	}
 }
 

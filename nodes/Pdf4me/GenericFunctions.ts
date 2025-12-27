@@ -340,7 +340,7 @@ export async function uploadBlobToPdf4me(
 				'Authorization': `Basic ${apiKey}`,
 			},
 			returnFullResponse: true,
-			timeout: 6000023,
+			timeout: 60000023,
 		});
 
 		// Check if response is successful

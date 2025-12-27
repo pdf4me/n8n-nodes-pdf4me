@@ -61,14 +61,14 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me": "^1.6.0"
+    "n8n-nodes-pdf4me": "^2.0.0"
   }
 }
 ```
 
-## What's New in Version 1.6.0
+## What's New in Version 2.0.0
 
-Version 1.6.0 continues to enhance the PDF4ME n8n node with improved functionality and reliability:
+Version 2.0.0 continues to enhance the PDF4ME n8n node with improved functionality and reliability:
 
 - **🔧 Code Refactoring**: Improved variable declarations and code structure
 - **🖼️ Image Processing**: Enhanced MIME type handling for image operations
@@ -195,7 +195,7 @@ To use this node, you need a PDF4ME API key. Here's how to get started:
 
 ## Usage
 
-This node allows you to automate document processing tasks in your n8n workflows. With version 1.6.0, the interface has been optimized for better performance and stability. Here are some common use cases:
+This node allows you to automate document processing tasks in your n8n workflows. With version 2.0.0, the interface has been optimized for better performance and stability. Here are some common use cases:
 
 ### AI-Powered Document Processing
 - Automatically extract invoice data for accounting systems
@@ -290,7 +290,7 @@ The Convert HTML to PDF operation supports multiple input methods for maximum fl
 - Build complete document processing pipelines with enhanced reliability
 - Automate document classification and routing
 - Create end-to-end document workflows with improved error handling
-- **Version 1.6.0**: Enhanced stability and performance for reliable workflow execution
+- **Version 2.0.0**: Enhanced stability and performance for reliable workflow execution
 
 For detailed examples and workflow templates, visit our documentation.
 
@@ -306,8 +306,15 @@ For detailed examples and workflow templates, visit our documentation.
 
 ## Version History
 
+### 2.0.0
+- **Latest Version**: Major version update with enhanced features and improvements
+- **Version Upgrade**: Major version bump to 2.0.0
+- **Enhanced Functionality**: Continued improvements to document processing capabilities
+- **Stability**: Enhanced overall stability and performance
+- **Maintained Compatibility**: All existing workflows continue to work seamlessly
+
 ### 1.6.0
-- **Latest Version**: Stability improvements and code optimizations
+- **Previous Version**: Stability improvements and code optimizations
 - **Code Refactoring**: Improved variable declarations and code structure across actions
 - **Image Processing**: Enhanced MIME type handling for image operations in extractResources
 - **Markdown Conversion**: Optimized convertMarkdownToPdf functionality

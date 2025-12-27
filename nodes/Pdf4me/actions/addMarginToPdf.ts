@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -228,11 +229,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
+	let docContent: string = '';
+	let inputDocName: string = docName;
+	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
-		// Get PDF content from binary data
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
@@ -240,8 +243,18 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName;
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -250,16 +263,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+		blobId = '';
 	} else if (inputDataType === 'url') {
-		// Download PDF from URL
+		// 1. Get URL parameter
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		docContent = Buffer.from(response).toString('base64');
+
+		// 2. Extract filename from URL
+		inputDocName = pdfUrl.split('/').pop() || docName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = pdfUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -272,7 +286,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Build the request body
 	const body: IDataObject = {
 		docContent,
-		docName,
+		docName: inputDocName,
 		marginLeft,
 		marginRight,
 		marginTop,
@@ -293,8 +307,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Generate filename if not provided
 		let fileName = outputFileName;
 		if (!fileName || fileName.trim() === '') {
-			// Extract name from docName if available, otherwise use default
-			const baseName = docName ? docName.replace(/\.pdf$/i, '') : 'document_with_margins';
+			// Extract name from inputDocName if available, otherwise use default
+			const baseName = inputDocName ? inputDocName.replace(/\.pdf$/i, '') : 'document_with_margins';
 			fileName = `${baseName}_with_margins.pdf`;
 		}
 
@@ -322,6 +336,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataName || 'data']: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

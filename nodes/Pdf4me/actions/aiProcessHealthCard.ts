@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 	ActionConstants,
 } from '../GenericFunctions';
 
@@ -104,7 +105,7 @@ export const description: INodeProperties[] = [
 /**
  * AI Process Health Card - Extract structured data from health cards using PDF4ME's AI/ML technology
  * Process: Read health card → Encode to base64 → Send API request → Poll for completion → Return extracted results
- * 
+ *
  * This action mirrors the Python process_health_card() function functionality exactly:
  * - Extracts member information, policy details, coverage, and dependent data
  * - Supports various health card formats using AI/ML technology
@@ -115,9 +116,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 
-	let docContent: string;
+	let docContent: string = '';
 
-	// Handle different input data types - convert all to base64
+	// Handle different input data types
 	if (inputDataType === 'binaryData') {
 		// Get health card content from binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
@@ -127,8 +128,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// Get binary data metadata for filename
+		const binaryData = item[0].binary[binaryPropertyName];
+		const fileName = binaryData.fileName || docName;
+
+		// Convert to Buffer and upload to UploadBlob
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, fileName);
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
@@ -138,15 +145,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 	} else if (inputDataType === 'url') {
-		// Download file from URL and convert to base64
+		// Use URL directly in docContent - no upload required
 		const healthCardUrl = this.getNodeParameter('healthCardUrl', index) as string;
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			method: 'GET' as const,
-			url: healthCardUrl,
-			encoding: 'arraybuffer' as const,
-		});
-		const buffer = Buffer.from(response);
-		docContent = buffer.toString('base64');
+		docContent = healthCardUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -219,6 +220,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						operation: 'aiProcessHealthCard',
 					},
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

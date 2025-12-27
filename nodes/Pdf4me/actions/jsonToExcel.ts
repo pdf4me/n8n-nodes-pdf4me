@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -270,7 +271,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-		let docContent: string;
+		let docContent: string = '';
+		let blobId: string = '';
 
 		// Handle different input data types
 		if (inputDataType === 'jsonString') {
@@ -286,8 +288,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 			// Convert to base64
 			docContent = Buffer.from(jsonContent, 'utf-8').toString('base64');
+			blobId = '';
 		} else if (inputDataType === 'binaryData') {
-			// Get JSON content from binary data
+			// 1. Validate binary data
 			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 			const item = this.getInputData(index);
 
@@ -295,17 +298,26 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 			}
 
-			const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-			const jsonString = buffer.toString('utf-8');
+			// 2. Get binary data metadata
+			const binaryData = item[0].binary[binaryPropertyName];
+			const jsonFileName = binaryData.fileName || 'data.json';
 
-			// Validate JSON
+			// 3. Convert to Buffer
+			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+			const jsonString = fileBuffer.toString('utf-8');
+
+			// 4. Validate JSON
 			try {
 				JSON.parse(jsonString);
 			} catch (error) {
 				throw new Error(`Invalid JSON in binary data: ${error instanceof Error ? error.message : 'Unknown error'}`);
 			}
 
-			docContent = buffer.toString('base64');
+			// 5. Upload to UploadBlob
+			blobId = await uploadBlobToPdf4me.call(this, fileBuffer, jsonFileName);
+
+			// 6. Use blobId in docContent
+			docContent = `${blobId}`;
 		} else {
 			// Use base64 content directly
 			docContent = this.getNodeParameter('base64Content', index) as string;
@@ -322,9 +334,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			} catch (error) {
 				throw new Error(`Invalid JSON in base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`);
 			}
+
+			blobId = '';
 		}
 
-		// Validate base64 content
+		// Validate content
 		if (!docContent || docContent.trim() === '') {
 			throw new Error('JSON content is required');
 		}
@@ -389,6 +403,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					binary: {
 						[binaryDataName || 'data']: binaryData,
 					},
+					pairedItem: { item: index },
 				},
 			];
 		}

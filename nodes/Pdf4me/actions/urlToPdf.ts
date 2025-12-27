@@ -238,6 +238,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
+	// Validate URL format
+	if (!webUrl || webUrl.trim() === '') {
+		throw new Error('Web URL is required');
+	}
+
+	try {
+		new URL(webUrl);
+	} catch {
+		throw new Error('Invalid URL format. Please provide a valid URL to the web page.');
+	}
+
 	// Build the request body
 	const body: IDataObject = {
 		webUrl,
@@ -300,6 +311,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataKey]: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

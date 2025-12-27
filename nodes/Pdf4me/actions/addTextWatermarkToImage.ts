@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 	ActionConstants,
 } from '../GenericFunctions';
 
@@ -298,34 +299,31 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main image content
-	let docContent: string;
+	let docContent: string = '';
 	let docName: string = outputFileName;
+
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
-		docContent = item[0].binary[binaryPropertyName].data;
-		docName = item[0].binary[binaryPropertyName].fileName || outputFileName;
+
+		// Get binary data metadata for filename
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || outputFileName;
+
+		// Convert to Buffer and upload to UploadBlob
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
 	} else if (inputDataType === 'url') {
+		// Use URL directly in docContent - no upload required
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const options = {
-
-			method: 'GET' as const,
-
-			url: imageUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		const buffer = Buffer.from(response, 'binary');
-		docContent = buffer.toString('base64');
 		docName = imageUrl.split('/').pop() || outputFileName;
+		docContent = imageUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -373,6 +371,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			binary: {
 				[binaryDataName || 'data']: binaryData,
 			},
+			pairedItem: { item: index },
 		},
 	];
 }
