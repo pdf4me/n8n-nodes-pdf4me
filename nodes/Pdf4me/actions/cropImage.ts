@@ -4,6 +4,7 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -315,12 +316,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
+	let docContent: string = '';
 	let originalFileName = docName;
+	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
-		// Get image content from binary data
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
@@ -328,38 +330,49 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
+		// 2. Get binary data metadata
 		const binaryData = item[0].binary[binaryPropertyName];
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const imageFileName = binaryData.fileName || docName || 'image.jpg';
+		originalFileName = imageFileName;
 
-		// Use the original filename if available
-		if (binaryData.fileName) {
-			originalFileName = binaryData.fileName;
-		}
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, imageFileName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		blobId = '';
 
 		// Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+
+		// Validate base64 content
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Image content is required');
+		}
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			method: 'GET' as const,
-			url: imageUrl,
-			encoding: 'arraybuffer' as const,
-		});
-		const buffer = await this.helpers.binaryToBuffer(response);
-		docContent = buffer.toString('base64');
-		originalFileName = imageUrl.split('/').pop() || outputFileName;
+
+		// 2. Extract filename from URL
+		originalFileName = imageUrl.split('/').pop() || docName || outputFileName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = imageUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate base64 content
-	if (!docContent || docContent.trim() === '') {
+	// Validate content (only for base64, blobId and URL are validated by API)
+	if (inputDataType === 'base64' && (!docContent || docContent.trim() === '')) {
 		throw new Error('Image content is required');
 	}
 
@@ -462,6 +475,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataName || 'data']: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

@@ -1,7 +1,11 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import { sanitizeProfiles, ActionConstants } from '../GenericFunctions';
-import { pdf4meAsyncRequest } from '../GenericFunctions';
+import {
+	sanitizeProfiles,
+	ActionConstants,
+	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
+} from '../GenericFunctions';
 
 // Make Node.js globals available
 // declare const URL: any;
@@ -38,13 +42,12 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Input Binary Field',
+		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: true,
 		default: 'data',
-		description: 'Name of the binary property that contains the PDF file (usually "data" for file uploads)',
-		placeholder: 'data',
+		required: true,
+		description: 'Name of the binary property containing the file to rotate',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.RotateDocument],
@@ -53,16 +56,26 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Base64 PDF Content',
+		displayName: 'Input File Name',
+		name: 'inputFileName',
+		type: 'string',
+		default: '',
+		description: 'Name of the input file (including extension). If not provided, will use the filename from binary data.',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.RotateDocument],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 Content',
 		name: 'base64Content',
 		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		required: true,
 		default: '',
-		description: 'Base64 encoded PDF document content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
+		required: true,
+		description: 'Base64 encoded content of the file to rotate',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.RotateDocument],
@@ -71,12 +84,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
+		displayName: 'File URL',
+		name: 'fileUrl',
 		type: 'string',
-		required: true,
 		default: '',
-		description: 'URL to the PDF file to rotate',
+		required: true,
+		description: 'URL of the file to rotate',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
@@ -84,7 +97,21 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-
+	},
+	{
+		displayName: 'Input File Name',
+		name: 'inputFileNameRequired',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'Name of the input file (including extension)',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.RotateDocument],
+				inputDataType: ['base64', 'url'],
+			},
+		},
 	},
 	{
 		displayName: 'Document Name',
@@ -177,15 +204,26 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let docContent: string;
+	// Main document content and metadata
+	let docContent: string = '';
+	let inputDocName: string = '';
+	let blobId: string = '';
 
-	// Handle different input data types
+	// Handle different input types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
+		}
+
 		if (!item[0].binary) {
 			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
 		}
+
 		if (!item[0].binary[binaryPropertyName]) {
 			const availableProperties = Object.keys(item[0].binary).join(', ');
 			throw new Error(
@@ -193,43 +231,175 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'Common property names are "data" for file uploads or the filename without extension.',
 			);
 		}
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = inputFileName || binaryData.fileName || 'document';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in Rotate API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
+		// Base64 input
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for base64 input type.');
+		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		docContent = await downloadPdfFromUrl.call(this, pdfUrl);
+		// URL input - send URL as string directly in docContent
+		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for URL input type.');
+		}
+
+		// Send URL as string directly in docContent - no conversion or modification
+		blobId = '';
+		docContent = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Prepare request body
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		try {
+			new URL(docContent);
+		} catch (error) {
+			throw new Error(`Invalid URL format: ${docContent}`);
+		}
+		// Ensure docContent remains as the original URL string (no trimming)
+		// docContent is already set to the URL string above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Document content is required');
+		}
+		// Validate base64 format for base64 input
+		try {
+			const testBuffer = Buffer.from(docContent, 'base64');
+			if (testBuffer.length === 0 && docContent.length > 0) {
+				throw new Error('Invalid base64 content: Unable to decode base64 string');
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Invalid base64')) {
+				throw error;
+			}
+			throw new Error('Invalid base64 content format');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('Document content is required');
+		}
+	}
+
+	// Build the request body - everything is sent via docContent
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'output.pdf';
 	const body: IDataObject = {
-		docContent,
-		docName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		rotationType,
-		IsAsync: true, // Enable asynchronous processing
+		IsAsync: true,
 	};
 
-	// Add custom profiles if provided
+	// Add profiles if provided
 	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) body.profiles = profiles;
+	if (profiles) {
+		body.profiles = profiles;
+	}
 
-	// Sanitize profiles
 	sanitizeProfiles(body);
 
-	// Replace direct API call with helper
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Rotate', body);
+	// Make the API request
+	let responseData;
+	try {
+		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Rotate', body);
+	} catch (error: unknown) {
+		// Provide better error messages with debugging information
+		const errorObj = error as { statusCode?: number; message?: string };
+		if (errorObj.statusCode === 500) {
+			throw new Error(
+				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${finalDocName}, ` +
+				`docContentLength=${docContent?.length || 0}, ` +
+				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
+			);
+		} else if (errorObj.statusCode === 400) {
+			throw new Error(
+				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${finalDocName}`
+			);
+		}
+		throw error;
+	}
 
-	// Handle the response
+	// Handle the binary response (PDF data)
 	if (responseData) {
-		const fileName = docName || `output_${Date.now()}.pdf`;
+		// Validate that we received valid PDF data
+		if (!Buffer.isBuffer(responseData)) {
+			throw new Error('Invalid response format: Expected Buffer but received ' + typeof responseData);
+		}
+
+		// Check if the response looks like a PDF (should start with %PDF)
+		const responseString = responseData.toString('utf8', 0, 10);
+		if (!responseString.startsWith('%PDF')) {
+			// If it doesn't look like a PDF, it might be an error message or base64 encoded
+			const errorText = responseData.toString('utf8', 0, 200);
+			if (errorText.includes('error') || errorText.includes('Error')) {
+				throw new Error(`API returned error: ${errorText}`);
+			}
+			// Try to decode as base64 if it doesn't look like a PDF
+			try {
+				const decodedBuffer = Buffer.from(responseData.toString('utf8'), 'base64');
+				const decodedString = decodedBuffer.toString('utf8', 0, 10);
+				if (decodedString.startsWith('%PDF')) {
+					// It was base64 encoded, use the decoded version
+					responseData = decodedBuffer;
+				} else {
+					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+				}
+			} catch (decodeError) {
+				throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+			}
+		}
+
+		// Generate filename if not provided
+		let fileName = docName || finalDocName || `rotated_${Date.now()}.pdf`;
+		if (!fileName.endsWith('.pdf')) {
+			fileName = `${fileName}.pdf`;
+		}
+
+		// responseData is already binary data (Buffer)
 		const binaryData = await this.helpers.prepareBinaryData(
 			responseData,
 			fileName,
 			'application/pdf',
 		);
+
+		// Determine the binary data name
+		const binaryDataKey = binaryDataName || 'data';
+
 		return [
 			{
 				json: {
@@ -238,32 +408,20 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					fileSize: responseData.length,
 					success: true,
 					message: 'Document rotated successfully',
-					docName,
+					inputDataType,
+					sourceFileName: inputDocName,
+					docName: finalDocName,
 					rotationType,
 				},
 				binary: {
-					[binaryDataName || 'data']: binaryData,
+					[binaryDataKey]: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}
 
 	// Error case
-	throw new Error('No response received from PDF4me API');
-}
-
-// Helper functions for downloading and reading files
-async function downloadPdfFromUrl(this: IExecuteFunctions, pdfUrl: string): Promise<string> {
-	try {
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			encoding: 'arraybuffer' as const,
-		};
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download PDF from URL: ${error.message}`);
-	}
+	throw new Error('No response data received from PDF4ME API');
 }
 

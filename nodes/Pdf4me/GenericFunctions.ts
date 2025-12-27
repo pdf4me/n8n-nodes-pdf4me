@@ -42,8 +42,6 @@ export async function pdf4meApiRequest(
 	}
 
 	try {
-		// Debug: Log authentication info (without exposing the full key)
-
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 			url: `${options.baseURL}${options.url}`,
 			method: options.method,
@@ -102,19 +100,12 @@ export async function pdf4meApiRequest(
 async function delayAsync(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 ): Promise<void> {
-	// const startTime = Date.now();
-	// console.log('PDF4ME: Calling DelayAsync endpoint for 10-second delay');
-
 	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 		url: 'https://api.pdf4me.com/api/v2/AddDelay',
 		method: 'GET',
 		returnFullResponse: true,
 		ignoreHttpStatusErrors: true,
 	});
-
-	// const endTime = Date.now();
-	// const actualDelay = endTime - startTime;
-	// console.log(`PDF4ME: DelayAsync endpoint completed after ${actualDelay}ms (expected: 10000ms)`);
 }
 
 export async function pdf4meAsyncRequest(
@@ -245,6 +236,155 @@ export function sanitizeProfiles(data: IDataObject): void {
 			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
+	}
+}
+
+/**
+ * Creates a multipart/form-data body manually without external dependencies.
+ * This is a native implementation to comply with n8n community node guidelines.
+ *
+ * @param fieldName - The form field name
+ * @param fileBuffer - The file buffer to upload
+ * @param filename - The filename
+ * @returns Object with body (Buffer) and boundary string
+ */
+function createMultipartFormData(fieldName: string, fileBuffer: Buffer, filename: string): { body: Buffer; boundary: string } {
+	// Generate a unique boundary
+	const boundary = `----n8n-pdf4me-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+	const CRLF = '\r\n';
+
+	// Build the multipart/form-data body
+	const parts: Buffer[] = [];
+
+	// Opening boundary
+	parts.push(Buffer.from(`--${boundary}${CRLF}`));
+
+	// Content-Disposition header
+	const disposition = `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"${CRLF}`;
+	parts.push(Buffer.from(disposition));
+
+	// Content-Type header (use application/octet-stream for binary files)
+	parts.push(Buffer.from(`Content-Type: application/octet-stream${CRLF}${CRLF}`));
+
+	// File content
+	parts.push(fileBuffer);
+
+	// Closing boundary
+	parts.push(Buffer.from(`${CRLF}--${boundary}--${CRLF}`));
+
+	// Combine all parts
+	const body = Buffer.concat(parts);
+
+	return { body, boundary };
+}
+
+/**
+ * Uploads binary data to PDF4me's UploadBlob endpoint and returns the blobId.
+ * This is used when binary data is provided as input instead of base64 content.
+ *
+ * @param this - Execution context
+ * @param fileStream - Binary data stream or buffer to upload
+ * @param filename - Name of the file being uploaded
+ * @returns The blobId from the API response
+ */
+export async function uploadBlobToPdf4me(
+	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+	fileStream: NodeJS.ReadableStream | Buffer,
+	filename: string,
+): Promise<string> {
+	try {
+		// Convert stream to buffer if needed
+		let fileBuffer: Buffer;
+		if (fileStream instanceof Buffer) {
+			fileBuffer = fileStream;
+		} else {
+			// Read stream into buffer
+			const chunks: Buffer[] = [];
+			for await (const chunk of fileStream) {
+				// Ensure chunk is a Buffer - handle different chunk types
+				if (Buffer.isBuffer(chunk)) {
+					chunks.push(chunk);
+				} else {
+					// Convert other types (string, Uint8Array, etc.) to Buffer
+					chunks.push(Buffer.from(chunk as string | ArrayLike<number>));
+				}
+			}
+			fileBuffer = Buffer.concat(chunks);
+		}
+
+		// Check file size
+		const sizeMB = fileBuffer.length / 1024 / 1024;
+		// Very large files might hit memory limits
+		// Set a reasonable upper limit based on typical n8n Cloud memory constraints
+		if (sizeMB > 500) {
+			throw new Error(
+				`File too large (${Math.round(sizeMB * 100) / 100}MB). Files larger than 500MB may exceed n8n Cloud memory limits. ` +
+				'Please use a smaller file or consider processing it in chunks.',
+			);
+		}
+
+		// Create multipart/form-data body manually (native implementation, no external dependencies)
+		const { body, boundary } = createMultipartFormData('file', fileBuffer, filename);
+
+		// Get authentication credentials
+		const credentials = await this.getCredentials('pdf4meApi');
+		const apiKey = credentials?.apiKey as string;
+
+		// Make the upload request with manually constructed multipart/form-data
+		const response = await this.helpers.httpRequest({
+			url: 'https://api.pdf4me.com/api/V2/UploadBlob',
+			method: 'POST',
+			body: body, // Native Buffer with multipart/form-data
+			headers: {
+				'Content-Type': `multipart/form-data; boundary=${boundary}`,
+				'Authorization': `Basic ${apiKey}`,
+			},
+			returnFullResponse: true,
+			timeout: 6000023,
+		});
+
+		// Check if response is successful
+		if (response.statusCode === 200 || response.statusCode === 201) {
+			// Parse JSON response manually since we didn't use json: true
+			let responseBody: IDataObject;
+			try {
+				if (typeof response.body === 'string') {
+					responseBody = JSON.parse(response.body);
+				} else if (Buffer.isBuffer(response.body)) {
+					responseBody = JSON.parse(response.body.toString('utf8'));
+				} else {
+					responseBody = response.body as IDataObject;
+				}
+			} catch (parseError) {
+				throw new Error(`Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+			}
+
+			// Check for BlobId (capital B) first, then fallback to blobId for backward compatibility
+			const blobId = responseBody?.BlobId || responseBody?.blobId;
+			if (responseBody && blobId) {
+				return blobId as string;
+			} else {
+				throw new Error('UploadBlob response missing BlobId field');
+			}
+		} else {
+			let errorMessage = `UploadBlob failed with status ${response.statusCode}`;
+			try {
+				let errorBody: IDataObject | string = response.body;
+				if (typeof response.body === 'string') {
+					errorBody = JSON.parse(response.body);
+				} else if (Buffer.isBuffer(response.body)) {
+					errorBody = JSON.parse(response.body.toString('utf8'));
+				}
+				if (typeof errorBody === 'object' && errorBody) {
+					errorMessage = (errorBody as any).message || (errorBody as any).error || errorMessage;
+				}
+			} catch {
+				// Ignore parsing errors
+			}
+			throw new Error(errorMessage);
+		}
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject);
 	}
 }
 

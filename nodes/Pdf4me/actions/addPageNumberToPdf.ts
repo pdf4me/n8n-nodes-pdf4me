@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -289,6 +290,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
 	let docContent: string;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -300,49 +303,78 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in AddPageNumber API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
 		docContent = this.getNodeParameter('base64Content', index) as string;
 
-		// Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
+		// Handle data URLs (remove data: prefix if present)
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
-		// Download PDF from URL
+		// URL input - send URL as string directly in docContent
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
 		if (!pdfUrl || pdfUrl.trim() === '') {
 			throw new Error('PDF URL is required');
 		}
-		const options = {
 
-			method: 'GET' as const,
+		// Validate URL format
+		try {
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
 
-			url: pdfUrl.trim(),
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		docContent = Buffer.from(response).toString('base64');
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(pdfUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate PDF content
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
 	}
 
 	// Build the request body
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.pdf';
 	const body: IDataObject = {
 		alignX,
 		alignY,
-		docContent,
-		docName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: finalDocName,
 		fontSize,
 		marginXinMM,
 		marginYinMM,
@@ -394,6 +426,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataName || 'data']: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}

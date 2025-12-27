@@ -4,6 +4,7 @@ import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Make Node.js globals available
@@ -205,13 +206,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
-	let docContent: string;
+	let docContent: string = '';
+	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-
-		// Get binary data from previous node
 		const item = this.getInputData(index);
 
 		if (!item[0].binary) {
@@ -226,13 +227,28 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		const inputDocName = binaryData.fileName || docName || 'document.docx';
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		docContent = this.getNodeParameter('base64Content', index) as string;
+		blobId = '';
 	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
 		const wordUrl = this.getNodeParameter('wordUrl', index) as string;
-		docContent = await downloadWordFromUrl.call(this, wordUrl);
+
+		// 2. Use URL directly in docContent
+		blobId = '';
+		docContent = wordUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
@@ -304,31 +320,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[binaryDataName || 'data']: binaryData,
 				},
+				pairedItem: { item: index },
 			},
 		];
 	}
 
 	// Error case
 	throw new Error('No text extraction results received from PDF4ME API');
-}
-
-async function downloadWordFromUrl(this: IExecuteFunctions, wordUrl: string): Promise<string> {
-	try {
-		const options = {
-
-			method: 'GET' as const,
-
-			url: wordUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-
-		return Buffer.from(response).toString('base64');
-	} catch (error) {
-		throw new Error(`Failed to download Word file from URL: ${error.message}`);
-	}
 }
 

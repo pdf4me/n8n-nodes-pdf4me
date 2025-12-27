@@ -4,6 +4,7 @@ import {
 	sanitizeProfiles,
 	ActionConstants,
 	pdf4meAsyncRequest,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 
@@ -39,12 +40,26 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Binary Property Name',
+		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: true,
 		default: 'data',
+		required: true,
 		description: 'Name of the binary property containing the PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfBySwissQR],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Input File Name',
+		name: 'inputFileName',
+		type: 'string',
+		default: '',
+		description: 'Name of the input file (including extension). If not provided, will use the filename from binary data.',
+		placeholder: 'document.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfBySwissQR],
@@ -56,13 +71,9 @@ export const description: INodeProperties[] = [
 		displayName: 'Base64 Content',
 		name: 'base64Content',
 		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		required: true,
 		default: '',
-		description: 'Base64 encoded PDF content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
+		required: true,
+		description: 'Base64 encoded content of the PDF file',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfBySwissQR],
@@ -71,12 +82,27 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
+		displayName: 'Input File Name',
+		name: 'inputFileNameRequired',
 		type: 'string',
-		required: true,
 		default: '',
-		description: 'URL to the PDF file',
+		required: true,
+		description: 'Name of the input file (including extension)',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SplitPdfBySwissQR],
+				inputDataType: ['base64', 'url'],
+			},
+		},
+	},
+	{
+		displayName: 'File URL',
+		name: 'fileUrl',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'URL of the PDF file',
 		placeholder: 'https://example.com/document.pdf',
 		displayOptions: {
 			show: {
@@ -84,7 +110,6 @@ export const description: INodeProperties[] = [
 				inputDataType: ['url'],
 			},
 		},
-
 	},
 	{
 		displayName: 'Split QR Page',
@@ -155,19 +180,6 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		required: true,
-		default: 'SwissQR.pdf',
-		description: 'Name for the output PDF file',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SplitPdfBySwissQR],
-			},
-		},
-	},
-	{
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
@@ -190,12 +202,11 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Binary Data Output Name',
+		displayName: 'Output Binary Field Name',
 		name: 'binaryDataName',
 		type: 'string',
 		default: 'data',
-		description: 'Custom name for the binary data in n8n output',
-		placeholder: 'split-pdfs',
+		description: 'Name of the binary property to store the output PDF file',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfBySwissQR],
@@ -206,64 +217,137 @@ export const description: INodeProperties[] = [
 
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const splitQRPage = this.getNodeParameter('splitQRPage', index) as string;
-	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
 	const combinePagesWithSameBarcodes = this.getNodeParameter('combinePagesWithSameBarcodes', index) as boolean;
+	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	let pdfContentBase64: string;
-	let docName: string = outputFileName.endsWith('.pdf') ? outputFileName : `${outputFileName}.pdf`;
+	// Main document content and metadata
+	let pdfContentBase64: string = '';
+	let inputDocName: string = '';
+	let blobId: string = '';
 
+	// Handle different input types
 	if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const inputFileName = this.getNodeParameter('inputFileName', index) as string;
 		const item = this.getInputData(index);
-		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+
+		// Check if item exists and has data
+		if (!item || !item[0]) {
+			throw new Error('No input data found. Please ensure the previous node provides data.');
 		}
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		pdfContentBase64 = buffer.toString('base64');
-		// Use the original filename if available
-		if (item[0].binary[binaryPropertyName].fileName) {
-			docName = item[0].binary[binaryPropertyName].fileName as string;
+
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
 		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
+		}
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = inputFileName || binaryData.fileName || 'document';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in SplitPdfBySwissQR API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in pdfContentBase64
+		pdfContentBase64 = `${blobId}`;
 	} else if (inputDataType === 'base64') {
+		// Base64 input
 		pdfContentBase64 = this.getNodeParameter('base64Content', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for base64 input type.');
+		}
+
 		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
 			throw new Error('Base64 content is required');
 		}
+
+		// Handle data URLs (remove data: prefix if present)
+		if (pdfContentBase64.includes(',')) {
+			pdfContentBase64 = pdfContentBase64.split(',')[1];
+		}
 		pdfContentBase64 = pdfContentBase64.trim();
+
+		blobId = '';
 	} else if (inputDataType === 'url') {
-		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-		if (!pdfUrl || pdfUrl.trim() === '') {
-			throw new Error('PDF URL is required');
+		// URL input - send URL as string directly in docContent
+		const fileUrl = this.getNodeParameter('fileUrl', index) as string;
+		inputDocName = this.getNodeParameter('inputFileNameRequired', index) as string;
+
+		if (!inputDocName) {
+			throw new Error('Input file name is required for URL input type.');
 		}
+
+		if (!fileUrl || fileUrl.trim() === '') {
+			throw new Error('File URL is required');
+		}
+
+		// Validate URL format
 		try {
-			const options = {
-
-				method: 'GET' as const,
-
-				url: pdfUrl.trim(),
-
-				encoding: 'arraybuffer' as const,
-
-			};
-
-			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-			pdfContentBase64 = Buffer.from(response).toString('base64');
-		} catch (error) {
-			throw new Error(`Failed to download PDF from URL: ${error.message}`);
+			new URL(fileUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
-		// Extract filename from URL
-		docName = pdfUrl.split('/').pop() || docName;
+
+		// Send URL as string directly in pdfContentBase64 - no download or conversion
+		blobId = '';
+		pdfContentBase64 = String(fileUrl);
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!pdfContentBase64 || typeof pdfContentBase64 !== 'string' || pdfContentBase64.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
+			throw new Error('Document content is required');
+		}
+		// Validate base64 format for base64 input
+		try {
+			const testBuffer = Buffer.from(pdfContentBase64, 'base64');
+			if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
+				throw new Error('Invalid base64 content: Unable to decode base64 string');
+			}
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('Invalid base64')) {
+				throw error;
+			}
+			throw new Error('Invalid base64 content format');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!pdfContentBase64 || pdfContentBase64.trim() === '') {
+			throw new Error('Document content is required');
+		}
+	}
+
+	// Use inputDocName for docName in the request
+	const docNameForRequest = inputDocName || 'output.pdf';
+
 	const body: IDataObject = {
-		docContent: pdfContentBase64,
-		docName,
+		docContent: pdfContentBase64, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docName: docNameForRequest,
 		splitBarcodePage: splitQRPage,
 		combinePagesWithSameConsecutiveBarcodes: combinePagesWithSameBarcodes,
 		pdfRenderDpi,
@@ -271,12 +355,34 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	};
 
 	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) body.profiles = profiles;
+	if (profiles) {
+		body.profiles = profiles;
+	}
 
 	sanitizeProfiles(body);
 
 	// Call the PDF4me SplitPdfBySwissQR endpoint
-	const response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfSwissQR', body);
+	let response;
+	try {
+		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode', body);
+	} catch (error: unknown) {
+		// Provide better error messages with debugging information
+		const errorObj = error as { statusCode?: number; message?: string };
+		if (errorObj.statusCode === 500) {
+			throw new Error(
+				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}, ` +
+				`docContentLength=${pdfContentBase64?.length || 0}, ` +
+				`docContentType=${typeof pdfContentBase64 === 'string' && pdfContentBase64.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
+			);
+		} else if (errorObj.statusCode === 400) {
+			throw new Error(
+				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}`
+			);
+		}
+		throw error;
+	}
 
 	// --- BEGIN: Buffer/String Response Parsing ---
 	let parsedResponse = response;
@@ -336,7 +442,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let totalFiles = 0;
 	let outputDirectory = '';
 	let folderName = '';
-	const sourcePdf = docName;
+	const sourcePdf = inputDocName || docNameForRequest || 'output.pdf';
 	let responseType = '';
 
 	// If response is a ZIP (Buffer or base64 string)
@@ -387,7 +493,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			for (const doc of parsedResponse.splitedDocuments) {
 				if (doc.streamFile && doc.fileName) {
 					const buffer = Buffer.from(doc.streamFile, 'base64');
-					const binaryKey = `file_${idx}`;
+					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
 					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.fileName, 'application/pdf');
 					filesSummary.push({
 						fileName: doc.fileName,
@@ -404,11 +510,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			responseType = 'Multiple PDFs (splitedDocuments)';
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
 			const buffer = Buffer.from(parsedResponse.docContent, 'base64');
-			binaryData['file_1'] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
+			binaryData[`${binaryDataName || 'data'}_1`] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
 			filesSummary.push({
 				fileName: parsedResponse.docName,
 				pageIndex: 1,
-				binaryProperty: 'file_1',
+				binaryProperty: `${binaryDataName || 'data'}_1`,
 				mimeType: 'application/pdf',
 				fileType: 'PDF file',
 				fileSize: buffer.length,
@@ -416,6 +522,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			totalFiles = 1;
 			responseType = 'Single PDF (legacy)';
 		} else {
+			// Unexpected response: save for debugging
 			// Debug logging removed due to n8n restrictions
 			throw new Error('Unexpected response format from PDF4me SplitPdfBySwissQR API. Raw response saved to /tmp/pdf4me_split_swissqr_raw_response.json');
 		}
@@ -436,6 +543,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			files: filesSummary,
 		},
 		binary: binaryData,
+		pairedItem: { item: index },
 	};
 
 	return [output];

@@ -3,6 +3,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
+	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
 // Declare Node.js global
@@ -273,12 +274,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const pageSelection = this.getNodeParameter('pageSelection', index) as string;
-	const pageNumbers = this.getNodeParameter('pageNumbers', index) as string;
+	const pageNumbers = (pageSelection === 'specific' || pageSelection === 'range')
+		? (this.getNodeParameter('pageNumbers', index) as string)
+		: '';
 	const outputFileNamePrefix = this.getNodeParameter('outputFileNamePrefix', index) as string;
 	const imageSettings = this.getNodeParameter('imageSettings', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let docContent: string;
+	let blobId: string = '';
+	let inputDocName: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
@@ -298,8 +303,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		docContent = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in CreateImages API payload
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${blobId}`;
 
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
@@ -310,8 +326,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = docContent.split(',')[1];
 		}
 
+		blobId = '';
+
 	} else if (inputDataType === 'url') {
-		// Use PDF URL directly - download the file first
+		// Use PDF URL directly - send URL as string directly in docContent
 		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
 
 		// Validate URL format
@@ -321,30 +339,35 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
 		}
 
-
-		const options = {
-			method: 'GET' as const,
-			url: pdfUrl,
-			headers: {
-				'User-Agent': 'Mozilla/5.0 (compatible; n8n-pdf4me-node)',
-				'Accept': 'application/pdf,application/octet-stream,*/*',
-			},
-			timeout: 30000, // 30 seconds timeout
-			encoding: 'arraybuffer' as const,
-		};
-		docContent = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
+		// Send URL as string directly in docContent - no download or conversion
+		blobId = '';
+		docContent = String(pdfUrl);
 
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
 	}
 
-	// Validate content
-	if (!docContent || docContent.trim() === '') {
-		throw new Error('PDF content is required');
+	// Validate content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+		// Validate PDF content for base64
+		validatePdfContent(docContent);
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+		// blobId validation - just check it's not empty
 	}
-
-	// Validate PDF content
-	validatePdfContent(docContent);
 
 	// Get image settings
 	const settings = imageSettings.settings as IDataObject || {};
@@ -356,25 +379,44 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let pageNrsString = '';
 
 	if (pageSelection === 'specific') {
-		// Parse specific page numbers
-		pageNrs = pageNumbers.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+		// Parse specific page numbers - supports formats like "1,3,5" or "1, 2, 3"
+		const parts = pageNumbers.split(',').map(p => p.trim()).filter(p => p.length > 0);
+		pageNrs = parts.map(p => {
+			const num = parseInt(p);
+			if (isNaN(num)) {
+				throw new Error(`Invalid page number format: '${p}'. Please provide valid page numbers (e.g., '1,3,5')`);
+			}
+			return num;
+		});
 		if (pageNrs.length === 0) {
-			throw new Error('Please provide valid page numbers (e.g., "1,3,5")');
+			throw new Error('Please provide valid page numbers (e.g., \'1,3,5\')');
 		}
-		pageNrsString = pageNumbers;
+		// Remove duplicates and sort
+		pageNrs = [...new Set(pageNrs)].sort((a, b) => a - b);
+		pageNrsString = pageNumbers.trim();
 	} else if (pageSelection === 'range') {
-		// Parse page range
-		const rangeMatch = pageNumbers.match(/^(\d+)-(\d+)$/);
+		// Parse page range - supports formats like "1-5" or "2-" (to end)
+		const trimmed = pageNumbers.trim();
+		const rangeMatch = trimmed.match(/^(\d+)-(\d*)$/);
 		if (!rangeMatch) {
-			throw new Error('Please provide a valid page range (e.g., "1-5")');
+			throw new Error('Please provide a valid page range (e.g., \'1-5\' or \'2-\' for from page 2 to end)');
 		}
 		const start = parseInt(rangeMatch[1]);
-		const end = parseInt(rangeMatch[2]);
-		if (start > end) {
-			throw new Error('Start page number must be less than or equal to end page number');
+		const endStr = rangeMatch[2];
+
+		if (endStr === '') {
+			// Format like '2-' means from page 2 to end - we can't determine end, so use start only
+			// The API will handle 'to end' format in the pageNrs string
+			pageNrs = [start];
+			pageNrsString = trimmed; // Keep the '2-' format for API
+		} else {
+			const end = parseInt(endStr);
+			if (start > end) {
+				throw new Error('Start page number must be less than or equal to end page number');
+			}
+			pageNrs = Array.from({length: end - start + 1}, (_, i) => start + i);
+			pageNrsString = trimmed;
 		}
-		pageNrs = Array.from({length: end - start + 1}, (_, i) => start + i);
-		pageNrsString = pageNumbers;
 	} else {
 		// All pages - use empty string to indicate all pages
 		pageNrsString = '';
@@ -383,9 +425,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 
 	// Build the request body
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.pdf';
 	const body: IDataObject = {
-		docContent,
-		docName,
+		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
+		docname: finalDocName, // API expects lowercase 'docname'
 		imageAction: {
 			WidthPixel: widthPixel.toString(),
 			ImageExtension: imageExtension,
@@ -400,8 +444,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		};
 		body.pageNrs = pageNrsString;
 	}
-
-
 
 	try {
 		// Use async processing for CreateImages endpoint
@@ -460,7 +502,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// This.helpers.fs is not available, so we'll skip file writing for now.
 			// If debugging is critical, this needs to be refactored to use this.helpers.request
 			// or a different method to fetch the response for logging.
-			// For now, we'll just log to console.
 		} catch (e) {
 			// Ignore file write errors for debugging
 		}
@@ -504,6 +545,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						binary: {
 							[`${binaryDataName || 'data'}_${i + 1}`]: binaryData,
 						},
+						pairedItem: { item: index },
 					});
 
 				} else {
@@ -546,13 +588,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						binary: {
 							[`${binaryDataName || 'data'}_${i + 1}`]: binaryData,
 						},
+						pairedItem: { item: index },
 					});
 
 				} else {
-					// Save problematic document for debugging
-					// This.helpers.fs is not available, so we'll skip file writing for now.
-					// If debugging is critical, this needs to be refactored.
-					// Removed console.warn for compliance with n8n guidelines
+				// Save problematic document for debugging
+				// This.helpers.fs is not available, so we'll skip file writing for now.
+				// If debugging is critical, this needs to be refactored.
+				// Removed console.warn for compliance with n8n guidelines
 				}
 			}
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
@@ -581,6 +624,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				binary: {
 					[fileName]: binaryData,
 				},
+				pairedItem: { item: index },
 			});
 
 		} else {
@@ -594,8 +638,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		return images;
 	} catch (error) {
-		// Enhanced error handling
-		if (error.message && error.message.includes('File is Empty')) {
+		// Enhanced error handling with detailed debugging information
+		const errorMessage = error instanceof Error ? error.message : String(error);
+
+		if (errorMessage && errorMessage.includes('File is Empty')) {
 			throw new Error(
 				'PDF4ME API Error: File is Empty. This usually means:\n' +
 				'1. The PDF file is corrupted or invalid\n' +
@@ -603,15 +649,39 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'3. The input data type doesn\'t match the actual data\n\n' +
 				`Input Type: ${inputDataType}\n` +
 				`Content Length: ${body.docContent && typeof body.docContent === 'string' ? body.docContent.length : 0}\n` +
+				`Content Type: ${inputDataType === 'binaryData' ? 'blobId' : inputDataType === 'url' ? 'URL' : 'base64'}\n` +
 				`Has Content: ${!!body.docContent}`,
 			);
 		}
+
+		// Provide more context for 500 errors
+		if (errorMessage && (errorMessage.includes('500') || errorMessage.includes('service was not able to process'))) {
+			throw new Error(
+				'PDF4ME API Error (500): The service was not able to process your request.\n\n' +
+				'Debug Information:\n' +
+				`- Input Type: ${inputDataType}\n` +
+				`- Document Name: ${finalDocName}\n` +
+				`- Content Length: ${docContent?.length || 0}\n` +
+				`- Content Type: ${inputDataType === 'binaryData' ? 'blobId/URL' : inputDataType === 'url' ? 'URL' : 'base64'}\n` +
+				`- Image Width: ${widthPixel}px\n` +
+				`- Image Format: ${imageExtension}\n` +
+				`- Page Selection: ${pageSelection}\n` +
+				`- Page Numbers: ${body.pageNrs || 'all pages'}\n\n` +
+				'Please check:\n' +
+				'1. The PDF file is valid and not corrupted\n' +
+				'2. The blobId/URL is accessible (for binary data/URL inputs)\n' +
+				'3. The page numbers are valid for the document\n' +
+				'4. The image settings are within acceptable ranges\n\n' +
+				`Original Error: ${errorMessage}`,
+			);
+		}
+
 		throw error;
 	}
 }
 
 /**
- * Validate PDF content
+ * Validate PDF content (for base64 input only)
  */
 function validatePdfContent(docContent: string): void {
 	if (!docContent || docContent.trim() === '') {
@@ -635,7 +705,7 @@ function validatePdfContent(docContent: string): void {
 			);
 		}
 	} catch (error) {
-		if (error.message.includes('PDF files should start with')) {
+		if (error instanceof Error && error.message.includes('PDF files should start with')) {
 			throw error;
 		}
 		throw new Error('Invalid base64 content. Please ensure the PDF content is properly base64 encoded.');

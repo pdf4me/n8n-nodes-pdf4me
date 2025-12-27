@@ -1,5 +1,5 @@
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
-import { ActionConstants, pdf4meAsyncRequest } from '../GenericFunctions';
+import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
 	{
@@ -323,7 +323,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const documentDataType = this.getNodeParameter('documentDataType', index) as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-	
+
 	// Auto-set output type based on template file type
 	let outputType: string;
 	if (templateFileType === 'HTML') {
@@ -341,6 +341,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let templateFileName: string;
 	let documentDataFile: string = '';
 	let documentDataText: string = '';
+	let templateBlobId: string = '';
+	let documentBlobId: string = '';
 
 	// Handle template file input types
 	if (templateInputDataType === 'binaryData') {
@@ -352,64 +354,96 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		templateFileData = buffer.toString('base64');
 		const binaryData = item[0].binary[binaryPropertyName];
 		templateFileName = inputFileName || binaryData.fileName || 'template.docx';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in GenerateDocumentMultiple API payload
+		templateBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, templateFileName);
+
+		// Use blobId in templateFileData
+		templateFileData = `${templateBlobId}`;
 	} else if (templateInputDataType === 'base64') {
 		templateFileData = this.getNodeParameter('templateBase64Content', index) as string;
+
+		// Handle data URLs (remove data: prefix if present)
+		if (templateFileData.includes(',')) {
+			templateFileData = templateFileData.split(',')[1];
+		}
+
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
+		templateBlobId = '';
 	} else if (templateInputDataType === 'htmlCode') {
 		// Validate that template file type is HTML
 		if (templateFileType !== 'HTML') {
 			throw new Error('HTML Code input type is only available when Template File Type is set to HTML');
 		}
-		
+
 		let htmlCode = this.getNodeParameter('templateHtmlCode', index) as string;
-		
+
 		// Validate HTML code
 		if (!htmlCode || htmlCode.trim().length === 0) {
 			throw new Error('HTML code cannot be empty');
 		}
-		
+
 		// Ensure HTML has basic structure
 		if (!htmlCode.includes('<html') && !htmlCode.includes('<!DOCTYPE')) {
-			// console.log('Warning: HTML code may not have proper HTML structure');
 			// Try to wrap the content in basic HTML structure if it's missing
 			if (!htmlCode.includes('<html')) {
 				htmlCode = `<!DOCTYPE html><html><head><title>Template</title></head><body>${htmlCode}</body></html>`;
-				// console.log('Wrapped HTML content in basic HTML structure');
 			}
 		}
-		
+
 		// Convert HTML to base64
 		try {
 			templateFileData = Buffer.from(htmlCode, 'utf8').toString('base64');
 		} catch (error) {
-			// console.log('Error converting HTML to base64:', error);
 			// Fallback: try with different encoding
 			templateFileData = Buffer.from(htmlCode, 'latin1').toString('base64');
 		}
-		
+
 		// Set default filename for HTML template
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string || 'template.html';
+		templateBlobId = '';
 	} else if (templateInputDataType === 'url') {
 		const templateFileUrl = this.getNodeParameter('templateFileUrl', index) as string;
+
+		// Validate URL format
+		try {
+			new URL(templateFileUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the template file.');
+		}
+
+		// Send URL as string directly in templateFileData - no download or conversion
+		templateBlobId = '';
+		templateFileData = String(templateFileUrl);
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
-		const options = {
-
-			method: 'GET' as const,
-
-			url: templateFileUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		templateFileData = Buffer.from(response).toString('base64');
 	} else {
 		throw new Error(`Unsupported template input type: ${templateInputDataType}`);
+	}
+
+	// Validate template content based on input type
+	if (templateInputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!templateFileData || typeof templateFileData !== 'string' || templateFileData.trim() === '') {
+			throw new Error('Template file URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (templateInputDataType === 'base64' || templateInputDataType === 'htmlCode') {
+		// For base64/HTML, validate content is not empty
+		if (!templateFileData || templateFileData.trim() === '') {
+			throw new Error('Template file content is required');
+		}
+	} else if (templateInputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!templateFileData || templateFileData.trim() === '') {
+			throw new Error('Template file content is required');
+		}
 	}
 
 	// Handle document data input types
@@ -423,26 +457,63 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-		documentDataFile = buffer.toString('base64');
+		const binaryData = item[0].binary[binaryPropertyName];
+		const inputFileName = this.getNodeParameter('documentDataFileName', index) as string;
+		const documentFileName = inputFileName || binaryData.fileName || 'data.json';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in GenerateDocumentMultiple API payload
+		documentBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, documentFileName);
+
+		// Use blobId in documentDataFile
+		documentDataFile = `${documentBlobId}`;
 	} else if (documentInputDataType === 'base64') {
 		documentDataFile = this.getNodeParameter('documentBase64Content', index) as string;
+
+		// Handle data URLs (remove data: prefix if present)
+		if (documentDataFile.includes(',')) {
+			documentDataFile = documentDataFile.split(',')[1];
+		}
+
+		documentBlobId = '';
 	} else if (documentInputDataType === 'url') {
 		const documentDataFileUrl = this.getNodeParameter('documentDataFileUrl', index) as string;
-		const options = {
 
-			method: 'GET' as const,
+		// Validate URL format
+		try {
+			new URL(documentDataFileUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the document data file.');
+		}
 
-			url: documentDataFileUrl,
-
-			encoding: 'arraybuffer' as const,
-
-		};
-
-		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', options);
-		documentDataFile = Buffer.from(response).toString('base64');
+		// Send URL as string directly in documentDataFile - no download or conversion
+		documentBlobId = '';
+		documentDataFile = String(documentDataFileUrl);
 	} else {
 		throw new Error(`Unsupported document input type: ${documentInputDataType}`);
+	}
+
+	// Validate document data content based on input type
+	if (documentInputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!documentDataFile || typeof documentDataFile !== 'string' || documentDataFile.trim() === '') {
+			throw new Error('Document data file URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (documentInputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!documentDataFile || documentDataFile.trim() === '') {
+			throw new Error('Document data file content is required');
+		}
+	} else if (documentInputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!documentDataFile || documentDataFile.trim() === '') {
+			throw new Error('Document data file content is required');
+		}
 	}
 
 	// Validate that either documentDataFile or documentDataText is provided
@@ -450,13 +521,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Either Document Data File or Document Data Text must be provided');
 	}
 
+	// templateFileData can be: blobId (for binary), base64 string (for base64/htmlCode), or URL string (for url)
+	// documentDataFile can be: blobId (for binary), base64 string (for base64), or URL string (for url)
 	const payload = {
 		templateFileType,
 		templateFileName,
-		templateFileData,
+		templateFileData, // Binary data uses blobId format, base64/htmlCode uses base64 string, URL uses URL string
 		documentDataType,
 		outputType,
-		documentDataFile,
+		documentDataFile, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		documentDataText,
 		IsAsync: true,
 	};
@@ -518,6 +591,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						binary: {
 							data: binaryData,
 						},
+						pairedItem: { item: index },
 					},
 				];
 			}
@@ -629,6 +703,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					binary: {
 						[binaryDataName || 'data']: binaryData,
 					},
+					pairedItem: { item: index },
 				});
 			} catch (error) {
 				continue;
