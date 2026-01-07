@@ -452,6 +452,7 @@ export const ActionConstants = {
 	MergeMultiplePDFs: 'Merge Multiple PDFs',
 	OverlayPDFs: 'Overlay PDFs',
 	ParseDocument: 'Parse Document',
+	PrepareForPrint: 'Prepare For Print',
 	ProtectDocument: 'Protect PDF',
 	ReadBarcodeFromImage: 'Read Barcode From Image',
 	ReadBarcodeFromPdf: 'Read Barcode From PDF',
