@@ -88,6 +88,7 @@ import * as parseDocument from './actions/parseDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
+import * as resizePdf from './actions/resizePdf';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -270,6 +271,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await linearizePdf.execute.call(this, i)));
 				} else if (action === ActionConstants.FlattenPdf) {
 					operationResult.push(...(await flattenPdf.execute.call(this, i)));
+				} else if (action === ActionConstants.ResizePdf) {
+					operationResult.push(...(await resizePdf.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

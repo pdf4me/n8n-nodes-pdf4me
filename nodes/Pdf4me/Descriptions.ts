@@ -81,6 +81,7 @@ import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
+import * as resizePdf from './actions/resizePdf';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -394,6 +395,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AddMarginToPdf,
 					description: 'Add margins to PDF documents',
 					action: 'Add margin to PDF',
+				},
+				{
+					name: 'Resize PDF',
+					value: ActionConstants.ResizePdf,
+					description: 'Resize PDF pages with custom page sizes and padding options',
+					action: 'Resize PDF',
 				},
 				{
 					name: 'Add Page Number to PDF',
@@ -969,6 +976,7 @@ export const descriptions: INodeTypeDescription = {
 		...addImageStampToPdf.description,
 		...addImageWatermarkToImage.description,
 		...addMarginToPdf.description,
+		...resizePdf.description,
 		...addPageNumberToPdf.description,
 		...addTextStampToPdf.description,
 		...addTextWatermarkToImage.description,

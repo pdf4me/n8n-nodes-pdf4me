@@ -459,6 +459,7 @@ export const ActionConstants = {
 	RemoveExifTagsFromImage: 'Remove Exif Tags From Image',
 	RepairPdfDocument: 'Repair PDF Document',
 	ReplaceTextWithImage: 'Replace Text With Image',
+	ResizePdf: 'Resize PDF',
 	ReplaceTextWithImageInWord: 'Replace Text With Image In Word',
 	ResizeImage: 'Resize Image',
 	RotateDocument: 'Rotate Document',
