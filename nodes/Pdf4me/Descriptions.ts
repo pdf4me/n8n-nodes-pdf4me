@@ -78,6 +78,7 @@ import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as uploadFile from './actions/uploadFile';
+import * as uploadBlob from './actions/uploadBlob';
 import * as parseDocument from './actions/parseDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
@@ -883,6 +884,12 @@ export const descriptions: INodeTypeDescription = {
 					action: 'Upload file to PDF4me',
 				},
 				{
+					name: 'Upload Blob',
+					value: ActionConstants.UploadBlob,
+					description: 'Upload a blob to PDF4me storage (supports binary, base64, and URL inputs)',
+					action: 'Upload blob',
+				},
+				{
 					name: 'Get Document from PDF4me',
 					value: ActionConstants.GetDocumentFromPdf4me,
 					description: 'Retrieve a document from PDF4me storage',
@@ -1066,6 +1073,7 @@ export const descriptions: INodeTypeDescription = {
 		...unlock_pdf.description,
 		...update_hyperlinks_annotation.description,
 		...uploadFile.description,
+		...uploadBlob.description,
 		...zugferdInvoice.description,
 	],
 	subtitle: '={{$parameter["resource"]}} / {{$parameter["operation"]}}',

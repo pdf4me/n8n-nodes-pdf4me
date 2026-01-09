@@ -84,6 +84,7 @@ import * as convertPdfToPowerpoint from './actions/convertPdfToPowerpoint';
 import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
+import * as uploadBlob from './actions/uploadBlob';
 import * as parseDocument from './actions/parseDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
@@ -267,6 +268,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await convertWordToPdfForm.execute.call(this, i)));
 				} else if (action === ActionConstants.UploadFile) {
 					operationResult.push(...(await uploadFile.execute.call(this, i)));
+				} else if (action === ActionConstants.UploadBlob) {
+					operationResult.push(...(await uploadBlob.execute.call(this, i)));
 				} else if (action === ActionConstants.ParseDocument) {
 					operationResult.push(...(await parseDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.LinearizePdf) {

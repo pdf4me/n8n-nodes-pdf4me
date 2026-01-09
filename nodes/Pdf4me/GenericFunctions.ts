@@ -476,6 +476,7 @@ export const ActionConstants = {
 	UnlockPdf: 'Unlock PDF',
 	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
 	UploadFile: 'Upload File To PDF4me',
+	UploadBlob: 'Upload Blob',
 	ZugferdInvoice: 'Zugferd Invoice',
 };
 
