@@ -83,6 +83,7 @@ import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import * as resizePdf from './actions/resizePdf';
 import * as prepareForPrint from './actions/prepareForPrint';
+import * as createEpcQrCode from './actions/createEpcQrCode';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -256,6 +257,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.BarcodeGenerator,
 					description: 'Generate various types of barcodes including QR codes, Code 128, Code 39, and more',
 					action: 'Create barcode',
+				},
+				{
+					name: 'Create EPC QR Code',
+					value: ActionConstants.CreateEpcQrCode,
+					description: 'Create EPC QR codes for SEPA payments with bank details and payment information',
+					action: 'Create EPC QR code',
 				},
 				{
 					name: 'Read SwissQR Code',
@@ -1026,6 +1033,7 @@ export const descriptions: INodeTypeDescription = {
 		...flipImage.description,
 		...flattenPdf.description,
 		...barcodeGenerator.description,
+		...createEpcQrCode.description,
 		...generateDocumentSingle.description,
 		...generateDocumentsMultiple.description,
 		...get_document_from_pdf4me.description,

@@ -421,6 +421,7 @@ export const ActionConstants = {
 	UrlToPdf: 'Convert URL to PDF',
 	ConvertVisio: 'Convert VISIO',
 	ConvertWordToPdfForm: 'Convert Word To PDF Form',
+	CreateEpcQrCode: 'Create EPC QR Code',
 	CreateImagesFromPdf: 'Create Images From PDF',
 	CreatePdfA: 'Create PDF/A',
 	CreateSwissQrBill: 'Create Swiss QR Bill',

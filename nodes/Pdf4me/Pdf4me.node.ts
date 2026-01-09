@@ -90,6 +90,7 @@ import * as flattenPdf from './actions/flattenPdf';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as resizePdf from './actions/resizePdf';
 import * as prepareForPrint from './actions/prepareForPrint';
+import * as createEpcQrCode from './actions/createEpcQrCode';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -276,6 +277,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await resizePdf.execute.call(this, i)));
 				} else if (action === ActionConstants.PrepareForPrint) {
 					operationResult.push(...(await prepareForPrint.execute.call(this, i)));
+				} else if (action === ActionConstants.CreateEpcQrCode) {
+					operationResult.push(...(await createEpcQrCode.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {
