@@ -123,7 +123,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertMarkdownToPdf],
 			},
 		},
-		hint: 'Convert Markdown to PDF. See our <b><a href="https://docs.pdf4me.com/n8n/convert/markdown-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert Markdown to PDF. See our <b><a href="https://docs.pdf4me.com/integration/n8n/convert/markdown-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',

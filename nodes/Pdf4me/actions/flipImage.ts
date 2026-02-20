@@ -98,7 +98,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.FlipImage],
 			},
 		},
-		hint: 'Flip image. See our <b><a href="https://docs.pdf4me.com/n8n/image/flip-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Flip image. See our <b><a href="https://docs.pdf4me.com/integration/n8n/image/flip-image/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Orientation Type',

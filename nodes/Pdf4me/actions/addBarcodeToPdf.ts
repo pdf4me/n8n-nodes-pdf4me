@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
-		hint: 'Add barcodes to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/add-barcode-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Add barcodes to your PDF. See our <b><a href="https://docs.pdf4me.com/integration/n8n/barcode/add-barcode-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 
 	},
 	{

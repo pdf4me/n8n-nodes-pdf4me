@@ -66,7 +66,7 @@ export const description: INodeProperties[] = [
 				inputDataType: ['binaryData'],
 			},
 		},
-		hint: 'Convert Word to PDF form. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-word-to-pdf-form/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert Word to PDF form. See our <b><a href="https://docs.pdf4me.com/integration/n8n/convert/convert-word-to-pdf-form/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Base64 Content',

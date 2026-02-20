@@ -100,7 +100,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ExtractTextByExpression],
 			},
 		},
-		hint: 'Extract text from PDF using custom expressions. See our <b><a href="https://docs.pdf4me.com/n8n/extract/extract-text-by-expression/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Extract text from PDF using custom expressions. See our <b><a href="https://docs.pdf4me.com/integration/n8n/extract/extract-text-by-expression/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Expression',
