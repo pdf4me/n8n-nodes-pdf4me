@@ -13,7 +13,12 @@ import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
 import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
 import * as aiInvoiceParser from './actions/aiInvoiceParser';
 import * as aiProcessHealthCard from './actions/aiProcessHealthCard';
+import * as aiProcessBankCheque from './actions/aiProcessBankCheque';
 import * as aiProcessContract from './actions/aiProcessContract';
+import * as aiProcessCreditCard from './actions/aiProcessCreditCard';
+import * as aiProcessMarriageCertificate from './actions/aiProcessMarriageCertificate';
+import * as aiProcessMortgageDocument from './actions/aiProcessMortgageDocument';
+import * as aiProcessPayStub from './actions/aiProcessPayStub';
 import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
@@ -25,6 +30,7 @@ import * as convertPdfToWord from './actions/convertPdfToWord';
 import * as convertToPdf from './actions/convertToPdf';
 import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
+import * as signDocument from './actions/signDocument';
 import * as signPdf from './actions/signPdf';
 import * as urlToPdf from './actions/urlToPdf';
 import * as compressImage from './actions/compressImage';
@@ -216,6 +222,18 @@ export const descriptions: INodeTypeDescription = {
 					action: 'AI-Invoice Parser',
 				},
 				{
+					name: 'AI-Process Bank Cheque',
+					value: ActionConstants.AiProcessBankCheque,
+					description: 'Extract structured data from bank cheques using AI/ML technology for payment processing',
+					action: 'AI-Process Bank Cheque',
+				},
+				{
+					name: 'AI-Process Credit Card',
+					value: ActionConstants.AiProcessCreditCard,
+					description: 'Extract structured data from credit cards using AI/ML technology for payment processing',
+					action: 'AI-Process Credit Card',
+				},
+				{
 					name: 'AI-Process Contract',
 					value: ActionConstants.AiProcessContract,
 					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
@@ -226,6 +244,24 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AiProcessHealthCard,
 					description: 'Extract structured data from health cards using AI/ML technology for member management',
 					action: 'AI-Process HealthCard',
+				},
+				{
+					name: 'AI-Process Marriage Certificate',
+					value: ActionConstants.AiProcessMarriageCertificate,
+					description: 'Extract structured data from marriage certificates using AI/ML technology for document verification',
+					action: 'AI-Process Marriage Certificate',
+				},
+				{
+					name: 'AI-Process Mortgage Document',
+					value: ActionConstants.AiProcessMortgageDocument,
+					description: 'Extract structured data from mortgage documents using AI/ML technology for loan processing',
+					action: 'AI-Process Mortgage Document',
+				},
+				{
+					name: 'AI-Process Pay Stub',
+					value: ActionConstants.AiProcessPayStub,
+					description: 'Extract structured data from pay stubs using AI/ML technology for payroll processing',
+					action: 'AI-Process Pay Stub',
 				},
 			],
 			default: ActionConstants.AiInvoiceParser,
@@ -406,6 +442,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AddImageStampToPdf,
 					description: 'Add image stamps or watermarks to PDF documents',
 					action: 'Add image stamp to PDF',
+				},
+				{
+					name: 'Sign Document',
+					value: ActionConstants.SignDocument,
+					description: 'Send document for e-signature via email',
+					action: 'Sign Document',
 				},
 				{
 					name: 'Sign PDF',
@@ -973,8 +1015,13 @@ export const descriptions: INodeTypeDescription = {
 		...addTextStampToPdf.description,
 		...addTextWatermarkToImage.description,
 		...aiInvoiceParser.description,
+		...aiProcessBankCheque.description,
+		...aiProcessCreditCard.description,
 		...aiProcessContract.description,
 		...aiProcessHealthCard.description,
+		...aiProcessMarriageCertificate.description,
+		...aiProcessMortgageDocument.description,
+		...aiProcessPayStub.description,
 		...classifyDocument.description,
 		...compressImage.description,
 		...compressPdf.description,
@@ -1034,6 +1081,7 @@ export const descriptions: INodeTypeDescription = {
 		...rotateImage.description,
 		...rotateImageByExifData.description,
 		...rotatePage.description,
+		...signDocument.description,
 		...signPdf.description,
 		...SplitPdfByBarcode.description,
 		...SplitPdfBySwissQR.description,

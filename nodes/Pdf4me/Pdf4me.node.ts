@@ -20,7 +20,12 @@ import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
 import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
 import * as aiInvoiceParser from './actions/aiInvoiceParser';
 import * as aiProcessHealthCard from './actions/aiProcessHealthCard';
+import * as aiProcessBankCheque from './actions/aiProcessBankCheque';
 import * as aiProcessContract from './actions/aiProcessContract';
+import * as aiProcessCreditCard from './actions/aiProcessCreditCard';
+import * as aiProcessMarriageCertificate from './actions/aiProcessMarriageCertificate';
+import * as aiProcessMortgageDocument from './actions/aiProcessMortgageDocument';
+import * as aiProcessPayStub from './actions/aiProcessPayStub';
 import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
@@ -32,6 +37,7 @@ import * as rotatePage from './actions/rotatePage';
 import * as jsonToExcel from './actions/jsonToExcel';
 import * as convertPdfToWord from './actions/convertPdfToWord';
 import * as convertToPdf from './actions/convertToPdf';
+import * as signDocument from './actions/signDocument';
 import * as signPdf from './actions/signPdf';
 import * as urlToPdf from './actions/urlToPdf';
 import * as compressImage from './actions/compressImage';
@@ -114,8 +120,18 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await aiInvoiceParser.execute.call(this, i)));
 				} else if (action === ActionConstants.AiProcessHealthCard) {
 					operationResult.push(...(await aiProcessHealthCard.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessBankCheque) {
+					operationResult.push(...(await aiProcessBankCheque.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessCreditCard) {
+					operationResult.push(...(await aiProcessCreditCard.execute.call(this, i)));
 				} else if (action === ActionConstants.AiProcessContract) {
 					operationResult.push(...(await aiProcessContract.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessMarriageCertificate) {
+					operationResult.push(...(await aiProcessMarriageCertificate.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessMortgageDocument) {
+					operationResult.push(...(await aiProcessMortgageDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.AiProcessPayStub) {
+					operationResult.push(...(await aiProcessPayStub.execute.call(this, i)));
 				} else if (action === ActionConstants.BarcodeGenerator) {
 					operationResult.push(...(await barcodeGenerator.execute.call(this, i)));
 				} else if (action === ActionConstants.ClassifyDocument) {
@@ -200,6 +216,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await disabletracking_changes_in_word.execute.call(this, i)));
 				} else if (action === ActionConstants.EnableTrackingChangesInWord) {
 					operationResult.push(...(await enableTrackingChangesInWord.execute.call(this, i)));
+				} else if (action === ActionConstants.SignDocument) {
+					operationResult.push(...(await signDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.SignPdf) {
 					operationResult.push(...(await signPdf.execute.call(this, i)));
 				} else if (action === ActionConstants.ReadBarcodeFromImage) {

@@ -1,0 +1,304 @@
+/**
+ * Sign Document Action
+ * API Endpoint: POST /api/v2/SignDocument
+ *
+ * Sends a document for e-signature via email. Differs from Sign PDF which adds
+ * an image signature - this initiates an e-signature workflow with the signer.
+ *
+ * Async handling (202 + Location polling) is done by pdf4meAsyncRequest in GenericFunctions.
+ */
+
+import type { INodeProperties } from 'n8n-workflow';
+import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
+
+export const description: INodeProperties[] = [
+	{
+		displayName: 'Input Data Type',
+		name: 'inputDataType',
+		type: 'options',
+		required: true,
+		default: 'binaryData',
+		description: 'Choose how to provide the PDF file to sign',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+		options: [
+			{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+			{
+				name: 'Base64 String',
+				value: 'base64',
+				description: 'Provide PDF content as base64 encoded string',
+			},
+			{
+				name: 'URL',
+				value: 'url',
+				description: 'Provide URL to PDF file',
+			},
+		],
+	},
+	{
+		displayName: 'Input Binary Field',
+		name: 'binaryPropertyName',
+		type: 'string',
+		required: true,
+		default: 'data',
+		description: 'Name of the binary property that contains the PDF file',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+				inputDataType: ['binaryData'],
+			},
+		},
+	},
+	{
+		displayName: 'Base64 PDF Content',
+		name: 'base64Content',
+		type: 'string',
+		typeOptions: {
+			alwaysOpenEditWindow: true,
+		},
+		required: true,
+		default: '',
+		description: 'Base64 encoded PDF document content',
+		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+				inputDataType: ['base64'],
+			},
+		},
+	},
+	{
+		displayName: 'PDF URL',
+		name: 'pdfUrl',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'URL to the PDF file to sign',
+		placeholder: 'https://example.com/document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+				inputDataType: ['url'],
+			},
+		},
+	},
+	{
+		displayName: 'Document Name',
+		name: 'docName',
+		type: 'string',
+		default: 'document.pdf',
+		description: 'Name of the PDF file for reference',
+		placeholder: 'document.pdf',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Email To',
+		name: 'emailTo',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Email address of the signer',
+		placeholder: 'signer@example.com',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Subject',
+		name: 'subject',
+		type: 'string',
+		default: 'Please sign this document',
+		description: 'Email subject line',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Body',
+		name: 'body',
+		type: 'string',
+		typeOptions: {
+			rows: 4,
+		},
+		default: 'Please review and sign the attached document',
+		description: 'Email body text',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Callback URL',
+		name: 'callBackURL',
+		type: 'string',
+		default: '',
+		description: 'URL to receive webhook callback when signing is complete',
+		placeholder: 'https://your-callback-url.com/webhook',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Custom Field',
+		name: 'customField',
+		type: 'string',
+		default: '{}',
+		description: 'Optional custom field as JSON object (e.g. {"key": "value"})',
+		placeholder: '{}',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Key',
+		name: 'key',
+		type: 'string',
+		default: '',
+		description: 'Optional custom key',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Value',
+		name: 'value',
+		type: 'string',
+		default: '',
+		description: 'Optional custom value',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SignDocument],
+			},
+		},
+	},
+];
+
+export async function execute(this: IExecuteFunctions, index: number) {
+	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const docNameParam = this.getNodeParameter('docName', index) as string;
+	const emailTo = this.getNodeParameter('emailTo', index) as string;
+	const subject = this.getNodeParameter('subject', index) as string;
+	const body = this.getNodeParameter('body', index) as string;
+	const callBackURL = this.getNodeParameter('callBackURL', index) as string;
+	const customFieldStr = this.getNodeParameter('customField', index) as string;
+	const key = this.getNodeParameter('key', index) as string;
+	const value = this.getNodeParameter('value', index) as string;
+
+	// Document content handling
+	let docContent: string;
+	let inputDocName = '';
+
+	if (inputDataType === 'binaryData') {
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const item = this.getInputData(index);
+
+		if (!item[0]?.binary?.[binaryPropertyName]) {
+			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+		}
+
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docNameParam || 'document.pdf';
+
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+		docContent = String(blobId);
+	} else if (inputDataType === 'base64') {
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
+		}
+		inputDocName = docNameParam || 'document.pdf';
+	} else if (inputDataType === 'url') {
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+		try {
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
+		docContent = String(pdfUrl);
+		inputDocName = pdfUrl.split('/').pop() || docNameParam || 'document.pdf';
+	} else {
+		throw new Error(`Unsupported input data type: ${inputDataType}`);
+	}
+
+	if (!docContent || docContent.trim() === '') {
+		throw new Error('PDF content is required');
+	}
+
+	const finalDocName = docNameParam || inputDocName || 'document.pdf';
+
+	// Build signBasicAction
+	const signBasicAction: IDataObject = {
+		emailTo,
+		subject,
+		body,
+		callBackURL: callBackURL || undefined,
+	};
+
+	if (customFieldStr && customFieldStr.trim() !== '' && customFieldStr.trim() !== '{}') {
+		try {
+			signBasicAction.customField = JSON.parse(customFieldStr);
+		} catch {
+			throw new Error('Custom Field must be valid JSON');
+		}
+	}
+
+	// Build request body (isAsync: true - async/polling handled by pdf4meAsyncRequest)
+	const bodyPayload: IDataObject = {
+		docName: finalDocName,
+		docContent,
+		signBasicAction,
+		isAsync: true,
+	};
+
+	if (key && key.trim() !== '') {
+		bodyPayload.key = key.trim();
+	}
+	if (value !== undefined && value !== null && String(value).trim() !== '') {
+		bodyPayload.value = String(value).trim();
+	}
+
+	// POST to SignDocument (async/polling handled by pdf4meAsyncRequest)
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/SignDocument', bodyPayload);
+
+	if (!responseData || typeof responseData !== 'object') {
+		throw new Error('Invalid response from SignDocument API');
+	}
+
+	const resp = responseData as IDataObject;
+
+	return [
+		{
+			json: {
+				signBasicData: resp.signBasicData ?? resp,
+				jobId: resp.jobId,
+				status: resp.status,
+				success: true,
+			},
+			pairedItem: { item: index },
+		},
+	];
+}
