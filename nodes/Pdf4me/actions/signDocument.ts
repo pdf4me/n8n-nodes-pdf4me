@@ -95,7 +95,7 @@ export const description: INodeProperties[] = [
 		name: 'docName',
 		type: 'string',
 		default: 'document.pdf',
-		description: 'Name of the PDF file for reference',
+		description: 'Display name for the document when sent to the signer',
 		placeholder: 'document.pdf',
 		displayOptions: {
 			show: {
@@ -104,12 +104,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Email To',
+		displayName: 'Signer Email',
 		name: 'emailTo',
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Email address of the signer',
+		description: 'Email address of the person who will receive and sign the document',
 		placeholder: 'signer@example.com',
 		displayOptions: {
 			show: {
@@ -118,11 +118,11 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Subject',
+		displayName: 'Email Subject',
 		name: 'subject',
 		type: 'string',
 		default: 'Please sign this document',
-		description: 'Email subject line',
+		description: 'Subject line of the email sent to the signer',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SignDocument],
@@ -130,14 +130,14 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Body',
+		displayName: 'Email Message',
 		name: 'body',
 		type: 'string',
 		typeOptions: {
 			rows: 4,
 		},
 		default: 'Please review and sign the attached document',
-		description: 'Email body text',
+		description: 'Message content included in the email to the signer',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SignDocument],
@@ -145,12 +145,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Callback URL',
+		displayName: 'Notify Sender (Callback URL or Email)',
 		name: 'callBackURL',
 		type: 'string',
 		default: '',
-		description: 'URL to receive webhook callback when signing is complete',
-		placeholder: 'https://your-callback-url.com/webhook',
+		description: 'Callback URL or email address to notify you when the document is signed. Leave empty for no notification.',
+		placeholder: 'https://your-webhook.com/sign-complete or notify@example.com',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SignDocument],
@@ -158,11 +158,11 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Custom Field',
+		displayName: 'Custom Metadata',
 		name: 'customField',
 		type: 'string',
 		default: '{}',
-		description: 'Optional custom field as JSON object (e.g. {"key": "value"})',
+		description: 'Additional metadata as JSON (e.g. {"referenceId": "123", "department": "Legal"})',
 		placeholder: '{}',
 		displayOptions: {
 			show: {
@@ -171,11 +171,11 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Key',
+		displayName: 'Metadata Key',
 		name: 'key',
 		type: 'string',
 		default: '',
-		description: 'Optional custom key',
+		description: 'Custom key for tracking or integration purposes',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SignDocument],
@@ -183,11 +183,11 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Value',
+		displayName: 'Metadata Value',
 		name: 'value',
 		type: 'string',
 		default: '',
-		description: 'Optional custom value',
+		description: 'Custom value associated with the metadata key',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SignDocument],
