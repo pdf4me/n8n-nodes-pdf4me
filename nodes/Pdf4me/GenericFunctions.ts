@@ -127,7 +127,9 @@ export async function pdf4meAsyncRequest(
 		url.includes('/ProcessContract') || url.includes('/ProcessBankCheque') ||
 		url.includes('/ProcessCreditCard') || url.includes('/ProcessMarriageCertificate') ||
 		url.includes('/ProcessMortgageDocument') || url.includes('/ProcessPayStub') ||
-		url.includes('/ProcessUniversalDocument') ||
+		url.includes('/ProcessUniversalDocument') || url.includes('/ProcessShippingLabel') ||
+		url.includes('/ProcessOrder') || url.includes('/ProcessReceipt') || url.includes('/ProcessTaxDocument') ||
+		url.includes('/ProcessBankStatement') ||
 		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
 		url.includes('/ExtractResources') || url.includes('/ExtractPdfFormData') ||
 		url.includes('/GetPdfMetadata') || url.includes('/ExtractTextByExpression') ||
@@ -485,6 +487,11 @@ export const ActionConstants = {
 	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
 	UploadFile: 'Upload File To PDF4me',
 	ProcessUniversalDocument: 'Process Universal Document',
+	ProcessShippingLabel: 'Process Shipping Label',
+	ProcessOrder: 'Process Order',
+	ProcessReceipt: 'Process Receipt',
+	ProcessTaxDocument: 'Process Tax Document',
+	ProcessBankStatement: 'Process Bank Statement',
 	ZugferdInvoice: 'Zugferd Invoice',
 };
 

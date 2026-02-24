@@ -86,6 +86,11 @@ import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
 import * as processUniversalDocument from './actions/processUniversalDocument';
+import * as processShippingLabel from './actions/processShippingLabel';
+import * as processOrder from './actions/processOrder';
+import * as processReceipt from './actions/processReceipt';
+import * as processTaxDocument from './actions/processTaxDocument';
+import * as processBankStatement from './actions/processBankStatement';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
@@ -263,6 +268,42 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AiProcessPayStub,
 					description: 'Extract structured data from pay stubs using AI/ML technology for payroll processing',
 					action: 'AI-Process Pay Stub',
+				},
+				{
+					name: 'AI-Process Universal Document',
+					value: ActionConstants.ProcessUniversalDocument,
+					description: 'Extract specified fields from documents using universal document processing',
+					action: 'AI-Process Universal Document',
+				},
+				{
+					name: 'AI-Process Shipping Label',
+					value: ActionConstants.ProcessShippingLabel,
+					description: 'Process shipping labels to extract and analyze shipping information',
+					action: 'AI-Process Shipping Label',
+				},
+				{
+					name: 'AI-Process Order',
+					value: ActionConstants.ProcessOrder,
+					description: 'Process order documents to extract and analyze order information',
+					action: 'AI-Process Order',
+				},
+				{
+					name: 'AI-Process Receipt',
+					value: ActionConstants.ProcessReceipt,
+					description: 'Process receipt documents to extract items, merchant info, totals, and custom fields',
+					action: 'AI-Process Receipt',
+				},
+				{
+					name: 'AI-Process Tax Document',
+					value: ActionConstants.ProcessTaxDocument,
+					description: 'Process tax documents (W2, 1099, 1040, etc.) to extract tax information and custom fields',
+					action: 'AI-Process Tax Document',
+				},
+				{
+					name: 'AI-Process Bank Statement',
+					value: ActionConstants.ProcessBankStatement,
+					description: 'Process bank statement documents to extract transactions, analyze patterns, and custom fields',
+					action: 'AI-Process Bank Statement',
 				},
 			],
 			default: ActionConstants.AiInvoiceParser,
@@ -1070,6 +1111,11 @@ export const descriptions: INodeTypeDescription = {
 		...overlayPDFs.description,
 		...parseDocument.description,
 		...processUniversalDocument.description,
+		...processShippingLabel.description,
+		...processOrder.description,
+		...processReceipt.description,
+		...processTaxDocument.description,
+		...processBankStatement.description,
 		...protect_document.description,
 		...readBarcodeFromImage.description,
 		...readBarcodeFromPdf.description,
