@@ -92,6 +92,11 @@ import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
 import * as processUniversalDocument from './actions/processUniversalDocument';
+import * as processShippingLabel from './actions/processShippingLabel';
+import * as processOrder from './actions/processOrder';
+import * as processReceipt from './actions/processReceipt';
+import * as processTaxDocument from './actions/processTaxDocument';
+import * as processBankStatement from './actions/processBankStatement';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
@@ -287,6 +292,16 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await parseDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.ProcessUniversalDocument) {
 					operationResult.push(...(await processUniversalDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.ProcessShippingLabel) {
+					operationResult.push(...(await processShippingLabel.execute.call(this, i)));
+				} else if (action === ActionConstants.ProcessOrder) {
+					operationResult.push(...(await processOrder.execute.call(this, i)));
+				} else if (action === ActionConstants.ProcessReceipt) {
+					operationResult.push(...(await processReceipt.execute.call(this, i)));
+				} else if (action === ActionConstants.ProcessTaxDocument) {
+					operationResult.push(...(await processTaxDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.ProcessBankStatement) {
+					operationResult.push(...(await processBankStatement.execute.call(this, i)));
 				} else if (action === ActionConstants.LinearizePdf) {
 					operationResult.push(...(await linearizePdf.execute.call(this, i)));
 				} else if (action === ActionConstants.FlattenPdf) {
