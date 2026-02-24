@@ -91,6 +91,7 @@ import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as processUniversalDocument from './actions/processUniversalDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
@@ -284,6 +285,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await uploadFile.execute.call(this, i)));
 				} else if (action === ActionConstants.ParseDocument) {
 					operationResult.push(...(await parseDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.ProcessUniversalDocument) {
+					operationResult.push(...(await processUniversalDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.LinearizePdf) {
 					operationResult.push(...(await linearizePdf.execute.call(this, i)));
 				} else if (action === ActionConstants.FlattenPdf) {

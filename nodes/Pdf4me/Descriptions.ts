@@ -85,6 +85,7 @@ import * as convertVisio from './actions/convertVisio';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as processUniversalDocument from './actions/processUniversalDocument';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
@@ -1068,6 +1069,7 @@ export const descriptions: INodeTypeDescription = {
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,
 		...parseDocument.description,
+		...processUniversalDocument.description,
 		...protect_document.description,
 		...readBarcodeFromImage.description,
 		...readBarcodeFromPdf.description,

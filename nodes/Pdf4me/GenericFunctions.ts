@@ -127,6 +127,7 @@ export async function pdf4meAsyncRequest(
 		url.includes('/ProcessContract') || url.includes('/ProcessBankCheque') ||
 		url.includes('/ProcessCreditCard') || url.includes('/ProcessMarriageCertificate') ||
 		url.includes('/ProcessMortgageDocument') || url.includes('/ProcessPayStub') ||
+		url.includes('/ProcessUniversalDocument') ||
 		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
 		url.includes('/ExtractResources') || url.includes('/ExtractPdfFormData') ||
 		url.includes('/GetPdfMetadata') || url.includes('/ExtractTextByExpression') ||
@@ -483,6 +484,7 @@ export const ActionConstants = {
 	UnlockPdf: 'Unlock PDF',
 	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
 	UploadFile: 'Upload File To PDF4me',
+	ProcessUniversalDocument: 'Process Universal Document',
 	ZugferdInvoice: 'Zugferd Invoice',
 };
 
