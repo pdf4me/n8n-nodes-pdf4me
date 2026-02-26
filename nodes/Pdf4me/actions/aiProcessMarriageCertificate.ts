@@ -76,7 +76,7 @@ export const description: INodeProperties[] = [
 		required: true,
 		default: '',
 		description: 'URL to the marriage certificate file to process',
-		placeholder: 'https://example.com/marriage_certificate.png',
+		placeholder: 'https://example.com/marriage_certificate.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AiProcessMarriageCertificate],
@@ -88,9 +88,9 @@ export const description: INodeProperties[] = [
 		displayName: 'Document Name',
 		name: 'docName',
 		type: 'string',
-		default: 'marriage_certificate.png',
+		default: 'marriage_certificate.pdf',
 		description: 'Name of the source marriage certificate file for reference',
-		placeholder: 'original-marriage_certificate.png',
+		placeholder: 'original-marriage_certificate.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AiProcessMarriageCertificate],

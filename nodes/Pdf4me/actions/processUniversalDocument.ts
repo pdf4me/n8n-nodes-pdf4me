@@ -273,9 +273,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Map mode string to integer (Standard = 0, Strict = 1)
 	const modeValue = mode === 'Strict' ? 1 : 0;
 
+	// Ensure docName is never empty - API requires it for document identification
+	const finalDocName =
+		(inputDocName && inputDocName.trim()) || (docName && docName.trim()) || 'document.pdf';
+
 	// Build the request body according to API specification
 	const body: IDataObject = {
-		docName: inputDocName,
+		docName: finalDocName,
 		docContent,
 		fields,
 		mode: modeValue,
@@ -308,7 +312,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						message: 'Fields extracted successfully',
 						processingTimestamp: new Date().toISOString(),
-						sourceFileName: inputDocName,
+						sourceFileName: finalDocName,
 						operation: 'processUniversalDocument',
 					},
 				},

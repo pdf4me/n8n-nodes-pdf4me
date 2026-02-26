@@ -121,6 +121,55 @@ For PDF to Word conversion:
 2. Use "Draft" quality for faster processing
 3. Split large documents into smaller chunks
 
+### ❌ Error: "Processing job not found or expired. The document processing may have timed out."
+
+This error occurs when polling the async job status returns HTTP 404. The PDF4ME API uses async processing (202 response) and a polling URL to fetch results.
+
+#### 🔍 Possible Causes
+
+1. **Relative polling URL** – The API may return a relative path in the Location header. The node now resolves relative URLs to absolute URLs automatically.
+2. **Wrong API environment** – Ensure your API key matches the environment. The node uses `https://api.pdf4me.com` by default. If your key is for production (`https://api.pdf4me.com`), contact support or check for an environment option.
+3. **Job expiry** – Async jobs can expire if processing takes too long. Try smaller documents or simpler operations.
+4. **Network/timeout** – Intermittent failures can cause the job to be lost. Retry the operation.
+
+#### ✅ Solutions
+
+- **Rebuild and test** – Run `npm run build` and re-link the package to get the latest polling URL fix.
+- **Verify API key** – Confirm your key is valid and has access to the operation at https://dev.pdf4me.com/
+- **Try sync mode** – If the API supports `isAsync: false` for smaller documents, that may avoid polling entirely (check PDF4ME docs).
+- **Contact PDF4ME** – If the error persists, reach out to support@pdf4me.com with your request/response details.
+
+### ❌ Error: "No tax document processing results received from PDF4ME API"
+
+This error occurs when the Process Tax Document action receives a null or empty response from the PDF4ME API.
+
+#### 🔍 Diagnosis Steps
+
+1. **Check document format**:
+   - Ensure the input is a valid PDF tax document (W2, 1099, 1040, etc.)
+   - Verify the file is not corrupted and opens correctly
+
+2. **Verify API access**:
+   - Confirm your PDF4ME API key has ProcessTaxDocument access
+   - Check your account credits at https://dev.pdf4me.com/
+
+3. **Test with a known tax form**:
+   - Try a sample W2 or 1099 from the PDF4ME documentation
+   - Set the "Tax Model" option to match the form type (e.g., W2, 1099)
+
+#### ✅ Solutions
+
+##### Solution 1: Set the Tax Model
+If your document is a specific tax form, set the "Tax Model" dropdown to match (e.g., W2, 1099, 1040) for improved parsing accuracy.
+
+##### Solution 2: Verify Input
+- For Binary Data: Ensure the previous node outputs binary data with the correct property name (usually "data")
+- For URL: Ensure the URL is publicly accessible
+- For Base64: Ensure the string is valid base64-encoded PDF content
+
+##### Solution 3: Check API Status
+If the error persists, the API may have returned an empty response. Contact PDF4ME support at support@pdf4me.com with your trace details.
+
 ### ❌ Error: "Invalid JSON in Profiles"
 
 This error occurs when the Custom Profiles JSON is malformed.

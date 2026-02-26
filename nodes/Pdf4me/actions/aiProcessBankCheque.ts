@@ -208,7 +208,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const payload: IDataObject = {
 		docContent,    // Base64, blob ID, or URL of bank cheque document
 		docName,       // User-provided document name
-		IsAsync: true,
+		isAsync: true,
 	};
 
 	// Add optional customFieldKeys if provided

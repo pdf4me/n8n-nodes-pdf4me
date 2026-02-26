@@ -425,15 +425,16 @@ export const description: INodeProperties[] = [
 		displayName: 'Display Text',
 		name: 'displayText',
 		type: 'options',
-		required: true,
+		required: false,
 		default: 'below',
-		description: 'Text will be display of the barcode',
+		description: 'Where to display the barcode text',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
 		options: [
+			{ name: 'None', value: '', description: 'No text display' },
 			{ name: 'Above', value: 'above' },
 			{ name: 'Below', value: 'below' },
 		],

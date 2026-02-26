@@ -212,8 +212,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Prepare request body according to API specification
+	// Use user-provided docName (same as aiInvoiceParser) - do not overwrite with derived filename
 	const body: IDataObject = {
-		docName: inputDocName,
+		docName,
 		docContent,
 		isAsync: true,
 	};

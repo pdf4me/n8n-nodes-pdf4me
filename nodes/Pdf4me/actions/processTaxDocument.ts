@@ -321,8 +321,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Prepare request body according to API specification
+	// Use user-provided docName (same as aiInvoiceParser) - do not overwrite with derived filename
 	const body: IDataObject = {
-		docName: inputDocName,
+		docName,
 		docContent,
 		isAsync: true,
 	};
@@ -348,12 +349,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessTaxDocument', body);
 
 	// Handle the response (processed tax document data)
-	if (responseData) {
+	// Accept objects (including empty {}) and arrays - null/undefined indicate API returned no data
+	if (responseData !== null && responseData !== undefined) {
+		const dataToSpread = typeof responseData === 'object' ? responseData : { result: responseData };
 		// Return both raw data and metadata
 		return [
 			{
 				json: {
-					...responseData, // Raw API response data
+					...dataToSpread,
 					_metadata: {
 						success: true,
 						message: 'Tax document processed successfully',
@@ -367,6 +370,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		];
 	}
 
-	// Error case - no response received
-	throw new Error('No tax document processing results received from PDF4ME API');
+	// Error case - API returned null/undefined (empty or failed processing)
+	const receivedType = responseData === null ? 'null' : typeof responseData;
+	const debugHint =
+		responseData === undefined
+			? 'The API may have returned an empty response, or the polling location URL may be incorrect.'
+			: 'Check that the document is a valid tax form (W2, 1099, 1040, etc.) and that your PDF4ME API key has ProcessTaxDocument access.';
+	throw new Error(
+		`No tax document processing results received from PDF4ME API (received: ${receivedType}). ${debugHint}`,
+	);
 }
