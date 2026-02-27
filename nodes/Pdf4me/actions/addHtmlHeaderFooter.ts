@@ -41,34 +41,6 @@ import {
 // declare const console: any;
 // declare const process: any;
 
-// Simplified debug configuration
-interface DebugConfig {
-	enabled: boolean;
-	logLevel: 'none' | 'basic' | 'detailed';
-	logToConsole?: boolean;
-}
-
-// Simplified debug logger class
-class DebugLogger {
-	private config: DebugConfig;
-
-	constructor(config: DebugConfig) {
-		this.config = config;
-	}
-
-	log(level: string, message: string, data?: any): void {
-		if (!this.config.enabled) return;
-
-
-
-		if (this.config.logToConsole !== false) {
-			if (data) {
-				// Log data if needed
-			}
-		}
-	}
-}
-
 export const description: INodeProperties[] = [
 	{
 		displayName: 'Input Data Type',
@@ -319,18 +291,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Debug Mode',
-		name: 'debugMode',
-		type: 'boolean',
-		default: false,
-		description: 'Enable debug logging for troubleshooting',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddHtmlHeaderFooter],
-			},
-		},
-	},
-	{
 		displayName: 'Binary Data Output Name',
 		name: 'binaryDataName',
 		type: 'string',
@@ -346,14 +306,6 @@ export const description: INodeProperties[] = [
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
-	const logger = new DebugLogger({
-		enabled: this.getNodeParameter('debugMode', index, false) as boolean,
-		logLevel: 'basic',
-		logToConsole: true,
-	});
-
-	logger.log('info', 'Starting Add HTML Header Footer to PDF operation');
-
 	try {
 		// Get input parameters
 		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
@@ -368,10 +320,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
 		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		logger.log('info', `Input data type: ${inputDataType}`);
-		logger.log('info', `Location: ${location}`);
-		logger.log('info', `Pages: ${pages}`);
-		logger.log('info', `Skip first page: ${skipFirstPage}`);
 
 		// Get PDF content based on input type
 		let docContent: string = '';
@@ -399,7 +347,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 			// 5. Use blobId in docContent
 			docContent = `${blobId}`;
-			logger.log('info', `Using binary data with filename: ${actualDocName}, blobId: ${blobId}`);
 			break;
 		}
 
@@ -407,7 +354,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			docContent = this.getNodeParameter('base64Content', index) as string;
 			actualDocName = docName;
 			blobId = '';
-			logger.log('info', 'Using base64 content');
 			break;
 		}
 
@@ -421,7 +367,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// 3. Use URL directly in docContent
 			blobId = '';
 			docContent = pdfUrl;
-			logger.log('info', `Using PDF URL directly: ${pdfUrl}`);
 			break;
 		}
 
@@ -431,7 +376,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Validate PDF content (skip for blobId and URL formats)
 		if (inputDataType === 'base64') {
-			validatePdfContent(docContent, inputDataType, logger);
+			validatePdfContent(docContent, inputDataType);
 		}
 
 		// Prepare the API request payload
@@ -449,22 +394,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			IsAsync: true,
 		};
 
-		logger.log('info', 'Prepared API payload', {
-			docName: actualDocName,
-			htmlContentLength: htmlContent.length,
-			location,
-			pages,
-			skipFirstPage,
-			margins: { marginLeft, marginRight, marginTop, marginBottom },
-		});
-
 		// Make API request
 		const apiUrl = '/api/v2/AddHtmlHeaderFooter';
 
-		logger.log('info', 'Making async API request');
 		const result: any = await pdf4meAsyncRequest.call(this, apiUrl, payload);
-
-		logger.log('info', `API request successful, received ${result.length} bytes`);
 
 		// Create binary data using n8n's helper for proper UI formatting
 		const binaryData = await this.helpers.prepareBinaryData(
@@ -498,11 +431,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			pairedItem: { item: index },
 		};
 
-		logger.log('info', 'Operation completed successfully');
 		return [outputItem as INodeExecutionData];
 
 	} catch (error) {
-		logger.log('error', 'Operation failed', error);
 		throw error;
 	}
 }
@@ -511,7 +442,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 /**
  * Validate PDF content
  */
-function validatePdfContent(docContent: string, inputDataType: string, logger?: DebugLogger): void {
+function validatePdfContent(docContent: string, inputDataType: string): void {
 	if (!docContent || typeof docContent !== 'string') {
 		throw new Error('Invalid PDF content provided');
 	}
@@ -524,7 +455,6 @@ function validatePdfContent(docContent: string, inputDataType: string, logger?: 
 			if (pdfHeader !== '%PDF') {
 				throw new Error('Content does not appear to be a valid PDF (missing PDF header)');
 			}
-			logger?.log('info', `PDF content validated: ${buffer.length} bytes`);
 		} catch (error) {
 			throw new Error(`Failed to validate PDF content: ${error.message}`);
 		}

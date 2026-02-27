@@ -11,34 +11,6 @@ import {
 // declare const URL: any;
 // declare const console: any;
 
-// Simplified debug configuration
-interface DebugConfig {
-	enabled: boolean;
-	logLevel: 'none' | 'basic' | 'detailed';
-	logToConsole?: boolean;
-}
-
-// Simplified debug logger class
-class DebugLogger {
-	private config: DebugConfig;
-
-	constructor(config: DebugConfig) {
-		this.config = config;
-	}
-
-	log(level: string, message: string, data?: any): void {
-		if (!this.config.enabled) return;
-
-
-
-		if (this.config.logToConsole !== false) {
-			if (data) {
-				// Log data if needed
-			}
-		}
-	}
-}
-
 export const description: INodeProperties[] = [
 	{
 		displayName: 'Input Data Type',
@@ -469,13 +441,6 @@ export const description: INodeProperties[] = [
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
 				placeholder: '{ \'outputDataFormat\': \'base64\' }',
 			},
-			{
-				displayName: 'Enable Debug Mode',
-				name: 'enableDebug',
-				type: 'boolean',
-				default: false,
-				description: 'Enable debugging and logging',
-			},
 		],
 	},
 	{
@@ -520,100 +485,76 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	// Initialize debug logger
-	const debugConfig: DebugConfig = {
-		enabled: advancedOptions?.enableDebug === true,
-		logLevel: 'basic',
-		logToConsole: true,
-	};
+	let docContent: string;
+	let pdfBlobId: string = '';
+	let inputDocName: string = '';
 
-	const logger = new DebugLogger(debugConfig);
-	logger.log('info', 'Starting Add Image Stamp to PDF operation', {
-		inputDataType,
-		imageInputDataType,
-		outputFileName,
-		alignX,
-		alignY,
-		IsAsync: true,
-	});
+	// Handle different input data types for PDF
+	if (inputDataType === 'binaryData') {
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const item = this.getInputData(index);
 
-	try {
-		let docContent: string;
-		let pdfBlobId: string = '';
-		let inputDocName: string = '';
-
-		// Handle different input data types for PDF
-		if (inputDataType === 'binaryData') {
-			logger.log('debug', 'Processing PDF as binary data');
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const item = this.getInputData(index);
-
-			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
-			}
-
-			const binaryData = item[0].binary[binaryPropertyName];
-			inputDocName = binaryData.fileName || docName || 'document.pdf';
-
-			// Get binary data as Buffer
-			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-
-			// Upload the file to UploadBlob endpoint and get blobId
-			// UploadBlob needs binary file (Buffer), not base64 string
-			// Returns blobId which is then used in ImageStamp API payload
-			pdfBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
-
-			// Use blobId in docContent
-			docContent = `${pdfBlobId}`;
-			logger.log('debug', 'PDF binary data uploaded to blob', { blobId: pdfBlobId });
-		} else if (inputDataType === 'base64') {
-			logger.log('debug', 'Processing PDF as base64');
-			docContent = this.getNodeParameter('base64Content', index) as string;
-
-			// Remove data URL prefix if present
-			if (docContent.includes(',')) {
-				docContent = docContent.split(',')[1];
-			}
-
-			pdfBlobId = '';
-			logger.log('debug', 'PDF base64 content processed', { length: docContent.length });
-		} else if (inputDataType === 'url') {
-			logger.log('debug', 'Processing PDF from URL');
-			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-
-			// Validate URL format
-			try {
-				new URL(pdfUrl);
-			} catch {
-				throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
-			}
-
-			// Send URL as string directly in docContent - no download or conversion
-			pdfBlobId = '';
-			docContent = String(pdfUrl);
-			logger.log('debug', 'PDF URL set directly', { url: pdfUrl });
-		} else {
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
+		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
+			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
 		}
 
-		// Validate PDF content based on input type
-		if (inputDataType === 'url') {
-			// For URLs, validate URL format (but don't modify the URL string)
-			if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
-				throw new Error('URL is required and must be a non-empty string');
-			}
-			// URL validation already done above
-		} else if (inputDataType === 'base64') {
-			// For base64, validate content is not empty
-			if (!docContent || docContent.trim() === '') {
-				throw new Error('PDF content is required');
-			}
-		} else if (inputDataType === 'binaryData') {
-			// For binary data, validate blobId is set
-			if (!docContent || docContent.trim() === '') {
-				throw new Error('PDF content is required');
-			}
+		const binaryData = item[0].binary[binaryPropertyName];
+		inputDocName = binaryData.fileName || docName || 'document.pdf';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ImageStamp API payload
+		pdfBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
+
+		// Use blobId in docContent
+		docContent = `${pdfBlobId}`;
+	} else if (inputDataType === 'base64') {
+		docContent = this.getNodeParameter('base64Content', index) as string;
+
+		// Remove data URL prefix if present
+		if (docContent.includes(',')) {
+			docContent = docContent.split(',')[1];
 		}
+
+		pdfBlobId = '';
+	} else if (inputDataType === 'url') {
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
+		// Validate URL format
+		try {
+			new URL(pdfUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+		}
+
+		// Send URL as string directly in docContent - no download or conversion
+		pdfBlobId = '';
+		docContent = String(pdfUrl);
+	} else {
+		throw new Error(`Unsupported input data type: ${inputDataType}`);
+	}
+
+	// Validate PDF content based on input type
+	if (inputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!docContent || typeof docContent !== 'string' || docContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (inputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	} else if (inputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!docContent || docContent.trim() === '') {
+			throw new Error('PDF content is required');
+		}
+	}
 
 		// Handle different image input data types
 		let imageContent: string;
@@ -621,7 +562,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		let inputImageName: string = '';
 
 		if (imageInputDataType === 'binaryData') {
-			logger.log('debug', 'Processing image as binary data');
 			const imageBinaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
 			const item = this.getInputData(index);
 
@@ -642,9 +582,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 			// Use blobId in imageContent
 			imageContent = `${imageBlobId}`;
-			logger.log('debug', 'Image binary data uploaded to blob', { blobId: imageBlobId });
 		} else if (imageInputDataType === 'base64') {
-			logger.log('debug', 'Processing image as base64');
 			imageContent = this.getNodeParameter('imageContent', index) as string;
 
 			// Remove data URL prefix if present
@@ -655,9 +593,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Clean up whitespace
 			imageContent = imageContent.replace(/\s/g, '');
 			imageBlobId = '';
-			logger.log('debug', 'Image base64 content processed', { length: imageContent.length });
 		} else if (imageInputDataType === 'url') {
-			logger.log('debug', 'Processing image from URL');
 			const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 
 			// Validate URL format
@@ -670,7 +606,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Send URL as string directly in imageContent - no download or conversion
 			imageBlobId = '';
 			imageContent = String(imageUrl);
-			logger.log('debug', 'Image URL set directly', { url: imageUrl });
 		} else {
 			throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
 		}
@@ -690,7 +625,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			// Validate that image content is valid base64
 			try {
 				Buffer.from(imageContent, 'base64');
-				logger.log('debug', 'Image base64 validation passed');
 			} catch {
 				throw new Error('Invalid base64 image content. Please ensure the image is properly encoded.');
 			}
@@ -746,37 +680,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			IsAsync: true,
 		};
 
-		logger.log('debug', 'Request body prepared', {
-			alignX,
-			alignY,
-			docContentLength: docContent.length,
-			imageContentLength: imageContent.length,
-			pages,
-		});
-
 		// Add custom profiles if provided
 		if (advancedOptions.profiles) {
-			logger.log('debug', 'Processing custom profiles');
 			try {
 				const profiles = JSON.parse(advancedOptions.profiles as string);
 				sanitizeProfiles(profiles);
 				Object.assign(body, profiles);
-				logger.log('debug', 'Custom profiles applied successfully');
 			} catch (error) {
-				logger.log('error', 'Failed to parse custom profiles', { error: error.message });
 				throw new Error(`Invalid custom profiles JSON: ${error}`);
 			}
 		}
 
 		// Make the API request
-		logger.log('debug', 'Making API request', { endpoint: '/api/v2/ImageStamp' });
-
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ImageStamp', body);
-
-		logger.log('debug', 'API request completed successfully', {
-			responseType: typeof responseData,
-			responseLength: responseData?.length || 0,
-		});
 
 		// Handle the binary response (PDF data)
 		if (responseData) {
@@ -799,11 +715,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'application/pdf',
 			);
 
-			logger.log('info', 'Add Image Stamp to PDF operation completed successfully', {
-				fileName,
-				fileSize: responseData.length,
-			});
-
 			return [
 				{
 					json: {
@@ -819,17 +730,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					pairedItem: { item: index },
 				},
 			];
-		}
-
-		throw new Error('No response data received from PDF4ME API');
-	} catch (error) {
-		logger.log('error', 'Add Image Stamp to PDF operation failed', {
-			error: error.message,
-			stack: error.stack,
-		});
-
-		throw error;
 	}
+	throw new Error('No response data received from PDF4ME API');
 }
 
 /**

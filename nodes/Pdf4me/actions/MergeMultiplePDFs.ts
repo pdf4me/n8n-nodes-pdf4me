@@ -310,18 +310,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		sanitizeProfiles(body);
 
-		// Log payload (truncate base64 in docContent for readability)
-		const payloadToLog = {
-			...body,
-			docContent: Array.isArray(body.docContent)
-				? (body.docContent as string[]).map((c) =>
-					c.length > 80 ? `${c.substring(0, 40)}...[${c.length} chars]` : c,
-				)
-				: body.docContent,
-		};
-		// eslint-disable-next-line no-console
-		console.log('[MergeMultiplePDFs] Payload:', JSON.stringify(payloadToLog, null, 2));
-
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Merge', body);
 
 		// Handle the binary response (merged PDF file data)
