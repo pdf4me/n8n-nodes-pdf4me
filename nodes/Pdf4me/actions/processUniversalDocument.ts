@@ -144,8 +144,8 @@ export const description: INodeProperties[] = [
 		name: 'documentType',
 		type: 'string',
 		default: '',
-		description: 'Optional document type identifier',
-		placeholder: '',
+		description: 'Optional document type identifier (e.g., invoice, purchase_order, shipping_label)',
+		placeholder: 'invoice',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ProcessUniversalDocument],
