@@ -289,208 +289,207 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let docName: string = '';
 	let blobId: string = '';
 
-		// Handle different input data types for the main PDF
-		if (inputDataType === 'binaryData') {
-			// 1. Validate binary data
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const item = this.getInputData(index);
+	// Handle different input data types for the main PDF
+	if (inputDataType === 'binaryData') {
+		// 1. Validate binary data
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const item = this.getInputData(index);
 
-			if (!item[0].binary) {
-				throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		if (!item[0].binary) {
+			throw new Error('No binary data found in the input. Please ensure the previous node provides binary data.');
+		}
+
+		if (!item[0].binary[binaryPropertyName]) {
+			const availableProperties = Object.keys(item[0].binary).join(', ');
+			throw new Error(
+				`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
+				'Common property names are "data" for file uploads or the filename without extension.',
+			);
+		}
+
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		docName = binaryData.fileName || 'document.pdf';
+
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
+
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
+
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
+	} else if (inputDataType === 'base64') {
+		// Get PDF content from base64 string
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		docName = this.getNodeParameter('docName', index) as string || 'document.pdf';
+		blobId = '';
+	} else if (inputDataType === 'url') {
+		// 1. Get URL parameter
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
+		// 2. Extract filename from URL
+		docName = pdfUrl.split('/').pop() || 'document.pdf';
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = pdfUrl;
+	} else {
+		throw new Error(`Unsupported input data type: ${inputDataType}`);
+	}
+
+	// Ensure docName has .pdf extension
+	validateFileExtension(docName, '.pdf');
+
+	// Additional validation for API request
+	if (!docContent || docContent.trim() === '') {
+		throw new Error('PDF content is empty or invalid');
+	}
+
+	// Validate PDF content (skip for blobId and URL formats)
+	if (inputDataType === 'base64') {
+		validatePdfContent(docContent, inputDataType);
+	}
+
+	// Process attachments
+	const attachmentArray: IDataObject[] = [];
+
+	if (attachments.attachment && Array.isArray(attachments.attachment)) {
+		for (let i = 0; i < attachments.attachment.length; i++) {
+			const attachment = attachments.attachment[i] as IDataObject;
+			const attachmentName = attachment.attachmentName as string;
+			const attachmentContentType = attachment.attachmentContentType as string;
+
+			let attachmentContent: string;
+
+			if (attachmentContentType === 'binaryData') {
+				// 1. Validate binary data
+				const binaryFieldName = attachment.attachmentBinaryField as string;
+				const item = this.getInputData(index);
+
+				if (!item[0].binary || !item[0].binary[binaryFieldName]) {
+					throw new Error(`Attachment binary field '${binaryFieldName}' not found.`);
+				}
+
+				// 2. Get binary data metadata
+				const attachmentBinaryData = item[0].binary[binaryFieldName];
+				const attachmentFileName = attachmentName || attachmentBinaryData.fileName || 'attachment';
+
+				// 3. Convert to Buffer
+				const attachmentFileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryFieldName);
+
+				// 4. Upload to UploadBlob
+				const attachmentBlobId = await uploadBlobToPdf4me.call(this, attachmentFileBuffer, attachmentFileName);
+
+				// 5. Use blobId in attachmentContent
+				attachmentContent = `${attachmentBlobId}`;
+			} else if (attachmentContentType === 'base64') {
+				// Get attachment from base64 string
+				attachmentContent = attachment.attachmentBase64Content as string;
+			} else if (attachmentContentType === 'url') {
+				// 1. Get URL parameter
+				const attachmentUrl = attachment.attachmentUrl as string;
+
+				// 2. Use URL directly in attachmentContent
+				attachmentContent = attachmentUrl;
+			} else {
+				throw new Error(`Unsupported attachment content type: ${attachmentContentType}`);
 			}
 
-			if (!item[0].binary[binaryPropertyName]) {
-				const availableProperties = Object.keys(item[0].binary).join(', ');
-				throw new Error(
-					`Binary property '${binaryPropertyName}' not found. Available properties: ${availableProperties || 'none'}. ` +
-					'Common property names are "data" for file uploads or the filename without extension.',
-				);
+			// Validate attachment name has proper extension
+			validateFileExtension(attachmentName, ''); // Empty string means just check for any extension
+
+			// Validate attachment content (similar to PDF validation)
+			if (!attachmentContent || attachmentContent.trim() === '') {
+				throw new Error(`Empty attachment content for: ${attachmentName}`);
 			}
 
-			// 2. Get binary data metadata
-			const binaryData = item[0].binary[binaryPropertyName];
-			docName = binaryData.fileName || 'document.pdf';
-
-			// 3. Convert to Buffer
-			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-
-			// 4. Upload to UploadBlob
-			blobId = await uploadBlobToPdf4me.call(this, fileBuffer, docName);
-
-			// 5. Use blobId in docContent
-			docContent = `${blobId}`;
-		} else if (inputDataType === 'base64') {
-			// Get PDF content from base64 string
-			docContent = this.getNodeParameter('base64Content', index) as string;
-			docName = this.getNodeParameter('docName', index) as string || 'document.pdf';
-			blobId = '';
-		} else if (inputDataType === 'url') {
-			// 1. Get URL parameter
-			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
-
-			// 2. Extract filename from URL
-			docName = pdfUrl.split('/').pop() || 'document.pdf';
-
-			// 3. Use URL directly in docContent
-			blobId = '';
-			docContent = pdfUrl;
-		} else {
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
-		}
-
-		// Ensure docName has .pdf extension
-		validateFileExtension(docName, '.pdf');
-
-		// Additional validation for API request
-		if (!docContent || docContent.trim() === '') {
-			throw new Error('PDF content is empty or invalid');
-		}
-
-		// Validate PDF content (skip for blobId and URL formats)
-		if (inputDataType === 'base64') {
-			validatePdfContent(docContent, inputDataType);
-		}
-
-		// Process attachments
-		const attachmentArray: IDataObject[] = [];
-
-		if (attachments.attachment && Array.isArray(attachments.attachment)) {
-			for (let i = 0; i < attachments.attachment.length; i++) {
-				const attachment = attachments.attachment[i] as IDataObject;
-				const attachmentName = attachment.attachmentName as string;
-				const attachmentContentType = attachment.attachmentContentType as string;
-
-				let attachmentContent: string;
-
-				if (attachmentContentType === 'binaryData') {
-					// 1. Validate binary data
-					const binaryFieldName = attachment.attachmentBinaryField as string;
-					const item = this.getInputData(index);
-
-					if (!item[0].binary || !item[0].binary[binaryFieldName]) {
-						throw new Error(`Attachment binary field '${binaryFieldName}' not found.`);
+			// Basic validation for attachment base64 content (only for base64 input type)
+			if (attachmentContentType === 'base64') {
+				try {
+					const attachmentBuffer = Buffer.from(attachmentContent, 'base64');
+					if (attachmentBuffer.length === 0) {
+						throw new Error(`Attachment content is empty for: ${attachmentName}`);
 					}
-
-					// 2. Get binary data metadata
-					const attachmentBinaryData = item[0].binary[binaryFieldName];
-					const attachmentFileName = attachmentName || attachmentBinaryData.fileName || 'attachment';
-
-					// 3. Convert to Buffer
-					const attachmentFileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryFieldName);
-
-					// 4. Upload to UploadBlob
-					const attachmentBlobId = await uploadBlobToPdf4me.call(this, attachmentFileBuffer, attachmentFileName);
-
-					// 5. Use blobId in attachmentContent
-					attachmentContent = `${attachmentBlobId}`;
-				} else if (attachmentContentType === 'base64') {
-					// Get attachment from base64 string
-					attachmentContent = attachment.attachmentBase64Content as string;
-				} else if (attachmentContentType === 'url') {
-					// 1. Get URL parameter
-					const attachmentUrl = attachment.attachmentUrl as string;
-
-					// 2. Use URL directly in attachmentContent
-					attachmentContent = attachmentUrl;
-				} else {
-					throw new Error(`Unsupported attachment content type: ${attachmentContentType}`);
+				} catch (error) {
+					throw new Error(`Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`);
 				}
-
-				// Validate attachment name has proper extension
-				validateFileExtension(attachmentName, ''); // Empty string means just check for any extension
-
-				// Validate attachment content (similar to PDF validation)
-				if (!attachmentContent || attachmentContent.trim() === '') {
-					throw new Error(`Empty attachment content for: ${attachmentName}`);
-				}
-
-				// Basic validation for attachment base64 content (only for base64 input type)
-				if (attachmentContentType === 'base64') {
-					try {
-						const attachmentBuffer = Buffer.from(attachmentContent, 'base64');
-						if (attachmentBuffer.length === 0) {
-							throw new Error(`Attachment content is empty for: ${attachmentName}`);
-						}
-					} catch (error) {
-						throw new Error(`Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`);
-					}
-				}
-
-				attachmentArray.push({
-					docName: attachmentName,
-					docContent: attachmentContent,
-				});
-
 			}
+
+			attachmentArray.push({
+				docName: attachmentName,
+				docContent: attachmentContent,
+			});
 		}
+	}
 
-		if (attachmentArray.length === 0) {
-			throw new Error('No attachments provided. Please add at least one attachment.');
+	if (attachmentArray.length === 0) {
+		throw new Error('No attachments provided. Please add at least one attachment.');
+	}
+
+	// Build the request body according to API specification
+	const body: IDataObject = {
+		// PDF File Name - Required: Source PDF file name with .pdf extension
+		docName: docName,
+		// PDF File content - Required: The content of the input file (base64)
+		docContent: docContent,
+		// Attachments - List of attachments to be added to the PDF
+		attachments: attachmentArray,
+	};
+
+	// Validate request body (following C# example validation pattern)
+	if (!body.docName || !body.docContent || !body.attachments || !Array.isArray(body.attachments) || body.attachments.length === 0) {
+		const missingFields = [];
+		if (!body.docName) missingFields.push('docName');
+		if (!body.docContent) missingFields.push('docContent');
+		if (!body.attachments || !Array.isArray(body.attachments) || body.attachments.length === 0) missingFields.push('attachments');
+
+		throw new Error(`Missing required fields in request body: ${missingFields.join(', ')}. Required: docName, docContent, and at least one attachment.`);
+	}
+
+	// Add custom profiles if provided
+	if (advancedOptions.profiles) {
+		try {
+			const profiles = JSON.parse(advancedOptions.profiles as string);
+			sanitizeProfiles(profiles);
+			Object.assign(body, profiles);
+		} catch (error) {
+			throw new Error(`Invalid custom profiles JSON: ${error}`);
 		}
+	}
 
-		// Build the request body according to API specification
-		const body: IDataObject = {
-			// PDF File Name - Required: Source PDF file name with .pdf extension
-			docName: docName,
-			// PDF File content - Required: The content of the input file (base64)
-			docContent: docContent,
-			// Attachments - List of attachments to be added to the PDF
-			attachments: attachmentArray,
-		};
-
-		// Validate request body (following C# example validation pattern)
-		if (!body.docName || !body.docContent || !body.attachments || !Array.isArray(body.attachments) || body.attachments.length === 0) {
-			const missingFields = [];
-			if (!body.docName) missingFields.push('docName');
-			if (!body.docContent) missingFields.push('docContent');
-			if (!body.attachments || !Array.isArray(body.attachments) || body.attachments.length === 0) missingFields.push('attachments');
-
-			throw new Error(`Missing required fields in request body: ${missingFields.join(', ')}. Required: docName, docContent, and at least one attachment.`);
-		}
-
-		// Add custom profiles if provided
-		if (advancedOptions.profiles) {
-			try {
-				const profiles = JSON.parse(advancedOptions.profiles as string);
-				sanitizeProfiles(profiles);
-				Object.assign(body, profiles);
-			} catch (error) {
-				throw new Error(`Invalid custom profiles JSON: ${error}`);
-			}
-		}
-
-		// Make the API request (following C# example pattern)
-		// Use async request method for better performance with large files
+	// Make the API request (following C# example pattern)
+	// Use async request method for better performance with large files
 	const result = await pdf4meAsyncRequest.call(this, '/api/v2/AddAttachmentToPdf', body) as Buffer;
 
-		// Ensure output filename has .pdf extension
-		let finalOutputFileName = outputFileName;
-		if (!finalOutputFileName.toLowerCase().endsWith('.pdf')) {
-			finalOutputFileName = `${finalOutputFileName.replace(/\.[^.]*$/, '')}.pdf`;
-		}
+	// Ensure output filename has .pdf extension
+	let finalOutputFileName = outputFileName;
+	if (!finalOutputFileName.toLowerCase().endsWith('.pdf')) {
+		finalOutputFileName = `${finalOutputFileName.replace(/\.[^.]*$/, '')}.pdf`;
+	}
 
-		// Return the result as binary data
-		const binaryData = await this.helpers.prepareBinaryData(
-			result,
-			finalOutputFileName,
-			'application/pdf',
-		);
+	// Return the result as binary data
+	const binaryData = await this.helpers.prepareBinaryData(
+		result,
+		finalOutputFileName,
+		'application/pdf',
+	);
 
-		// Prepare output
+	// Prepare output
 	const output: INodeExecutionData = {
-			json: {
-				success: true,
-				message: 'PDF with attachments created successfully',
-				fileName: finalOutputFileName,
-				mimeType: 'application/pdf',
-				fileSize: result.length,
-				attachmentCount: attachmentArray.length,
-			},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
-			pairedItem: { item: index },
-		};
+		json: {
+			success: true,
+			message: 'PDF with attachments created successfully',
+			fileName: finalOutputFileName,
+			mimeType: 'application/pdf',
+			fileSize: result.length,
+			attachmentCount: attachmentArray.length,
+		},
+		binary: {
+			[binaryDataName || 'data']: binaryData,
+		},
+		pairedItem: { item: index },
+	};
 
 	return [output];
 }

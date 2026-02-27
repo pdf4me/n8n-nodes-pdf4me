@@ -306,136 +306,131 @@ export const description: INodeProperties[] = [
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
-	try {
-		// Get input parameters
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const htmlContent = this.getNodeParameter('htmlContent', index) as string;
-		const location = this.getNodeParameter('location', index) as string;
-		const pages = this.getNodeParameter('pages', index) as string;
-		const skipFirstPage = this.getNodeParameter('skipFirstPage', index) as boolean;
-		const marginLeft = this.getNodeParameter('marginLeft', index) as number;
-		const marginRight = this.getNodeParameter('marginRight', index) as number;
-		const marginTop = this.getNodeParameter('marginTop', index) as number;
-		const marginBottom = this.getNodeParameter('marginBottom', index) as number;
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
+	// Get input parameters
+	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const htmlContent = this.getNodeParameter('htmlContent', index) as string;
+	const location = this.getNodeParameter('location', index) as string;
+	const pages = this.getNodeParameter('pages', index) as string;
+	const skipFirstPage = this.getNodeParameter('skipFirstPage', index) as boolean;
+	const marginLeft = this.getNodeParameter('marginLeft', index) as number;
+	const marginRight = this.getNodeParameter('marginRight', index) as number;
+	const marginTop = this.getNodeParameter('marginTop', index) as number;
+	const marginBottom = this.getNodeParameter('marginBottom', index) as number;
+	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-		// Get PDF content based on input type
-		let docContent: string = '';
-		let actualDocName: string = docName;
-		let blobId: string = '';
+	// Get PDF content based on input type
+	let docContent: string = '';
+	let actualDocName: string = docName;
+	let blobId: string = '';
 
-		switch (inputDataType) {
-		case 'binaryData': {
-			// 1. Validate binary data
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const item = this.getInputData(index);
-			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`Binary property "${binaryPropertyName}" not found in input data`);
-			}
-
-			// 2. Get binary data metadata
-			const binaryData = item[0].binary[binaryPropertyName];
-			actualDocName = binaryData.fileName || docName;
-
-			// 3. Convert to Buffer
-			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-
-			// 4. Upload to UploadBlob
-			blobId = await uploadBlobToPdf4me.call(this, fileBuffer, actualDocName);
-
-			// 5. Use blobId in docContent
-			docContent = `${blobId}`;
-			break;
+	switch (inputDataType) {
+	case 'binaryData': {
+		// 1. Validate binary data
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const item = this.getInputData(index);
+		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
+			throw new Error(`Binary property "${binaryPropertyName}" not found in input data`);
 		}
 
-		case 'base64': {
-			docContent = this.getNodeParameter('base64Content', index) as string;
-			actualDocName = docName;
-			blobId = '';
-			break;
-		}
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		actualDocName = binaryData.fileName || docName;
 
-		case 'url': {
-			// 1. Get URL parameter
-			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
-			// 2. Extract filename from URL
-			actualDocName = pdfUrl.split('/').pop() || docName;
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, actualDocName);
 
-			// 3. Use URL directly in docContent
-			blobId = '';
-			docContent = pdfUrl;
-			break;
-		}
-
-		default:
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
-		}
-
-		// Validate PDF content (skip for blobId and URL formats)
-		if (inputDataType === 'base64') {
-			validatePdfContent(docContent, inputDataType);
-		}
-
-		// Prepare the API request payload
-		const payload: IDataObject = {
-			docContent,
-			docName: actualDocName,
-			htmlContent,
-			pages,
-			location,
-			skipFirstPage,
-			marginLeft,
-			marginRight,
-			marginTop,
-			marginBottom,
-			IsAsync: true,
-		};
-
-		// Make API request
-		const apiUrl = '/api/v2/AddHtmlHeaderFooter';
-
-		const result: any = await pdf4meAsyncRequest.call(this, apiUrl, payload);
-
-		// Create binary data using n8n's helper for proper UI formatting
-		const binaryData = await this.helpers.prepareBinaryData(
-			result,
-			outputFileName,
-			'application/pdf',
-		);
-
-		// Create output item
-		const outputItem = {
-			json: {
-				success: true,
-				message: 'HTML header/footer added successfully',
-				fileName: outputFileName,
-				mimeType: 'application/pdf',
-				fileSize: result.length,
-				originalDocName: actualDocName,
-				location,
-				pages,
-				skipFirstPage,
-				margins: {
-					left: marginLeft,
-					right: marginRight,
-					top: marginTop,
-					bottom: marginBottom,
-				},
-			},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
-			pairedItem: { item: index },
-		};
-
-		return [outputItem as INodeExecutionData];
-
-	} catch (error) {
-		throw error;
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
+		break;
 	}
+
+	case 'base64': {
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		actualDocName = docName;
+		blobId = '';
+		break;
+	}
+
+	case 'url': {
+		// 1. Get URL parameter
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
+		// 2. Extract filename from URL
+		actualDocName = pdfUrl.split('/').pop() || docName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = pdfUrl;
+		break;
+	}
+
+	default:
+		throw new Error(`Unsupported input data type: ${inputDataType}`);
+	}
+
+	// Validate PDF content (skip for blobId and URL formats)
+	if (inputDataType === 'base64') {
+		validatePdfContent(docContent, inputDataType);
+	}
+
+	// Prepare the API request payload
+	const payload: IDataObject = {
+		docContent,
+		docName: actualDocName,
+		htmlContent,
+		pages,
+		location,
+		skipFirstPage,
+		marginLeft,
+		marginRight,
+		marginTop,
+		marginBottom,
+		IsAsync: true,
+	};
+
+	// Make API request
+	const apiUrl = '/api/v2/AddHtmlHeaderFooter';
+
+	const result: any = await pdf4meAsyncRequest.call(this, apiUrl, payload);
+
+	// Create binary data using n8n's helper for proper UI formatting
+	const binaryData = await this.helpers.prepareBinaryData(
+		result,
+		outputFileName,
+		'application/pdf',
+	);
+
+	// Create output item
+	const outputItem = {
+		json: {
+			success: true,
+			message: 'HTML header/footer added successfully',
+			fileName: outputFileName,
+			mimeType: 'application/pdf',
+			fileSize: result.length,
+			originalDocName: actualDocName,
+			location,
+			pages,
+			skipFirstPage,
+			margins: {
+				left: marginLeft,
+				right: marginRight,
+				top: marginTop,
+				bottom: marginBottom,
+			},
+		},
+		binary: {
+			[binaryDataName || 'data']: binaryData,
+		},
+		pairedItem: { item: index },
+	};
+
+	return [outputItem as INodeExecutionData];
 }
 
 
