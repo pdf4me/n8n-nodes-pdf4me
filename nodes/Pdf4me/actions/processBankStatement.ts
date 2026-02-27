@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ProcessBankStatement],
 			},
 		},
-		hint: 'Process Bank Statement. See our <b><a href="https://docs.pdf4me.com/integration/n8n/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'AI - Bank Statement Data Extraction. See our <b><a href="https://docs.pdf4me.com/integration/n8n/pdf4me-ai/ai-process-bank-statement/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Bank Name',

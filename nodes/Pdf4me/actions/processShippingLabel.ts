@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ProcessShippingLabel],
 			},
 		},
-		hint: 'Process Shipping Label. See our <b><a href="https://docs.pdf4me.com/integration/n8n/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'AI - Shipping Label Data Extraction. See our <b><a href="https://docs.pdf4me.com/integration/n8n/pdf4me-ai/ai-process-shipping-label/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Advanced Options',

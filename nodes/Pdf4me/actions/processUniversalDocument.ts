@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ProcessUniversalDocument],
 			},
 		},
-		hint: 'Process Universal Document. See our <b><a href="https://docs.pdf4me.com/integration/n8n/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'AI - Universal Document Data Extraction. See our <b><a href="https://docs.pdf4me.com/integration/n8n/pdf4me-ai/ai-process-universal-document/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Fields',
