@@ -556,180 +556,180 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		}
 	}
 
-		// Handle different image input data types
-		let imageContent: string;
-		let imageBlobId: string = '';
-		let inputImageName: string = '';
+	// Handle different image input data types
+	let imageContent: string;
+	let imageBlobId: string = '';
+	let inputImageName: string = '';
 
-		if (imageInputDataType === 'binaryData') {
-			const imageBinaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
-			const item = this.getInputData(index);
+	if (imageInputDataType === 'binaryData') {
+		const imageBinaryPropertyName = this.getNodeParameter('imageBinaryPropertyName', index) as string;
+		const item = this.getInputData(index);
 
-			if (!item[0].binary || !item[0].binary[imageBinaryPropertyName]) {
-				throw new Error(`No binary data found in property '${imageBinaryPropertyName}'`);
-			}
-
-			const binaryData = item[0].binary[imageBinaryPropertyName];
-			inputImageName = binaryData.fileName || imageName || 'stamp.png';
-
-			// Get binary data as Buffer
-			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, imageBinaryPropertyName);
-
-			// Upload the file to UploadBlob endpoint and get blobId
-			// UploadBlob needs binary file (Buffer), not base64 string
-			// Returns blobId which is then used in ImageStamp API payload
-			imageBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputImageName);
-
-			// Use blobId in imageContent
-			imageContent = `${imageBlobId}`;
-		} else if (imageInputDataType === 'base64') {
-			imageContent = this.getNodeParameter('imageContent', index) as string;
-
-			// Remove data URL prefix if present
-			if (imageContent.includes(',')) {
-				imageContent = imageContent.split(',')[1];
-			}
-
-			// Clean up whitespace
-			imageContent = imageContent.replace(/\s/g, '');
-			imageBlobId = '';
-		} else if (imageInputDataType === 'url') {
-			const imageUrl = this.getNodeParameter('imageUrl', index) as string;
-
-			// Validate URL format
-			try {
-				new URL(imageUrl);
-			} catch {
-				throw new Error('Invalid URL format. Please provide a valid URL to the image file.');
-			}
-
-			// Send URL as string directly in imageContent - no download or conversion
-			imageBlobId = '';
-			imageContent = String(imageUrl);
-		} else {
-			throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
+		if (!item[0].binary || !item[0].binary[imageBinaryPropertyName]) {
+			throw new Error(`No binary data found in property '${imageBinaryPropertyName}'`);
 		}
 
-		// Validate image content based on input type
-		if (imageInputDataType === 'url') {
-			// For URLs, validate URL format (but don't modify the URL string)
-			if (!imageContent || typeof imageContent !== 'string' || imageContent.trim() === '') {
-				throw new Error('URL is required and must be a non-empty string');
-			}
-			// URL validation already done above
-		} else if (imageInputDataType === 'base64') {
-			// For base64, validate content is not empty
-			if (!imageContent || imageContent.trim() === '') {
-				throw new Error('Image content is required');
-			}
-			// Validate that image content is valid base64
-			try {
-				Buffer.from(imageContent, 'base64');
-			} catch {
-				throw new Error('Invalid base64 image content. Please ensure the image is properly encoded.');
-			}
-		} else if (imageInputDataType === 'binaryData') {
-			// For binary data, validate blobId is set
-			if (!imageContent || imageContent.trim() === '') {
-				throw new Error('Image content is required');
-			}
+		const binaryData = item[0].binary[imageBinaryPropertyName];
+		inputImageName = binaryData.fileName || imageName || 'stamp.png';
+
+		// Get binary data as Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, imageBinaryPropertyName);
+
+		// Upload the file to UploadBlob endpoint and get blobId
+		// UploadBlob needs binary file (Buffer), not base64 string
+		// Returns blobId which is then used in ImageStamp API payload
+		imageBlobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputImageName);
+
+		// Use blobId in imageContent
+		imageContent = `${imageBlobId}`;
+	} else if (imageInputDataType === 'base64') {
+		imageContent = this.getNodeParameter('imageContent', index) as string;
+
+		// Remove data URL prefix if present
+		if (imageContent.includes(',')) {
+			imageContent = imageContent.split(',')[1];
 		}
 
-		// Build the request body according to API specification
-		// Use inputDocName if docName is not provided, otherwise use docName
-		const finalDocName = docName || inputDocName || 'document.pdf';
-		// Use inputImageName if imageName is not provided, otherwise use imageName
-		const finalImageName = imageName || inputImageName || 'stamp.png';
-		const body: IDataObject = {
-			// Horizontal alignment of image
-			alignX,
-			// Vertical alignment of image
-			alignY,
-			// The content of the input file (Binary data uses blobId format, base64 uses base64 string, URL uses URL string)
-			docContent,
-			// Source PDF file name with .pdf extension
-			docName: finalDocName,
-			// The image file name with proper extension
-			imageName: finalImageName,
-			// Map stamp image content from source action (Binary data uses blobId format, base64 uses base64 string, URL uses URL string)
-			imageFile: imageContent,
-			// Specify page indices as comma-separated values or ranges
-			pages,
-			// Image height in millimeters (mm)
-			heightInMM: String(heightInMM),
-			// Image width in millimeters (mm)
-			widthInMM: String(widthInMM),
-			// Height of the image stamp in points(px)
-			heightInPx: String(heightInPx),
-			// Width of the image stamp in points(px)
-			widthInPx: String(widthInPx),
-			// Horizontal margin in millimeters (mm)
-			marginXInMM: String(marginXInMM),
-			// Vertical margin in millimeters (mm)
-			marginYInMM: String(marginYInMM),
-			// Margin from left origin of the image stamp in millimeters
-			marginXInPx: String(marginXInPx),
-			// Margin from top origin of the image stamp in millimeters
-			marginYInPx: String(marginYInPx),
-			// Values between 0 to 100. '0' is entirely transparent—100 for full opacity
-			opacity,
-			// Default: true
-			isBackground,
-			// Default: true
-			showOnlyInPrint,
-			IsAsync: true,
-		};
+		// Clean up whitespace
+		imageContent = imageContent.replace(/\s/g, '');
+		imageBlobId = '';
+	} else if (imageInputDataType === 'url') {
+		const imageUrl = this.getNodeParameter('imageUrl', index) as string;
 
-		// Add custom profiles if provided
-		if (advancedOptions.profiles) {
-			try {
-				const profiles = JSON.parse(advancedOptions.profiles as string);
-				sanitizeProfiles(profiles);
-				Object.assign(body, profiles);
-			} catch (error) {
-				throw new Error(`Invalid custom profiles JSON: ${error}`);
-			}
+		// Validate URL format
+		try {
+			new URL(imageUrl);
+		} catch {
+			throw new Error('Invalid URL format. Please provide a valid URL to the image file.');
 		}
 
-		// Make the API request
-		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ImageStamp', body);
+		// Send URL as string directly in imageContent - no download or conversion
+		imageBlobId = '';
+		imageContent = String(imageUrl);
+	} else {
+		throw new Error(`Unsupported image input data type: ${imageInputDataType}`);
+	}
 
-		// Handle the binary response (PDF data)
-		if (responseData) {
-			// Generate filename if not provided
-			let fileName = outputFileName;
-			if (!fileName || fileName.trim() === '') {
-				const baseName = docName ? docName.replace(/\.pdf$/i, '') : 'document_with_image_stamp';
-				fileName = `${baseName}_with_image_stamp.pdf`;
-			}
+	// Validate image content based on input type
+	if (imageInputDataType === 'url') {
+		// For URLs, validate URL format (but don't modify the URL string)
+		if (!imageContent || typeof imageContent !== 'string' || imageContent.trim() === '') {
+			throw new Error('URL is required and must be a non-empty string');
+		}
+		// URL validation already done above
+	} else if (imageInputDataType === 'base64') {
+		// For base64, validate content is not empty
+		if (!imageContent || imageContent.trim() === '') {
+			throw new Error('Image content is required');
+		}
+		// Validate that image content is valid base64
+		try {
+			Buffer.from(imageContent, 'base64');
+		} catch {
+			throw new Error('Invalid base64 image content. Please ensure the image is properly encoded.');
+		}
+	} else if (imageInputDataType === 'binaryData') {
+		// For binary data, validate blobId is set
+		if (!imageContent || imageContent.trim() === '') {
+			throw new Error('Image content is required');
+		}
+	}
 
-			// Ensure .pdf extension
-			if (!fileName.toLowerCase().endsWith('.pdf')) {
-				fileName = `${fileName.replace(/\.[^.]*$/, '')}.pdf`;
-			}
+	// Build the request body according to API specification
+	// Use inputDocName if docName is not provided, otherwise use docName
+	const finalDocName = docName || inputDocName || 'document.pdf';
+	// Use inputImageName if imageName is not provided, otherwise use imageName
+	const finalImageName = imageName || inputImageName || 'stamp.png';
+	const body: IDataObject = {
+		// Horizontal alignment of image
+		alignX,
+		// Vertical alignment of image
+		alignY,
+		// The content of the input file (Binary data uses blobId format, base64 uses base64 string, URL uses URL string)
+		docContent,
+		// Source PDF file name with .pdf extension
+		docName: finalDocName,
+		// The image file name with proper extension
+		imageName: finalImageName,
+		// Map stamp image content from source action (Binary data uses blobId format, base64 uses base64 string, URL uses URL string)
+		imageFile: imageContent,
+		// Specify page indices as comma-separated values or ranges
+		pages,
+		// Image height in millimeters (mm)
+		heightInMM: String(heightInMM),
+		// Image width in millimeters (mm)
+		widthInMM: String(widthInMM),
+		// Height of the image stamp in points(px)
+		heightInPx: String(heightInPx),
+		// Width of the image stamp in points(px)
+		widthInPx: String(widthInPx),
+		// Horizontal margin in millimeters (mm)
+		marginXInMM: String(marginXInMM),
+		// Vertical margin in millimeters (mm)
+		marginYInMM: String(marginYInMM),
+		// Margin from left origin of the image stamp in millimeters
+		marginXInPx: String(marginXInPx),
+		// Margin from top origin of the image stamp in millimeters
+		marginYInPx: String(marginYInPx),
+		// Values between 0 to 100. '0' is entirely transparent—100 for full opacity
+		opacity,
+		// Default: true
+		isBackground,
+		// Default: true
+		showOnlyInPrint,
+		IsAsync: true,
+	};
 
-			// Prepare binary data
-			const binaryData = await this.helpers.prepareBinaryData(
-				responseData,
-				fileName,
-				'application/pdf',
-			);
+	// Add custom profiles if provided
+	if (advancedOptions.profiles) {
+		try {
+			const profiles = JSON.parse(advancedOptions.profiles as string);
+			sanitizeProfiles(profiles);
+			Object.assign(body, profiles);
+		} catch (error) {
+			throw new Error(`Invalid custom profiles JSON: ${error}`);
+		}
+	}
 
-			return [
-				{
-					json: {
-						fileName,
-						mimeType: 'application/pdf',
-						fileSize: responseData.length,
-						success: true,
-						message: 'Image stamp added successfully',
-					},
-					binary: {
-						[binaryDataName || 'data']: binaryData,
-					},
-					pairedItem: { item: index },
+	// Make the API request
+	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ImageStamp', body);
+
+	// Handle the binary response (PDF data)
+	if (responseData) {
+		// Generate filename if not provided
+		let fileName = outputFileName;
+		if (!fileName || fileName.trim() === '') {
+			const baseName = docName ? docName.replace(/\.pdf$/i, '') : 'document_with_image_stamp';
+			fileName = `${baseName}_with_image_stamp.pdf`;
+		}
+
+		// Ensure .pdf extension
+		if (!fileName.toLowerCase().endsWith('.pdf')) {
+			fileName = `${fileName.replace(/\.[^.]*$/, '')}.pdf`;
+		}
+
+		// Prepare binary data
+		const binaryData = await this.helpers.prepareBinaryData(
+			responseData,
+			fileName,
+			'application/pdf',
+		);
+
+		return [
+			{
+				json: {
+					fileName,
+					mimeType: 'application/pdf',
+					fileSize: responseData.length,
+					success: true,
+					message: 'Image stamp added successfully',
 				},
-			];
+				binary: {
+					[binaryDataName || 'data']: binaryData,
+				},
+				pairedItem: { item: index },
+			},
+		];
 	}
 	throw new Error('No response data received from PDF4ME API');
 }

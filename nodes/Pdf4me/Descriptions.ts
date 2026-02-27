@@ -270,10 +270,10 @@ export const descriptions: INodeTypeDescription = {
 					action: 'AI-Process Pay Stub',
 				},
 				{
-					name: 'AI-Process Universal Document',
+					name: 'AI - Universal Document Data Extraction',
 					value: ActionConstants.ProcessUniversalDocument,
 					description: 'Extract specified fields from documents using universal document processing',
-					action: 'AI-Process Universal Document',
+					action: 'AI - Universal Document Data Extraction',
 				},
 				{
 					name: 'AI-Process Shipping Label',
@@ -486,10 +486,10 @@ export const descriptions: INodeTypeDescription = {
 					action: 'Add image stamp to PDF',
 				},
 				{
-					name: 'Sign Document',
+					name: 'Send Document for Signing',
 					value: ActionConstants.SignDocument,
 					description: 'Send document for e-signature via email',
-					action: 'Sign Document',
+					action: 'Send Document for Signing',
 				},
 				{
 					name: 'Sign PDF',

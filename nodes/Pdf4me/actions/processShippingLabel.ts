@@ -190,14 +190,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const documentUrl = this.getNodeParameter('documentUrl', index) as string;
 
 		// 2. Validate URL format
+		let parsedUrl: URL;
 		try {
-			new URL(documentUrl);
+			parsedUrl = new URL(documentUrl);
 		} catch {
 			throw new Error('Invalid URL format. Please provide a valid URL to the shipping label file.');
 		}
 
-		// 3. Extract filename from URL
-		inputDocName = documentUrl.split('/').pop() || docName;
+		// 3. Resolve document name (prefer user-provided docName)
+		const urlFileName = parsedUrl.pathname.split('/').pop();
+		const decodedUrlName = urlFileName ? decodeURIComponent(urlFileName) : '';
+		inputDocName = (docName && docName.trim()) || decodedUrlName || docName;
 
 		// 4. Use URL directly in docContent
 		blobId = '';
@@ -211,9 +214,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error('Shipping label document content is required');
 	}
 
+	// Ensure docName is never empty - API requires it for document identification
+	const finalDocName =
+		(inputDocName && inputDocName.trim()) || (docName && docName.trim()) || 'shipping_label.pdf';
+
 	// Prepare request body according to API specification
 	const body: IDataObject = {
-		docName: inputDocName,
+		docName: finalDocName,
 		docContent,
 		isAsync: true,
 	};
@@ -239,7 +246,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						message: 'Shipping label processed successfully',
 						processingTimestamp: new Date().toISOString(),
-						sourceFileName: inputDocName,
+						sourceFileName: finalDocName,
 						operation: 'processShippingLabel',
 					},
 				},
