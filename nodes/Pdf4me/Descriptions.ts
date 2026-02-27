@@ -13,7 +13,12 @@ import * as addImageWatermarkToImage from './actions/addImageWatermarkToImage';
 import * as addTextWatermarkToImage from './actions/addTextWatermarkToImage';
 import * as aiInvoiceParser from './actions/aiInvoiceParser';
 import * as aiProcessHealthCard from './actions/aiProcessHealthCard';
+import * as aiProcessBankCheque from './actions/aiProcessBankCheque';
 import * as aiProcessContract from './actions/aiProcessContract';
+import * as aiProcessCreditCard from './actions/aiProcessCreditCard';
+import * as aiProcessMarriageCertificate from './actions/aiProcessMarriageCertificate';
+import * as aiProcessMortgageDocument from './actions/aiProcessMortgageDocument';
+import * as aiProcessPayStub from './actions/aiProcessPayStub';
 import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
@@ -25,6 +30,7 @@ import * as convertPdfToWord from './actions/convertPdfToWord';
 import * as convertToPdf from './actions/convertToPdf';
 import * as rotateDocument from './actions/rotateDocument';
 import * as rotatePage from './actions/rotatePage';
+import * as signDocument from './actions/signDocument';
 import * as signPdf from './actions/signPdf';
 import * as urlToPdf from './actions/urlToPdf';
 import * as compressImage from './actions/compressImage';
@@ -79,6 +85,12 @@ import * as convertVisio from './actions/convertVisio';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as processUniversalDocument from './actions/processUniversalDocument';
+import * as processShippingLabel from './actions/processShippingLabel';
+import * as processOrder from './actions/processOrder';
+import * as processReceipt from './actions/processReceipt';
+import * as processTaxDocument from './actions/processTaxDocument';
+import * as processBankStatement from './actions/processBankStatement';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
@@ -216,6 +228,18 @@ export const descriptions: INodeTypeDescription = {
 					action: 'AI-Invoice Parser',
 				},
 				{
+					name: 'AI-Process Bank Cheque',
+					value: ActionConstants.AiProcessBankCheque,
+					description: 'Extract structured data from bank cheques using AI/ML technology for payment processing',
+					action: 'AI-Process Bank Cheque',
+				},
+				{
+					name: 'AI-Process Credit Card',
+					value: ActionConstants.AiProcessCreditCard,
+					description: 'Extract structured data from credit cards using AI/ML technology for payment processing',
+					action: 'AI-Process Credit Card',
+				},
+				{
 					name: 'AI-Process Contract',
 					value: ActionConstants.AiProcessContract,
 					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
@@ -226,6 +250,60 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AiProcessHealthCard,
 					description: 'Extract structured data from health cards using AI/ML technology for member management',
 					action: 'AI-Process HealthCard',
+				},
+				{
+					name: 'AI-Process Marriage Certificate',
+					value: ActionConstants.AiProcessMarriageCertificate,
+					description: 'Extract structured data from marriage certificates using AI/ML technology for document verification',
+					action: 'AI-Process Marriage Certificate',
+				},
+				{
+					name: 'AI-Process Mortgage Document',
+					value: ActionConstants.AiProcessMortgageDocument,
+					description: 'Extract structured data from mortgage documents using AI/ML technology for loan processing',
+					action: 'AI-Process Mortgage Document',
+				},
+				{
+					name: 'AI-Process Pay Stub',
+					value: ActionConstants.AiProcessPayStub,
+					description: 'Extract structured data from pay stubs using AI/ML technology for payroll processing',
+					action: 'AI-Process Pay Stub',
+				},
+				{
+					name: 'AI - Universal Document Data Extraction',
+					value: ActionConstants.ProcessUniversalDocument,
+					description: 'Extract specified fields from documents using universal document processing',
+					action: 'AI - Universal Document Data Extraction',
+				},
+				{
+					name: 'AI-Process Shipping Label',
+					value: ActionConstants.ProcessShippingLabel,
+					description: 'Process shipping labels to extract and analyze shipping information',
+					action: 'AI-Process Shipping Label',
+				},
+				{
+					name: 'AI-Process Order',
+					value: ActionConstants.ProcessOrder,
+					description: 'Process order documents to extract and analyze order information',
+					action: 'AI-Process Order',
+				},
+				{
+					name: 'AI-Process Receipt',
+					value: ActionConstants.ProcessReceipt,
+					description: 'Process receipt documents to extract items, merchant info, totals, and custom fields',
+					action: 'AI-Process Receipt',
+				},
+				{
+					name: 'AI-Process Tax Document',
+					value: ActionConstants.ProcessTaxDocument,
+					description: 'Process tax documents (W2, 1099, 1040, etc.) to extract tax information and custom fields',
+					action: 'AI-Process Tax Document',
+				},
+				{
+					name: 'AI-Process Bank Statement',
+					value: ActionConstants.ProcessBankStatement,
+					description: 'Process bank statement documents to extract transactions, analyze patterns, and custom fields',
+					action: 'AI-Process Bank Statement',
 				},
 			],
 			default: ActionConstants.AiInvoiceParser,
@@ -406,6 +484,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AddImageStampToPdf,
 					description: 'Add image stamps or watermarks to PDF documents',
 					action: 'Add image stamp to PDF',
+				},
+				{
+					name: 'Send Document for Signing',
+					value: ActionConstants.SignDocument,
+					description: 'Send document for e-signature via email',
+					action: 'Send Document for Signing',
 				},
 				{
 					name: 'Sign PDF',
@@ -973,8 +1057,13 @@ export const descriptions: INodeTypeDescription = {
 		...addTextStampToPdf.description,
 		...addTextWatermarkToImage.description,
 		...aiInvoiceParser.description,
+		...aiProcessBankCheque.description,
+		...aiProcessCreditCard.description,
 		...aiProcessContract.description,
 		...aiProcessHealthCard.description,
+		...aiProcessMarriageCertificate.description,
+		...aiProcessMortgageDocument.description,
+		...aiProcessPayStub.description,
 		...classifyDocument.description,
 		...compressImage.description,
 		...compressPdf.description,
@@ -1021,6 +1110,12 @@ export const descriptions: INodeTypeDescription = {
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,
 		...parseDocument.description,
+		...processUniversalDocument.description,
+		...processShippingLabel.description,
+		...processOrder.description,
+		...processReceipt.description,
+		...processTaxDocument.description,
+		...processBankStatement.description,
 		...protect_document.description,
 		...readBarcodeFromImage.description,
 		...readBarcodeFromPdf.description,
@@ -1034,6 +1129,7 @@ export const descriptions: INodeTypeDescription = {
 		...rotateImage.description,
 		...rotateImageByExifData.description,
 		...rotatePage.description,
+		...signDocument.description,
 		...signPdf.description,
 		...SplitPdfByBarcode.description,
 		...SplitPdfBySwissQR.description,

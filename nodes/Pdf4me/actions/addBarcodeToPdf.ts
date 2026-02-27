@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
-		hint: 'Add barcodes to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/add-barcode-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Add barcodes to your PDF. See our <b><a href="https://docs.pdf4me.com/integration/n8n/barcode/add-barcode-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 
 	},
 	{
@@ -425,15 +425,16 @@ export const description: INodeProperties[] = [
 		displayName: 'Display Text',
 		name: 'displayText',
 		type: 'options',
-		required: true,
+		required: false,
 		default: 'below',
-		description: 'Text will be display of the barcode',
+		description: 'Where to display the barcode text',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.AddBarcodeToPdf],
 			},
 		},
 		options: [
+			{ name: 'None', value: '', description: 'No text display' },
 			{ name: 'Above', value: 'above' },
 			{ name: 'Below', value: 'below' },
 		],

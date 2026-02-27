@@ -41,34 +41,6 @@ import {
 // declare const console: any;
 // declare const process: any;
 
-// Simplified debug configuration
-interface DebugConfig {
-	enabled: boolean;
-	logLevel: 'none' | 'basic' | 'detailed';
-	logToConsole?: boolean;
-}
-
-// Simplified debug logger class
-class DebugLogger {
-	private config: DebugConfig;
-
-	constructor(config: DebugConfig) {
-		this.config = config;
-	}
-
-	log(level: string, message: string, data?: any): void {
-		if (!this.config.enabled) return;
-
-
-
-		if (this.config.logToConsole !== false) {
-			if (data) {
-				// Log data if needed
-			}
-		}
-	}
-}
-
 export const description: INodeProperties[] = [
 	{
 		displayName: 'Input Data Type',
@@ -165,7 +137,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.AddHtmlHeaderFooter],
 			},
 		},
-		hint: 'Add HTML header/footer to your PDF. See our <b><a href="https://docs.pdf4me.com/n8n/edit/add-html-header-footer-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Add HTML header/footer to your PDF. See our <b><a href="https://docs.pdf4me.com/integration/n8n/edit/add-html-header-footer-to-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Location',
@@ -319,18 +291,6 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Debug Mode',
-		name: 'debugMode',
-		type: 'boolean',
-		default: false,
-		description: 'Enable debug logging for troubleshooting',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.AddHtmlHeaderFooter],
-			},
-		},
-	},
-	{
 		displayName: 'Binary Data Output Name',
 		name: 'binaryDataName',
 		type: 'string',
@@ -346,172 +306,138 @@ export const description: INodeProperties[] = [
 ];
 
 export async function execute(this: IExecuteFunctions, index: number) {
-	const logger = new DebugLogger({
-		enabled: this.getNodeParameter('debugMode', index, false) as boolean,
-		logLevel: 'basic',
-		logToConsole: true,
-	});
+	// Get input parameters
+	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
+	const htmlContent = this.getNodeParameter('htmlContent', index) as string;
+	const location = this.getNodeParameter('location', index) as string;
+	const pages = this.getNodeParameter('pages', index) as string;
+	const skipFirstPage = this.getNodeParameter('skipFirstPage', index) as boolean;
+	const marginLeft = this.getNodeParameter('marginLeft', index) as number;
+	const marginRight = this.getNodeParameter('marginRight', index) as number;
+	const marginTop = this.getNodeParameter('marginTop', index) as number;
+	const marginBottom = this.getNodeParameter('marginBottom', index) as number;
+	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
+	const docName = this.getNodeParameter('docName', index) as string;
+	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
-	logger.log('info', 'Starting Add HTML Header Footer to PDF operation');
+	// Get PDF content based on input type
+	let docContent: string = '';
+	let actualDocName: string = docName;
+	let blobId: string = '';
 
-	try {
-		// Get input parameters
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const htmlContent = this.getNodeParameter('htmlContent', index) as string;
-		const location = this.getNodeParameter('location', index) as string;
-		const pages = this.getNodeParameter('pages', index) as string;
-		const skipFirstPage = this.getNodeParameter('skipFirstPage', index) as boolean;
-		const marginLeft = this.getNodeParameter('marginLeft', index) as number;
-		const marginRight = this.getNodeParameter('marginRight', index) as number;
-		const marginTop = this.getNodeParameter('marginTop', index) as number;
-		const marginBottom = this.getNodeParameter('marginBottom', index) as number;
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		logger.log('info', `Input data type: ${inputDataType}`);
-		logger.log('info', `Location: ${location}`);
-		logger.log('info', `Pages: ${pages}`);
-		logger.log('info', `Skip first page: ${skipFirstPage}`);
-
-		// Get PDF content based on input type
-		let docContent: string = '';
-		let actualDocName: string = docName;
-		let blobId: string = '';
-
-		switch (inputDataType) {
-		case 'binaryData': {
-			// 1. Validate binary data
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
-			const item = this.getInputData(index);
-			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`Binary property "${binaryPropertyName}" not found in input data`);
-			}
-
-			// 2. Get binary data metadata
-			const binaryData = item[0].binary[binaryPropertyName];
-			actualDocName = binaryData.fileName || docName;
-
-			// 3. Convert to Buffer
-			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
-
-			// 4. Upload to UploadBlob
-			blobId = await uploadBlobToPdf4me.call(this, fileBuffer, actualDocName);
-
-			// 5. Use blobId in docContent
-			docContent = `${blobId}`;
-			logger.log('info', `Using binary data with filename: ${actualDocName}, blobId: ${blobId}`);
-			break;
+	switch (inputDataType) {
+	case 'binaryData': {
+		// 1. Validate binary data
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const item = this.getInputData(index);
+		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
+			throw new Error(`Binary property "${binaryPropertyName}" not found in input data`);
 		}
 
-		case 'base64': {
-			docContent = this.getNodeParameter('base64Content', index) as string;
-			actualDocName = docName;
-			blobId = '';
-			logger.log('info', 'Using base64 content');
-			break;
-		}
+		// 2. Get binary data metadata
+		const binaryData = item[0].binary[binaryPropertyName];
+		actualDocName = binaryData.fileName || docName;
 
-		case 'url': {
-			// 1. Get URL parameter
-			const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+		// 3. Convert to Buffer
+		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
-			// 2. Extract filename from URL
-			actualDocName = pdfUrl.split('/').pop() || docName;
+		// 4. Upload to UploadBlob
+		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, actualDocName);
 
-			// 3. Use URL directly in docContent
-			blobId = '';
-			docContent = pdfUrl;
-			logger.log('info', `Using PDF URL directly: ${pdfUrl}`);
-			break;
-		}
-
-		default:
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
-		}
-
-		// Validate PDF content (skip for blobId and URL formats)
-		if (inputDataType === 'base64') {
-			validatePdfContent(docContent, inputDataType, logger);
-		}
-
-		// Prepare the API request payload
-		const payload: IDataObject = {
-			docContent,
-			docName: actualDocName,
-			htmlContent,
-			pages,
-			location,
-			skipFirstPage,
-			marginLeft,
-			marginRight,
-			marginTop,
-			marginBottom,
-			IsAsync: true,
-		};
-
-		logger.log('info', 'Prepared API payload', {
-			docName: actualDocName,
-			htmlContentLength: htmlContent.length,
-			location,
-			pages,
-			skipFirstPage,
-			margins: { marginLeft, marginRight, marginTop, marginBottom },
-		});
-
-		// Make API request
-		const apiUrl = '/api/v2/AddHtmlHeaderFooter';
-
-		logger.log('info', 'Making async API request');
-		const result: any = await pdf4meAsyncRequest.call(this, apiUrl, payload);
-
-		logger.log('info', `API request successful, received ${result.length} bytes`);
-
-		// Create binary data using n8n's helper for proper UI formatting
-		const binaryData = await this.helpers.prepareBinaryData(
-			result,
-			outputFileName,
-			'application/pdf',
-		);
-
-		// Create output item
-		const outputItem = {
-			json: {
-				success: true,
-				message: 'HTML header/footer added successfully',
-				fileName: outputFileName,
-				mimeType: 'application/pdf',
-				fileSize: result.length,
-				originalDocName: actualDocName,
-				location,
-				pages,
-				skipFirstPage,
-				margins: {
-					left: marginLeft,
-					right: marginRight,
-					top: marginTop,
-					bottom: marginBottom,
-				},
-			},
-			binary: {
-				[binaryDataName || 'data']: binaryData,
-			},
-			pairedItem: { item: index },
-		};
-
-		logger.log('info', 'Operation completed successfully');
-		return [outputItem as INodeExecutionData];
-
-	} catch (error) {
-		logger.log('error', 'Operation failed', error);
-		throw error;
+		// 5. Use blobId in docContent
+		docContent = `${blobId}`;
+		break;
 	}
+
+	case 'base64': {
+		docContent = this.getNodeParameter('base64Content', index) as string;
+		actualDocName = docName;
+		blobId = '';
+		break;
+	}
+
+	case 'url': {
+		// 1. Get URL parameter
+		const pdfUrl = this.getNodeParameter('pdfUrl', index) as string;
+
+		// 2. Extract filename from URL
+		actualDocName = pdfUrl.split('/').pop() || docName;
+
+		// 3. Use URL directly in docContent
+		blobId = '';
+		docContent = pdfUrl;
+		break;
+	}
+
+	default:
+		throw new Error(`Unsupported input data type: ${inputDataType}`);
+	}
+
+	// Validate PDF content (skip for blobId and URL formats)
+	if (inputDataType === 'base64') {
+		validatePdfContent(docContent, inputDataType);
+	}
+
+	// Prepare the API request payload
+	const payload: IDataObject = {
+		docContent,
+		docName: actualDocName,
+		htmlContent,
+		pages,
+		location,
+		skipFirstPage,
+		marginLeft,
+		marginRight,
+		marginTop,
+		marginBottom,
+		IsAsync: true,
+	};
+
+	// Make API request
+	const apiUrl = '/api/v2/AddHtmlHeaderFooter';
+
+	const result: any = await pdf4meAsyncRequest.call(this, apiUrl, payload);
+
+	// Create binary data using n8n's helper for proper UI formatting
+	const binaryData = await this.helpers.prepareBinaryData(
+		result,
+		outputFileName,
+		'application/pdf',
+	);
+
+	// Create output item
+	const outputItem = {
+		json: {
+			success: true,
+			message: 'HTML header/footer added successfully',
+			fileName: outputFileName,
+			mimeType: 'application/pdf',
+			fileSize: result.length,
+			originalDocName: actualDocName,
+			location,
+			pages,
+			skipFirstPage,
+			margins: {
+				left: marginLeft,
+				right: marginRight,
+				top: marginTop,
+				bottom: marginBottom,
+			},
+		},
+		binary: {
+			[binaryDataName || 'data']: binaryData,
+		},
+		pairedItem: { item: index },
+	};
+
+	return [outputItem as INodeExecutionData];
 }
 
 
 /**
  * Validate PDF content
  */
-function validatePdfContent(docContent: string, inputDataType: string, logger?: DebugLogger): void {
+function validatePdfContent(docContent: string, inputDataType: string): void {
 	if (!docContent || typeof docContent !== 'string') {
 		throw new Error('Invalid PDF content provided');
 	}
@@ -524,7 +450,6 @@ function validatePdfContent(docContent: string, inputDataType: string, logger?: 
 			if (pdfHeader !== '%PDF') {
 				throw new Error('Content does not appear to be a valid PDF (missing PDF header)');
 			}
-			logger?.log('info', `PDF content validated: ${buffer.length} bytes`);
 		} catch (error) {
 			throw new Error(`Failed to validate PDF content: ${error.message}`);
 		}

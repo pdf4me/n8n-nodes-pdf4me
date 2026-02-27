@@ -85,7 +85,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.UpdateHyperlinksAnnotation],
 			},
 		},
-		hint: 'Update hyperlinks annotation. See our <b><a href="https://docs.pdf4me.com/n8n/pdf4me/update-hyperlinks-annotation/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Update hyperlinks annotation. See our <b><a href="https://docs.pdf4me.com/integration/n8n/pdf4me/update-hyperlinks-annotation/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Search On',

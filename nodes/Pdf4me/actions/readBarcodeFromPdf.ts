@@ -193,7 +193,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ReadBarcodeFromPdf],
 			},
 		},
-		hint: 'Read barcodes from PDF. See our <b><a href="https://docs.pdf4me.com/n8n/barcode/read-barcode-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples. Output JSON schema: <b><code>barcodeSchema</code></b>',
+		hint: 'Read barcodes from PDF. See our <b><a href="https://docs.pdf4me.com/integration/n8n/barcode/read-barcode-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples. Output JSON schema: <b><code>barcodeSchema</code></b>',
 	},
 	{
 		displayName: 'Barcode Type',
