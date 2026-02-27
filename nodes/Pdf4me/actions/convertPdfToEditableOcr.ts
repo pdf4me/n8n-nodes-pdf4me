@@ -110,7 +110,7 @@ export const description: INodeProperties[] = [
 				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
 			},
 		],
-		hint: 'Convert PDF to editable PDF using OCR. See our <b><a href="https://docs.pdf4me.com/n8n/find-search/convert-pdf-to-editable-pdf-using-ocr/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert PDF to editable PDF using OCR. See our <b><a href="https://docs.pdf4me.com/integration/n8n/find-search/convert-pdf-to-editable-pdf-using-ocr/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'OCR Only When Needed',

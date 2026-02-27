@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.SplitPdfRegular],
 			},
 		},
-		hint: 'Split PDF regularly. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/split-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Split PDF regularly. See our <b><a href="https://docs.pdf4me.com/integration/n8n/merge-split/split-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Split Action',

@@ -78,7 +78,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.DisableTrackingChangesInWord],
 			},
 		},
-		hint: 'Disable tracking changes in Word document. See our <b><a href="https://docs.pdf4me.com/n8n/word/disable-tracking-changes-in-word/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Disable tracking changes in Word document. See our <b><a href="https://docs.pdf4me.com/integration/n8n/word/disable-tracking-changes-in-word/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Async',

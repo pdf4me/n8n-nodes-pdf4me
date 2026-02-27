@@ -103,7 +103,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ZugferdInvoice],
 			},
 		},
-		hint: 'Create ZUGFeRD compliant invoices from XML, JSON, or CSV data. See our <b><a href="https://docs.pdf4me.com/n8n/invoice/zugferd-invoice/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Create ZUGFeRD compliant invoices from XML, JSON, or CSV data. See our <b><a href="https://docs.pdf4me.com/integration/n8n/invoice/zugferd-invoice/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Output Mode',

@@ -148,7 +148,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.ConvertPdfToExcel],
 			},
 		},
-		hint: 'Convert PDF to Excel spreadsheet. See our <b><a href="https://docs.pdf4me.com/n8n/convert/convert-pdf-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Convert PDF to Excel spreadsheet. See our <b><a href="https://docs.pdf4me.com/integration/n8n/convert/convert-pdf-to-excel/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Merge All Sheets',

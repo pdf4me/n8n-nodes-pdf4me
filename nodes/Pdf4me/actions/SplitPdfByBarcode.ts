@@ -124,7 +124,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.SplitPdfByBarcode],
 			},
 		},
-		hint: 'Split PDF by barcode. See our <b><a href="https://docs.pdf4me.com/n8n/merge-split/split-pdf-barcode/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Split PDF by barcode. See our <b><a href="https://docs.pdf4me.com/integration/n8n/merge-split/split-pdf-barcode/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Barcode Filter',

@@ -19,8 +19,10 @@ export async function pdf4meApiRequest(
 ): Promise<any> {
 	// Determine if this is a JSON response operation (AI processing endpoints)
 	const isJsonResponse = url.includes('/ProcessInvoice') || url.includes('/ProcessHealthCard') ||
-		url.includes('/ProcessContract') || url.includes('/ParseDocument') ||
-		url.includes('/ClassifyDocument');
+		url.includes('/ProcessContract') || url.includes('/ProcessBankCheque') ||
+		url.includes('/ProcessCreditCard') || url.includes('/ProcessMarriageCertificate') ||
+		url.includes('/ProcessMortgageDocument') || url.includes('/ProcessPayStub') ||
+		url.includes('/ParseDocument') || url.includes('/ClassifyDocument');
 
 	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
@@ -122,12 +124,17 @@ export async function pdf4meAsyncRequest(
 	// Determine if this is a JSON response operation (like CreateImages, AI processing, metadata extraction)
 	const isJsonResponse = url.includes('/CreateImages') || url.includes('/CreateImagesFromPdf') ||
 		url.includes('/ProcessInvoice') || url.includes('/ProcessHealthCard') ||
-		url.includes('/ProcessContract') || url.includes('/ParseDocument') ||
-		url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
+		url.includes('/ProcessContract') || url.includes('/ProcessBankCheque') ||
+		url.includes('/ProcessCreditCard') || url.includes('/ProcessMarriageCertificate') ||
+		url.includes('/ProcessMortgageDocument') || url.includes('/ProcessPayStub') ||
+		url.includes('/ProcessUniversalDocument') || url.includes('/ProcessShippingLabel') ||
+		url.includes('/ProcessOrder') || url.includes('/ProcessReceipt') || url.includes('/ProcessTaxDocument') ||
+		url.includes('/ProcessBankStatement') ||
+		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
 		url.includes('/ExtractResources') || url.includes('/ExtractPdfFormData') ||
 		url.includes('/GetPdfMetadata') || url.includes('/ExtractTextByExpression') ||
 		url.includes('/ExtractAttachmentFromPdf') || url.includes('/GetImageMetadata') ||
-		url.includes('/ExtractTableFromPdf');
+		url.includes('/ExtractTableFromPdf') || url.includes('/SignDocument');
 
 	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
@@ -404,8 +411,13 @@ export const ActionConstants = {
 	AddTextStampToPdf: 'Add Text Stamp To PDF',
 	AddTextWatermarkToImage: 'Add Text Watermark To Image',
 	AiInvoiceParser: 'AI-Invoice Parser',
+	AiProcessBankCheque: 'AI-Process Bank Cheque',
+	AiProcessCreditCard: 'AI-Process Credit Card',
 	AiProcessContract: 'AI-Process Contract',
 	AiProcessHealthCard: 'AI-Process HealthCard',
+	AiProcessMarriageCertificate: 'AI-Process Marriage Certificate',
+	AiProcessMortgageDocument: 'AI-Process Mortgage Document',
+	AiProcessPayStub: 'AI-Process Pay Stub',
 	ClassifyDocument: 'Classify Document',
 	CompressImage: 'Compress Image',
 	CompressPdf: 'Compress PDF',
@@ -465,6 +477,7 @@ export const ActionConstants = {
 	RotateImage: 'Rotate Image',
 	RotateImageByExifData: 'Rotate Image By Exif Data',
 	RotatePage: 'Rotate PDF Page',
+	SignDocument: 'Sign Document',
 	SignPdf: 'Sign PDF',
 	SplitPdfByBarcode: 'Split PDF By Barcode',
 	SplitPdfBySwissQR: 'Split PDF By SwissQR',
@@ -473,6 +486,12 @@ export const ActionConstants = {
 	UnlockPdf: 'Unlock PDF',
 	UpdateHyperlinksAnnotation: 'Update Hyperlinks Annotation',
 	UploadFile: 'Upload File To PDF4me',
+	ProcessUniversalDocument: 'Process Universal Document',
+	ProcessShippingLabel: 'Process Shipping Label',
+	ProcessOrder: 'Process Order',
+	ProcessReceipt: 'Process Receipt',
+	ProcessTaxDocument: 'Process Tax Document',
+	ProcessBankStatement: 'Process Bank Statement',
 	ZugferdInvoice: 'Zugferd Invoice',
 };
 

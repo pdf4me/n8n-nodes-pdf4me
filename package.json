@@ -5,7 +5,7 @@
   "keywords": [
     "n8n-community-node-package"
   ],
-  "homepage": "https://docs.pdf4me.com/n8n/getting-started/",
+  "homepage": "https://docs.pdf4me.com/integration/n8n/getting-started/",
   "bugs": {
     "url": "https://github.com/pdf4me/n8n-nodes-pdf4me/issues"
   },

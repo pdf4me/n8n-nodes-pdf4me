@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.FindAndReplaceText],
 			},
 		},
-		hint: 'Find and replace text in PDF. See our <b><a href="https://docs.pdf4me.com/n8n/find-search/find-and-replace-text/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'Find and replace text in PDF. See our <b><a href="https://docs.pdf4me.com/integration/n8n/find-search/find-and-replace-text/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'New Text',

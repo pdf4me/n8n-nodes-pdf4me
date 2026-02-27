@@ -101,7 +101,7 @@ export const description: INodeProperties[] = [
 				operation: [ActionConstants.FlattenPdf],
 			},
 		},
-		hint: 'PDF URL. See our <b><a href="https://docs.pdf4me.com/n8n/convert/flatten-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
+		hint: 'PDF URL. See our <b><a href="https://docs.pdf4me.com/integration/n8n/convert/flatten-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Document Name',
