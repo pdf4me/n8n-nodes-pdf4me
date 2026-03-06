@@ -98,16 +98,35 @@ export async function pdf4meApiRequest(
 
 // Removed n8nSleep and all artificial delay logic to comply with n8n community guidelines.
 
-// Delay function using PDF4ME's DelayAsync endpoint
+// Delay function using PDF4ME's DelayAsync endpoint.
+// Always guarantees a minimum wait of `minWaitMs` regardless of whether the
+// AddDelay call succeeds quickly or fails — this prevents rapid-fire polling
+// that can cause PDF4me to expire the processing job.
 async function delayAsync(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+	minWaitMs: number = 10000,
 ): Promise<void> {
-	await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-		url: 'https://api.pdf4me.com/api/v2/AddDelay',
-		method: 'GET',
-		returnFullResponse: true,
-		ignoreHttpStatusErrors: true,
-	});
+	const startTime = Date.now();
+	console.log(`[pdf4me Async] delayAsync: starting, minWaitMs=${minWaitMs}`);
+	try {
+		await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: 'https://api.pdf4me.com/api/v2/AddDelay',
+			method: 'GET',
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
+			timeout: 15000,
+		});
+		console.log(`[pdf4me Async] delayAsync: AddDelay API completed in ${Date.now() - startTime}ms`);
+	} catch (err) {
+		console.log(`[pdf4me Async] delayAsync: AddDelay API failed, using setTimeout fallback. Error: ${err instanceof Error ? err.message : String(err)}`);
+	}
+	const elapsed = Date.now() - startTime;
+	const remaining = minWaitMs - elapsed;
+	if (remaining > 0) {
+		console.log(`[pdf4me Async] delayAsync: waiting additional ${remaining}ms (elapsed ${elapsed}ms)`);
+		await new Promise<void>(resolve => setTimeout(resolve, remaining));
+	}
+	console.log(`[pdf4me Async] delayAsync: done (total ${Date.now() - startTime}ms)`);
 }
 
 export async function pdf4meAsyncRequest(
@@ -154,7 +173,7 @@ export async function pdf4meAsyncRequest(
 	options = Object.assign({}, options, option);
 
 	try {
-		// Make initial request
+		console.log(`[pdf4me Async] Initial request: ${options.method} ${options.baseURL}${options.url}`);
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 			url: `${options.baseURL}${options.url}`,
 			method: options.method,
@@ -167,8 +186,10 @@ export async function pdf4meAsyncRequest(
 			json: options.json,
 			timeout: options.timeout,
 		});
+		console.log(`[pdf4me Async] Initial response: status=${response.statusCode}`);
 
 		if (response.statusCode === 200) {
+			console.log(`[pdf4me Async] Immediate success (200), returning result`);
 			// Immediate success
 			if (isJsonResponse) {
 				return response.body; // Already parsed when json: true is set
@@ -190,15 +211,25 @@ export async function pdf4meAsyncRequest(
 				}
 			}
 		} else if (response.statusCode === 202) {
+			console.log(`[pdf4me Async] Received 202, extracting Location header`);
 			// Async processing - always start polling when API returns 202
-			const locationUrl = response.headers.headers?.location || response.headers.location;
-			if (!locationUrl) {
+			const rawLocation = response.headers?.location
+				|| response.headers?.headers?.location
+				|| (response.headers && (response.headers as IDataObject)['location']);
+			const locationStr = typeof rawLocation === 'string' ? rawLocation : Array.isArray(rawLocation) ? rawLocation[0] : undefined;
+			console.log(`[pdf4me Async] Raw Location: ${JSON.stringify(rawLocation)}, parsed: ${locationStr || '(empty)'}`);
+			if (!locationStr || !locationStr.trim()) {
 				throw new Error('No polling URL found in response');
 			}
+			// Resolve relative Location URLs to absolute (API may return e.g. /api/v2/GetDocument/xxx)
+			const baseUrl = options.baseURL || 'https://api.pdf4me.com';
+			const absoluteLocationUrl = locationStr.startsWith('http')
+				? locationStr
+				: `${baseUrl.replace(/\/$/, '')}${locationStr.startsWith('/') ? '' : '/'}${locationStr}`;
+			console.log(`[pdf4me Async] Absolute polling URL: ${absoluteLocationUrl}, starting pollForCompletion`);
 
-			// Start polling immediately when API returns 202
-			// Poll the location URL until completion
-			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
+			// Poll the location URL until completion (with initial delay so job can register)
+			return await pollForCompletion.call(this, absoluteLocationUrl, isJsonResponse);
 		} else {
 			let errorMessage = `API Error: ${response.statusCode}`;
 			try {
@@ -499,12 +530,23 @@ async function pollForCompletion(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	locationUrl: string,
 	isJsonResponse: boolean,
-	maxRetries: number = 9000,
+	maxRetries: number = 12000,
 ): Promise<any> {
 	let retryCount = 0;
+	// Tracks consecutive 404s — in cloud environments the job may not be
+	// immediately queryable after the 202 response. Allow many retries with delayAsync between each.
+	let notFoundCount = 0;
+	const maxNotFoundRetries = 90;
+
+	console.log(`[pdf4me Async] pollForCompletion: starting, url=${locationUrl}`);
+	// Initial delay before first poll — give the backend time to register the job
+	await delayAsync.call(this, 3000);
+	console.log(`[pdf4me Async] pollForCompletion: initial delay done, entering poll loop`);
 
 	while (retryCount < maxRetries) {
 		try {
+			retryCount++;
+			console.log(`[pdf4me Async] pollForCompletion: poll attempt #${retryCount}`);
 			// Make polling request
 			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 				url: locationUrl,
@@ -514,8 +556,10 @@ async function pollForCompletion(
 				json: isJsonResponse,
 				ignoreHttpStatusErrors: true,
 			});
+			console.log(`[pdf4me Async] pollForCompletion: attempt #${retryCount} → status=${pollResponse.statusCode}`);
 
 			if (pollResponse.statusCode === 200) {
+				console.log(`[pdf4me Async] pollForCompletion: SUCCESS on attempt #${retryCount}`);
 				// Success - return the final result
 				if (isJsonResponse) {
 					return pollResponse.body; // Already parsed when json: true is set
@@ -537,15 +581,27 @@ async function pollForCompletion(
 					}
 				}
 			} else if (pollResponse.statusCode === 202) {
-				// Still processing, continue polling with 10 second backoff
-				retryCount++;
-				// Use PDF4ME's DelayAsync endpoint for 10 second delay
+				console.log(`[pdf4me Async] pollForCompletion: 202 still processing, calling delayAsync`);
+				// Still processing — reset not-found counter and wait before next poll
+				notFoundCount = 0;
 				await delayAsync.call(this);
 				continue;
 			} else if (pollResponse.statusCode === 404) {
-				// Job not found or expired
-				throw new Error('Processing job not found or expired. The document processing may have timed out.');
+				notFoundCount++;
+				console.log(`[pdf4me Async] pollForCompletion: 404 not found (${notFoundCount}/${maxNotFoundRetries}), calling delayAsync`);
+				// In n8n Cloud (and other cloud environments), the job may not yet be
+				// registered on the PDF4me side immediately after the 202 response.
+				// Retry a limited number of times before declaring the job truly gone.
+				if (notFoundCount >= maxNotFoundRetries) {
+					console.log(`[pdf4me Async] pollForCompletion: 404 max retries (${maxNotFoundRetries}) exceeded, throwing`);
+					throw new Error(
+						'Processing job not found or expired after ' + maxNotFoundRetries + ' polling attempts. The document processing may have timed out.',
+					);
+				}
+				await delayAsync.call(this);
+				continue;
 			} else {
+				console.log(`[pdf4me Async] pollForCompletion: error status ${pollResponse.statusCode}, throwing`);
 				// Other error
 				let errorMessage = `Polling failed with status ${pollResponse.statusCode}`;
 				try {
@@ -561,20 +617,24 @@ async function pollForCompletion(
 				throw new Error(errorMessage);
 			}
 		} catch (error) {
-			// If it's a network error, retry with minimal backoff
-			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
-				retryCount++;
+			const errMsg = error instanceof Error ? error.message : String(error);
+			console.log(`[pdf4me Async] pollForCompletion: catch block, error=${errMsg}`);
+			// Retry on transient network errors
+			if (errMsg.includes('ENOTFOUND') || errMsg.includes('ECONNRESET') || errMsg.includes('timeout')) {
 				if (retryCount >= maxRetries) {
-					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
+					console.log(`[pdf4me Async] pollForCompletion: network error max retries exceeded`);
+					throw new Error(`Network error during polling after ${maxRetries} attempts: ${errMsg}`);
 				}
-				// Use PDF4ME's DelayAsync endpoint for 10 second delay on network errors
+				console.log(`[pdf4me Async] pollForCompletion: network error, calling delayAsync and retrying`);
 				await delayAsync.call(this);
 				continue;
 			}
 			// For other errors, throw immediately
+			console.log(`[pdf4me Async] pollForCompletion: re-throwing non-network error`);
 			throw error;
 		}
 	}
 
+	console.log(`[pdf4me Async] pollForCompletion: max retries (${maxRetries}) exceeded, throwing timeout`);
 	throw new Error(`Document processing timed out after ${maxRetries} polling attempts. The operation may still be processing on the server.`);
 }

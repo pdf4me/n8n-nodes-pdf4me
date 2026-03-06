@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
+	pdf4meApiRequest,
 	sanitizeProfiles,
 	ActionConstants,
 	uploadBlobToPdf4me,
@@ -243,6 +244,13 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
+				displayName: 'Use Sync Mode',
+				name: 'useSyncMode',
+				type: 'boolean',
+				default: false,
+				description: 'Process synchronously (no polling). Use when GetActionStatus returns 404 on api-dev or for smaller merges. Bypasses async polling.',
+			},
+			{
 				displayName: 'Custom Profiles',
 				name: 'profiles',
 				type: 'string',
@@ -298,10 +306,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			? (docName.toLowerCase().endsWith('.pdf') ? docName : `${docName.replace(/\.[^.]*$/, '')}.pdf`)
 			: (outputFileName && outputFileName.trim()) || 'merged_output.pdf';
 
+		const useSyncMode = !!advancedOptions?.useSyncMode;
 		const body: IDataObject = {
 			docContent: pdfContents,
 			docName: fullDocName,
-			IsAsync: true,
+			IsAsync: !useSyncMode,
 		};
 
 		// Add profiles if provided
@@ -310,7 +319,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		sanitizeProfiles(body);
 
-		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Merge', body);
+		console.log(`[pdf4me Merge] Starting merge: ${pdfContents.length} PDFs, docName=${fullDocName}, syncMode=${useSyncMode}`);
+		const responseData = useSyncMode
+			? await pdf4meApiRequest.call(this, '/api/v2/Merge', body)
+			: await pdf4meAsyncRequest.call(this, '/api/v2/Merge', body);
+		console.log(`[pdf4me Merge] pdf4meAsyncRequest returned, hasData=${!!responseData}, size=${responseData?.length ?? 0}`);
 
 		// Handle the binary response (merged PDF file data)
 		if (responseData) {
