@@ -1,11 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import {
-	sanitizeProfiles,
-	ActionConstants,
-	pdf4meAsyncRequest,
-	uploadBlobToPdf4me,
-} from '../GenericFunctions';
+import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 
 export const description: INodeProperties[] = [
@@ -153,8 +148,8 @@ export const description: INodeProperties[] = [
 		name: 'pdfRenderDpi',
 		type: 'options',
 		required: true,
-		default: '150',
-		description: 'PDF render DPI for processing',
+		default: '200',
+		description: 'PDF render DPI for barcode detection (100, 150, 200, 250)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfBySwissQR],
@@ -180,28 +175,6 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Advanced Options',
-		name: 'advancedOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SplitPdfBySwissQR],
-			},
-		},
-		options: [
-			{
-				displayName: 'Custom Profiles',
-				name: 'profiles',
-				type: 'string',
-				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: '{ \'outputDataFormat\': \'base64\' }',
-			},
-		],
-	},
-	{
 		displayName: 'Output Binary Field Name',
 		name: 'binaryDataName',
 		type: 'string',
@@ -220,7 +193,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const splitQRPage = this.getNodeParameter('splitQRPage', index) as string;
 	const combinePagesWithSameBarcodes = this.getNodeParameter('combinePagesWithSameBarcodes', index) as boolean;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
-	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main document content and metadata
@@ -345,26 +317,27 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Use inputDocName for docName in the request
 	const docNameForRequest = inputDocName || 'output.pdf';
 
+	// Internal Swiss-QR barcode settings (x-ms-visibility: internal in API schema) — fixed defaults, not exposed in the node.
+	const SWISS_QR_BARCODE_STRING = 'SPC';
+	const SWISS_QR_BARCODE_FILTER = 'startsWith';
+	const SWISS_QR_BARCODE_TYPE = 'qrcode';
+
 	const body: IDataObject = {
-		docContent: pdfContentBase64, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		docName: docNameForRequest,
+		docContent: pdfContentBase64,
+		barcodeString: SWISS_QR_BARCODE_STRING,
+		barcodeFilter: SWISS_QR_BARCODE_FILTER,
+		barcodeType: SWISS_QR_BARCODE_TYPE,
 		splitBarcodePage: splitQRPage,
 		combinePagesWithSameConsecutiveBarcodes: combinePagesWithSameBarcodes,
 		pdfRenderDpi,
-		IsAsync: true,
+		isAsync: true,
 	};
 
-	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) {
-		body.profiles = profiles;
-	}
-
-	sanitizeProfiles(body);
-
-	// Call the PDF4me SplitPdfBySwissQR endpoint
+	// Call the PDF4me FlowV2 SplitPdfByBarcode endpoint (Swiss QR operation)
 	let response;
 	try {
-		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode', body);
+		response = await pdf4meAsyncRequest.call(this, '/api/v2/FlowV2/SplitPdfByBarcode', body);
 	} catch (error: unknown) {
 		// Provide better error messages with debugging information
 		const errorObj = error as { statusCode?: number; message?: string };
