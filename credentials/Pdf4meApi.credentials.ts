@@ -29,7 +29,6 @@ export class Pdf4meApi implements ICredentialType {
 		properties: {
 			headers: {
 				'Authorization': '=Basic {{$credentials?.apiKey}}',
-				'Content-Type': 'application/json',
 			},
 		},
 	};

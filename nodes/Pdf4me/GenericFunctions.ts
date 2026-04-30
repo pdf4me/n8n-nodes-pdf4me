@@ -333,20 +333,17 @@ export async function uploadBlobToPdf4me(
 		// Create multipart/form-data body manually (native implementation, no external dependencies)
 		const { body, boundary } = createMultipartFormData('file', fileBuffer, filename);
 
-		// Get authentication credentials
-		const credentials = await this.getCredentials('pdf4meApi');
-		const apiKey = credentials?.apiKey as string;
-
-		// Make the upload request with manually constructed multipart/form-data
-		const response = await this.helpers.httpRequest({
+		// Make the upload request with manually constructed multipart/form-data.
+		// Authentication is provided by the credential via n8n helper.
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
 			url: 'https://api.pdf4me.com/api/V2/UploadBlob',
 			method: 'POST',
 			body: body, // Native Buffer with multipart/form-data
 			headers: {
 				'Content-Type': `multipart/form-data; boundary=${boundary}`,
-				'Authorization': `Basic ${apiKey}`,
 			},
 			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
 			timeout: 60000023,
 		});
 
