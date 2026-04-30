@@ -475,7 +475,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Call the PDF4me SplitPdfByBarcode endpoint
 	let response;
 	try {
-		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode_old', body);
+		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode', body);
 	} catch (error: unknown) {
 		// Provide better error messages with debugging information
 		const errorObj = error as { statusCode?: number; message?: string };

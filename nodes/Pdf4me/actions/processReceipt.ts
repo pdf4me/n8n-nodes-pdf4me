@@ -272,12 +272,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	let docContent: string = '';
 	let inputDocName: string = docName;
-	let blobId: string = '';
 
 	// Handle different input data types
 	if (inputDataType === 'binaryData') {
 		// 1. Validate binary data
-		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 
 		// Get binary data from previous node
 		const item = this.getInputData(index);
@@ -302,9 +301,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 
 		// 4. Upload to UploadBlob
-		blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
-
-		// 5. Use blobId in docContent
+		const blobId = await uploadBlobToPdf4me.call(this, fileBuffer, inputDocName);
 		docContent = `${blobId}`;
 	} else if (inputDataType === 'base64') {
 		// Use base64 content directly
@@ -314,7 +311,12 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (docContent.includes(',')) {
 			docContent = docContent.split(',')[1];
 		}
-		blobId = '';
+		// Validate that base64 content looks like a PDF
+		if (!docContent.startsWith('JVBERi0x')) {
+			throw new Error(
+				`Invalid PDF content. Base64 should start with 'JVBERi0x' (PDF header), but starts with: ${docContent.substring(0, 20)}`,
+			);
+		}
 	} else if (inputDataType === 'url') {
 		// 1. Get URL parameter
 		const documentUrl = this.getNodeParameter('documentUrl', index) as string;
@@ -330,7 +332,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		inputDocName = documentUrl.split('/').pop() || docName;
 
 		// 4. Use URL directly in docContent
-		blobId = '';
 		docContent = documentUrl;
 	} else {
 		throw new Error(`Unsupported input data type: ${inputDataType}`);
@@ -350,46 +351,129 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			.filter((key) => key.length > 0);
 	}
 
-	// Prepare request body according to API specification
-	const body: IDataObject = {
+	// Build the request payload
+	const payload: IDataObject = {
 		docName: inputDocName,
 		docContent,
 		analyzeItems,
 		extractMerchantInfo,
 		calculateTotals,
-		isAsync: true,
+		IsAsync: true,
 	};
 
 	// Add optional receiptType if provided
 	if (receiptType && receiptType.trim() !== '') {
-		body.receiptType = receiptType.trim();
+		payload.receiptType = receiptType.trim();
 	}
 
 	// Add customFieldKeys if provided
 	if (customFieldKeys.length > 0) {
-		body.customFieldKeys = customFieldKeys;
+		payload.customFieldKeys = customFieldKeys;
 	}
 
 	// Add custom profiles if provided
 	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) body.profiles = profiles;
+	if (profiles) payload.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles(payload);
 
-	// Make the API request
-	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessReceipt', body);
+	const shouldRetryExpiredJobError = (error: unknown): boolean => {
+		const normalizedError = error as { message?: string; description?: string; statusCode?: number };
+		const message =
+			`${normalizedError?.message || ''} ${normalizedError?.description || ''}`.toLowerCase();
+		return (
+			(message.includes('processing job not found') || message.includes('job not found or expired'))
+		);
+	};
 
-	// Handle the response (processed receipt data)
+	const executeProcessReceipt = async (): Promise<unknown> =>
+		pdf4meAsyncRequest.call(this, '/api/v2/ProcessReceipt', payload);
+
+	// Make the API request to process receipt - retry once for transient async job expiry
+	let responseData: unknown;
+	try {
+		responseData = await executeProcessReceipt();
+	} catch (error) {
+		if (shouldRetryExpiredJobError(error)) {
+			responseData = await executeProcessReceipt();
+		} else {
+			const requestError = error as { code?: string; statusCode?: number; message?: string };
+			const normalizedMessage = `${requestError.message || ''}`.toLowerCase();
+			if (requestError.code === 'ECONNRESET') {
+				throw new Error(
+					`Connection was reset. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (normalizedMessage.includes('authorization failed')) {
+				throw new Error(
+					`Authentication failed. Please check your PDF4ME API credentials. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (
+				normalizedMessage.includes('connection to the server was closed unexpectedly') ||
+				normalizedMessage.includes('server was closed unexpectedly')
+			) {
+				throw new Error(
+					`PDF4ME server connection closed unexpectedly. Please retry. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (normalizedMessage.includes('canceled')) {
+				throw new Error(
+					`Request was canceled before completion. Please retry the workflow run. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (requestError.statusCode === 500) {
+				throw new Error(
+					`PDF4Me server error (500): ${requestError.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (requestError.statusCode === 404) {
+				throw new Error(
+					`API endpoint not found. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (requestError.statusCode === 401) {
+				throw new Error(
+					`Authentication failed. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (requestError.statusCode === 403) {
+				throw new Error(
+					`Access denied. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (requestError.statusCode === 429) {
+				throw new Error(
+					`Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else if (requestError.statusCode) {
+				throw new Error(
+					`PDF4Me API error (${requestError.statusCode}): ${requestError.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
+				);
+			} else {
+				throw new Error(
+					`Connection error: ${requestError.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}, errorCode=${requestError.code}`,
+				);
+			}
+		}
+	}
+
+	// Process the response - same output handling as other AI actions
 	if (responseData) {
+		let processedData: IDataObject;
+
+		try {
+			if (typeof responseData === 'string') {
+				processedData = JSON.parse(responseData) as IDataObject;
+			} else {
+				processedData = responseData as IDataObject;
+			}
+		} catch (error) {
+			const parseError = error as { message?: string };
+			throw new Error(`Failed to parse API response: ${parseError.message || 'Unknown parse error'}`);
+		}
+
 		// Return both raw data and metadata
 		return [
 			{
 				json: {
-					...responseData, // Raw API response data
+					...processedData, // Raw API response data
 					_metadata: {
 						success: true,
-						message: 'Receipt processed successfully',
+						message: 'Receipt processed successfully using AI',
 						processingTimestamp: new Date().toISOString(),
 						sourceFileName: inputDocName,
 						operation: 'processReceipt',
@@ -401,5 +485,5 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	// Error case - no response received
-	throw new Error('No receipt processing results received from PDF4ME API');
+	throw new Error('No response data received from PDF4ME AI Receipt Processing API');
 }

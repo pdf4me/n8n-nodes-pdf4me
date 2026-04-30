@@ -107,22 +107,16 @@ export const description: INodeProperties[] = [
 		default: 'Web',
 		description: 'Optimization profile for compression',
 		options: [
+			{ name: 'Max', value: 'Max' },
 			{ name: 'Web', value: 'Web' },
 			{ name: 'Print', value: 'Print' },
-			{ name: 'Screen', value: 'Screen' },
+			{ name: 'Default', value: 'Default' },
+			{ name: 'WebMax', value: 'WebMax' },
+			{ name: 'PrintMax', value: 'PrintMax' },
+			{ name: 'PrintGray', value: 'PrintGray' },
+			{ name: 'Compress', value: 'Compress' },
+			{ name: 'CompressMax', value: 'CompressMax' },
 		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CompressPdf],
-			},
-		},
-	},
-	{
-		displayName: 'Async',
-		name: 'async',
-		type: 'boolean',
-		default: true,
-		description: 'Enable asynchronous processing',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CompressPdf],
@@ -234,7 +228,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	};
 
 	// Make the API request
-	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/Optimize', body);
+	const result = await pdf4meAsyncRequest.call(this, '/api/v2/Optimize', body) as Buffer;
 
 	// Return the result as binary data (PDF)
 	const mimeType = 'application/pdf';

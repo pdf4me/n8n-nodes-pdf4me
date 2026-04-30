@@ -1,11 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
-import {
-	sanitizeProfiles,
-	ActionConstants,
-	pdf4meAsyncRequest,
-	uploadBlobToPdf4me,
-} from '../GenericFunctions';
+import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 
 export const description: INodeProperties[] = [
@@ -153,8 +148,8 @@ export const description: INodeProperties[] = [
 		name: 'pdfRenderDpi',
 		type: 'options',
 		required: true,
-		default: '150',
-		description: 'PDF render DPI for processing',
+		default: '200',
+		description: 'PDF render DPI for barcode detection (100, 150, 200, 250)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SplitPdfBySwissQR],
@@ -180,28 +175,6 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Advanced Options',
-		name: 'advancedOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.SplitPdfBySwissQR],
-			},
-		},
-		options: [
-			{
-				displayName: 'Custom Profiles',
-				name: 'profiles',
-				type: 'string',
-				default: '',
-				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: '{ \'outputDataFormat\': \'base64\' }',
-			},
-		],
-	},
-	{
 		displayName: 'Output Binary Field Name',
 		name: 'binaryDataName',
 		type: 'string',
@@ -220,7 +193,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const splitQRPage = this.getNodeParameter('splitQRPage', index) as string;
 	const combinePagesWithSameBarcodes = this.getNodeParameter('combinePagesWithSameBarcodes', index) as boolean;
 	const pdfRenderDpi = this.getNodeParameter('pdfRenderDpi', index) as string;
-	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	// Main document content and metadata
@@ -345,23 +317,25 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Use inputDocName for docName in the request
 	const docNameForRequest = inputDocName || 'output.pdf';
 
+	// Internal Swiss-QR barcode settings (x-ms-visibility: internal in API schema) — fixed defaults, not exposed in the node.
+	const SWISS_QR_BARCODE_STRING = 'SPC';
+	const SWISS_QR_BARCODE_FILTER = 'startsWith';
+	const SWISS_QR_BARCODE_TYPE = 'qrcode';
+
 	const body: IDataObject = {
-		docContent: pdfContentBase64, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		docName: docNameForRequest,
+		docContent: pdfContentBase64,
+		barcodeString: SWISS_QR_BARCODE_STRING,
+		barcodeFilter: SWISS_QR_BARCODE_FILTER,
+		barcodeType: SWISS_QR_BARCODE_TYPE,
 		splitBarcodePage: splitQRPage,
 		combinePagesWithSameConsecutiveBarcodes: combinePagesWithSameBarcodes,
 		pdfRenderDpi,
+		fileNaming: 'NameAsPerPage',
 		IsAsync: true,
 	};
 
-	const profiles = advancedOptions?.profiles as string | undefined;
-	if (profiles) {
-		body.profiles = profiles;
-	}
-
-	sanitizeProfiles(body);
-
-	// Call the PDF4me SplitPdfBySwissQR endpoint
+	// Call the PDF4me SplitPdfByBarcode endpoint (Swiss QR operation)
 	let response;
 	try {
 		response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdfByBarcode', body);
@@ -448,6 +422,53 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// If response is a ZIP (Buffer or base64 string)
 	const isZip = (buf: Buffer) => buf.slice(0, 4).toString('hex') === '504b0304';
 
+	const looksLikeBase64 = (value: string): boolean => {
+		const normalized = value.trim().replace(/\s/g, '');
+		return normalized.length > 40 && normalized.length % 4 === 0 && /^[A-Za-z0-9+/=]+$/.test(normalized);
+	};
+
+	const findPdfContentAndName = (input: IDataObject): { content?: string; name?: string; url?: string } => {
+		const queue: IDataObject[] = [input];
+		let fallbackName: string | undefined;
+
+		while (queue.length > 0) {
+			const current = queue.shift() as IDataObject;
+			for (const [key, rawValue] of Object.entries(current)) {
+				if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+					queue.push(rawValue as IDataObject);
+					continue;
+				}
+				if (typeof rawValue !== 'string') {
+					continue;
+				}
+
+				const value = rawValue.trim();
+				const lowerKey = key.toLowerCase();
+
+				if (!fallbackName && (lowerKey.includes('filename') || lowerKey === 'name' || lowerKey === 'docname')) {
+					fallbackName = value.endsWith('.pdf') ? value : `${value}.pdf`;
+				}
+
+				if (lowerKey.includes('url') && /^https?:\/\//i.test(value)) {
+					return { url: value, name: fallbackName };
+				}
+
+				if (value.startsWith('JVBER')) {
+					return { content: value, name: fallbackName };
+				}
+
+				if (
+					looksLikeBase64(value) &&
+					(lowerKey.includes('content') || lowerKey.includes('stream') || lowerKey.includes('file') || lowerKey.includes('document'))
+				) {
+					return { content: value, name: fallbackName };
+				}
+			}
+		}
+
+		return { name: fallbackName };
+	};
+
 	const extractZipAndPrepareBinary = async () => {
 		throw new Error('ZIP file processing is not supported in this version. Please use an alternative API response format.');
 	};
@@ -488,15 +509,47 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			}
 			totalFiles = filesSummary.length;
 			responseType = 'Multiple PDFs (legacy array)';
-		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.splitedDocuments) {
+		} else if (
+			parsedResponse &&
+			typeof parsedResponse === 'object' &&
+			(parsedResponse.splitedDocuments || parsedResponse.splittedDocuments || parsedResponse.splitDocuments)
+		) {
+			const splitDocuments =
+				(parsedResponse.splitedDocuments ||
+					parsedResponse.splittedDocuments ||
+					parsedResponse.splitDocuments) as IDataObject[];
 			let idx = 1;
-			for (const doc of parsedResponse.splitedDocuments) {
-				if (doc.streamFile && doc.fileName) {
-					const buffer = Buffer.from(doc.streamFile, 'base64');
+			for (const doc of splitDocuments) {
+				const nestedDoc =
+					(doc.document as IDataObject | undefined) ||
+					(doc.result as IDataObject | undefined) ||
+					(doc.data as IDataObject | undefined) ||
+					({});
+				const contentBase64 =
+					(doc.streamFile as string | undefined) ||
+					(doc.docContent as string | undefined) ||
+					(doc.content as string | undefined) ||
+					(doc.documentContent as string | undefined) ||
+					(nestedDoc.streamFile as string | undefined) ||
+					(nestedDoc.docContent as string | undefined) ||
+					(nestedDoc.content as string | undefined) ||
+					(nestedDoc.documentContent as string | undefined);
+				const autoExtracted = findPdfContentAndName(doc);
+				const outputName =
+					(doc.fileName as string | undefined) ||
+					(doc.docName as string | undefined) ||
+					(doc.name as string | undefined) ||
+					(nestedDoc.fileName as string | undefined) ||
+					(nestedDoc.docName as string | undefined) ||
+					autoExtracted.name ||
+					`split_${idx}.pdf`;
+				const resolvedContent = contentBase64 || autoExtracted.content;
+				if (resolvedContent && typeof resolvedContent === 'string') {
+					const buffer = Buffer.from(resolvedContent.trim(), 'base64');
 					const binaryKey = `${binaryDataName || 'data'}_${idx}`;
-					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.fileName, 'application/pdf');
+					binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, outputName, 'application/pdf');
 					filesSummary.push({
-						fileName: doc.fileName,
+						fileName: outputName,
 						pageIndex: idx,
 						binaryProperty: binaryKey,
 						mimeType: 'application/pdf',
@@ -504,10 +557,62 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						fileSize: buffer.length,
 					});
 					idx++;
+				} else {
+					const remoteUrl =
+						(doc.fileUrl as string | undefined) ||
+						(doc.url as string | undefined) ||
+						(doc.documentUrl as string | undefined) ||
+						(doc.downloadUrl as string | undefined) ||
+						(nestedDoc.fileUrl as string | undefined) ||
+						(nestedDoc.url as string | undefined) ||
+						(nestedDoc.documentUrl as string | undefined) ||
+						(nestedDoc.downloadUrl as string | undefined) ||
+						autoExtracted.url;
+					if (remoteUrl) {
+						const downloaded = await this.helpers.httpRequest({
+							url: remoteUrl,
+							method: 'GET',
+							encoding: 'arraybuffer',
+						});
+						const buffer = Buffer.isBuffer(downloaded)
+							? downloaded
+							: typeof downloaded === 'string'
+								? Buffer.from(downloaded, 'base64')
+								: Buffer.from(downloaded as ArrayLike<number>);
+						const binaryKey = `${binaryDataName || 'data'}_${idx}`;
+						binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, outputName, 'application/pdf');
+						filesSummary.push({
+							fileName: outputName,
+							pageIndex: idx,
+							binaryProperty: binaryKey,
+							mimeType: 'application/pdf',
+							fileType: 'PDF file',
+							fileSize: buffer.length,
+						});
+						idx++;
+					}
 				}
 			}
 			totalFiles = filesSummary.length;
-			responseType = 'Multiple PDFs (splitedDocuments)';
+			responseType = 'Multiple PDFs (split documents)';
+		} else if (
+			parsedResponse &&
+			typeof parsedResponse === 'object' &&
+			parsedResponse.streamFile &&
+			parsedResponse.fileName
+		) {
+			const buffer = Buffer.from(parsedResponse.streamFile, 'base64');
+			binaryData[`${binaryDataName || 'data'}_1`] = await this.helpers.prepareBinaryData(buffer, parsedResponse.fileName, 'application/pdf');
+			filesSummary.push({
+				fileName: parsedResponse.fileName,
+				pageIndex: 1,
+				binaryProperty: `${binaryDataName || 'data'}_1`,
+				mimeType: 'application/pdf',
+				fileType: 'PDF file',
+				fileSize: buffer.length,
+			});
+			totalFiles = 1;
+			responseType = 'Single PDF (streamFile)';
 		} else if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.docContent && parsedResponse.docName) {
 			const buffer = Buffer.from(parsedResponse.docContent, 'base64');
 			binaryData[`${binaryDataName || 'data'}_1`] = await this.helpers.prepareBinaryData(buffer, parsedResponse.docName, 'application/pdf');
@@ -521,6 +626,130 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			});
 			totalFiles = 1;
 			responseType = 'Single PDF (legacy)';
+		} else if (
+			parsedResponse &&
+			typeof parsedResponse === 'object' &&
+			(parsedResponse.data || parsedResponse.result || parsedResponse.response)
+		) {
+			const wrapped =
+				(parsedResponse.data || parsedResponse.result || parsedResponse.response) as IDataObject;
+
+			if (Array.isArray(wrapped)) {
+				let idx = 1;
+				for (const doc of wrapped) {
+					if (doc?.docContent && doc?.docName) {
+						const buffer = Buffer.from(doc.docContent, 'base64');
+						const binaryKey = `${binaryDataName || 'data'}_${idx}`;
+						binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, doc.docName, 'application/pdf');
+						filesSummary.push({
+							fileName: doc.docName,
+							pageIndex: idx,
+							binaryProperty: binaryKey,
+							mimeType: 'application/pdf',
+							fileType: 'PDF file',
+							fileSize: buffer.length,
+						});
+						idx++;
+					}
+				}
+				totalFiles = filesSummary.length;
+				responseType = 'Multiple PDFs (wrapped array)';
+			} else if (wrapped.splitedDocuments || wrapped.splittedDocuments || wrapped.splitDocuments) {
+				const splitDocuments =
+					(wrapped.splitedDocuments ||
+						wrapped.splittedDocuments ||
+						wrapped.splitDocuments) as IDataObject[];
+				let idx = 1;
+				for (const doc of splitDocuments) {
+					const nestedDoc =
+						(doc.document as IDataObject | undefined) ||
+						(doc.result as IDataObject | undefined) ||
+						(doc.data as IDataObject | undefined) ||
+						({});
+					const contentBase64 =
+						(doc.streamFile as string | undefined) ||
+						(doc.docContent as string | undefined) ||
+						(doc.content as string | undefined) ||
+						(doc.documentContent as string | undefined) ||
+						(nestedDoc.streamFile as string | undefined) ||
+						(nestedDoc.docContent as string | undefined) ||
+						(nestedDoc.content as string | undefined) ||
+						(nestedDoc.documentContent as string | undefined);
+					const autoExtracted = findPdfContentAndName(doc);
+					const outputName =
+						(doc.fileName as string | undefined) ||
+						(doc.docName as string | undefined) ||
+						(doc.name as string | undefined) ||
+						(nestedDoc.fileName as string | undefined) ||
+						(nestedDoc.docName as string | undefined) ||
+						autoExtracted.name ||
+						`split_${idx}.pdf`;
+					const resolvedContent = contentBase64 || autoExtracted.content;
+					if (resolvedContent && typeof resolvedContent === 'string') {
+						const buffer = Buffer.from(resolvedContent.trim(), 'base64');
+						const binaryKey = `${binaryDataName || 'data'}_${idx}`;
+						binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, outputName, 'application/pdf');
+						filesSummary.push({
+							fileName: outputName,
+							pageIndex: idx,
+							binaryProperty: binaryKey,
+							mimeType: 'application/pdf',
+							fileType: 'PDF file',
+							fileSize: buffer.length,
+						});
+						idx++;
+					} else {
+						const remoteUrl =
+							(doc.fileUrl as string | undefined) ||
+							(doc.url as string | undefined) ||
+							(doc.documentUrl as string | undefined) ||
+							(doc.downloadUrl as string | undefined) ||
+							(nestedDoc.fileUrl as string | undefined) ||
+							(nestedDoc.url as string | undefined) ||
+							(nestedDoc.documentUrl as string | undefined) ||
+							(nestedDoc.downloadUrl as string | undefined) ||
+							autoExtracted.url;
+						if (remoteUrl) {
+							const downloaded = await this.helpers.httpRequest({
+								url: remoteUrl,
+								method: 'GET',
+								encoding: 'arraybuffer',
+							});
+							const buffer = Buffer.isBuffer(downloaded)
+								? downloaded
+								: typeof downloaded === 'string'
+									? Buffer.from(downloaded, 'base64')
+									: Buffer.from(downloaded as ArrayLike<number>);
+							const binaryKey = `${binaryDataName || 'data'}_${idx}`;
+							binaryData[binaryKey] = await this.helpers.prepareBinaryData(buffer, outputName, 'application/pdf');
+							filesSummary.push({
+								fileName: outputName,
+								pageIndex: idx,
+								binaryProperty: binaryKey,
+								mimeType: 'application/pdf',
+								fileType: 'PDF file',
+								fileSize: buffer.length,
+							});
+							idx++;
+						}
+					}
+				}
+				totalFiles = filesSummary.length;
+				responseType = 'Multiple PDFs (wrapped split documents)';
+			} else if (wrapped.streamFile && wrapped.fileName) {
+				const buffer = Buffer.from(wrapped.streamFile as string, 'base64');
+				binaryData[`${binaryDataName || 'data'}_1`] = await this.helpers.prepareBinaryData(buffer, wrapped.fileName as string, 'application/pdf');
+				filesSummary.push({
+					fileName: wrapped.fileName,
+					pageIndex: 1,
+					binaryProperty: `${binaryDataName || 'data'}_1`,
+					mimeType: 'application/pdf',
+					fileType: 'PDF file',
+					fileSize: buffer.length,
+				});
+				totalFiles = 1;
+				responseType = 'Single PDF (wrapped streamFile)';
+			}
 		} else {
 			// Unexpected response: save for debugging
 			// Debug logging removed due to n8n restrictions
