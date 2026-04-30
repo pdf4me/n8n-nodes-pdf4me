@@ -103,101 +103,89 @@ export const description: INodeProperties[] = [
 		hint: 'Convert PDF to images. See our <b><a href="https://docs.pdf4me.com/integration/n8n/image/create-image-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
-		displayName: 'Image Settings',
-		name: 'imageSettings',
-		type: 'fixedCollection',
+		displayName: 'Image Width (pixels)',
+		name: 'widthPixel',
+		type: 'number',
+		default: 800,
+		description: 'Width of the output images in pixels',
 		typeOptions: {
-			multipleValues: false,
+			minValue: 100,
+			maxValue: 4000,
 		},
-		default: {},
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateImagesFromPdf],
 			},
 		},
+	},
+	{
+		displayName: 'Image Format',
+		name: 'imageExtension',
+		type: 'options',
+		default: 'jpeg',
+		description: 'Output format for the images',
 		options: [
 			{
-				name: 'settings',
-				displayName: 'Settings',
-				values: [
-					{
-						displayName: 'Image Width (pixels)',
-						name: 'widthPixel',
-						type: 'number',
-						default: 800,
-						description: 'Width of the output images in pixels',
-						typeOptions: {
-							minValue: 100,
-							maxValue: 4000,
-						},
-					},
-					{
-						displayName: 'Image Format',
-						name: 'imageExtension',
-						type: 'options',
-						default: 'jpeg',
-						description: 'Output format for the images',
-						options: [
-							{
-								name: 'JPG',
-								value: 'jpg',
-								description: 'JPEG image format',
-							},
-							{
-								name: 'JPEG',
-								value: 'jpeg',
-								description: 'JPEG image format',
-							},
-							{
-								name: 'BMP',
-								value: 'bmp',
-								description: 'Bitmap image format',
-							},
-							{
-								name: 'GIF',
-								value: 'gif',
-								description: 'GIF image format',
-							},
-							{
-								name: 'JB2',
-								value: 'jb2',
-								description: 'JBIG2 image format',
-							},
-							{
-								name: 'JP2',
-								value: 'jp2',
-								description: 'JPEG 2000 image format',
-							},
-							{
-								name: 'JPF',
-								value: 'jpf',
-								description: 'JPEG 2000 image format',
-							},
-							{
-								name: 'JPX',
-								value: 'jpx',
-								description: 'JPEG 2000 image format',
-							},
-							{
-								name: 'PNG',
-								value: 'png',
-								description: 'PNG image format',
-							},
-							{
-								name: 'TIF',
-								value: 'tif',
-								description: 'TIFF image format',
-							},
-							{
-								name: 'TIFF',
-								value: 'tiff',
-								description: 'TIFF image format',
-							},
-						],
-					},
-				],
+				name: 'JPG',
+				value: 'jpg',
+				description: 'JPEG image format',
+			},
+			{
+				name: 'JPEG',
+				value: 'jpeg',
+				description: 'JPEG image format',
+			},
+			{
+				name: 'BMP',
+				value: 'bmp',
+				description: 'Bitmap image format',
+			},
+			{
+				name: 'GIF',
+				value: 'gif',
+				description: 'GIF image format',
+			},
+			{
+				name: 'JB2',
+				value: 'jb2',
+				description: 'JBIG2 image format',
+			},
+			{
+				name: 'JP2',
+				value: 'jp2',
+				description: 'JPEG 2000 image format',
+			},
+			{
+				name: 'JPF',
+				value: 'jpf',
+				description: 'JPEG 2000 image format',
+			},
+			{
+				name: 'JPX',
+				value: 'jpx',
+				description: 'JPEG 2000 image format',
+			},
+			{
+				name: 'PNG',
+				value: 'png',
+				description: 'PNG image format',
+			},
+			{
+				name: 'TIF',
+				value: 'tif',
+				description: 'TIFF image format',
+			},
+			{
+				name: 'TIFF',
+				value: 'tiff',
+				description: 'TIFF image format',
 			},
 		],
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreateImagesFromPdf],
+			},
+		},
 	},
 	{
 		displayName: 'Page Selection',
@@ -233,8 +221,9 @@ export const description: INodeProperties[] = [
 		name: 'pageNumbers',
 		type: 'string',
 		default: '',
-		description: 'Comma-separated page numbers (e.g., "1,3,5") or range (e.g., "1-5")',
-		placeholder: '1,3,5 or 1-5',
+		description: 'Supports: 3, 2-5, 4-, 1,3,5-7, -1, first, last, all, *',
+		placeholder: '1,3,5-7 or -1,last',
+		hint: 'Out-of-range positive pages are ignored. Reversed ranges like 7-3 return [7]. Duplicates are kept.',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateImagesFromPdf],
@@ -278,8 +267,9 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		? (this.getNodeParameter('pageNumbers', index) as string)
 		: '';
 	const outputFileNamePrefix = this.getNodeParameter('outputFileNamePrefix', index) as string;
-	const imageSettings = this.getNodeParameter('imageSettings', index) as IDataObject;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
+	const widthPixel = this.getNodeParameter('widthPixel', index) as number;
+	const imageExtension = this.getNodeParameter('imageExtension', index) as string;
 
 	let docContent: string;
 	let blobId: string = '';
@@ -369,64 +359,28 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// blobId validation - just check it's not empty
 	}
 
-	// Get image settings
-	const settings = imageSettings.settings as IDataObject || {};
-	const widthPixel = settings.widthPixel as number || 800;
-	const imageExtension = settings.imageExtension as string || 'jpeg';
+	const finalDocName = docName || inputDocName || 'document.pdf';
+
+	// Read document metadata first to resolve page aliases and ranges against PageCount
+	const metadataPageCount = await getDocumentPageCount.call(this, docContent, finalDocName);
 
 	// Prepare page selection
 	let pageNrs: number[] = [];
 	let pageNrsString = '';
 
-	if (pageSelection === 'specific') {
-		// Parse specific page numbers - supports formats like "1,3,5" or "1, 2, 3"
-		const parts = pageNumbers.split(',').map(p => p.trim()).filter(p => p.length > 0);
-		pageNrs = parts.map(p => {
-			const num = parseInt(p);
-			if (isNaN(num)) {
-				throw new Error(`Invalid page number format: '${p}'. Please provide valid page numbers (e.g., '1,3,5')`);
-			}
-			return num;
-		});
-		if (pageNrs.length === 0) {
-			throw new Error('Please provide valid page numbers (e.g., \'1,3,5\')');
-		}
-		// Remove duplicates and sort
-		pageNrs = [...new Set(pageNrs)].sort((a, b) => a - b);
-		pageNrsString = pageNumbers.trim();
-	} else if (pageSelection === 'range') {
-		// Parse page range - supports formats like "1-5" or "2-" (to end)
-		const trimmed = pageNumbers.trim();
-		const rangeMatch = trimmed.match(/^(\d+)-(\d*)$/);
-		if (!rangeMatch) {
-			throw new Error('Please provide a valid page range (e.g., \'1-5\' or \'2-\' for from page 2 to end)');
-		}
-		const start = parseInt(rangeMatch[1]);
-		const endStr = rangeMatch[2];
-
-		if (endStr === '') {
-			// Format like '2-' means from page 2 to end - we can't determine end, so use start only
-			// The API will handle 'to end' format in the pageNrs string
-			pageNrs = [start];
-			pageNrsString = trimmed; // Keep the '2-' format for API
-		} else {
-			const end = parseInt(endStr);
-			if (start > end) {
-				throw new Error('Start page number must be less than or equal to end page number');
-			}
-			pageNrs = Array.from({length: end - start + 1}, (_, i) => start + i);
-			pageNrsString = trimmed;
-		}
+	if (pageSelection === 'all') {
+		// All pages - keep a default PageNrs and mark pageNrs as "all"
+		pageNrs = [1];
+		pageNrsString = 'all';
 	} else {
-		// All pages - use empty string to indicate all pages
-		pageNrsString = '';
+		const parsedPageSelection = parsePageSelectionInput(pageNumbers, metadataPageCount);
+		pageNrs = parsedPageSelection.pageNrs;
+		pageNrsString = parsedPageSelection.pageNrsString;
 	}
 
 
 
 	// Build the request body
-	// Use inputDocName if docName is not provided, otherwise use docName
-	const finalDocName = docName || inputDocName || 'document.pdf';
 	const body: IDataObject = {
 		docContent, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		docname: finalDocName, // API expects lowercase 'docname'
@@ -437,13 +391,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		IsAsync: true,
 	};
 
-	// Add page selection if specified
-	if (pageSelection !== 'all') {
-		(body.imageAction as IDataObject).PageSelection = {
-			PageNrs: pageNrs,
-		};
-		body.pageNrs = pageNrsString;
-	}
+	// Always include page selection payload
+	(body.imageAction as IDataObject).PageSelection = {
+		PageNrs: pageNrs,
+	};
+	body.pageNrs = pageNrsString;
 
 	try {
 		// Use async processing for CreateImages endpoint
@@ -465,47 +417,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			}
 		}
 		// --- END: Buffer/String Response Parsing ---
-
-		// --- BEGIN: Response Debug Logging ---
-		const debugLog: any = {
-			timestamp: new Date().toISOString(),
-			typeof: typeof parsedResponse,
-		};
-		if (Buffer.isBuffer(responseData)) {
-			debugLog.type = 'Buffer';
-			debugLog.firstBytesHex = responseData.slice(0, 8).toString('hex');
-			debugLog.firstBytesAscii = responseData.slice(0, 8).toString('ascii');
-			debugLog.length = responseData.length;
-		} else if (typeof responseData === 'string') {
-			debugLog.type = 'string';
-			debugLog.length = responseData.length;
-			debugLog.first200 = responseData.substring(0, 200);
-			try {
-				const buffer = Buffer.from(responseData, 'base64');
-				debugLog.base64FirstBytesHex = buffer.slice(0, 8).toString('hex');
-				debugLog.base64FirstBytesAscii = buffer.slice(0, 8).toString('ascii');
-			} catch {
-				// Ignore buffer conversion errors for debugging
-			}
-		} else if (Array.isArray(parsedResponse)) {
-			debugLog.type = 'array';
-			debugLog.length = parsedResponse.length;
-			debugLog.firstItemKeys = parsedResponse[0] ? Object.keys(parsedResponse[0]) : [];
-		} else if (typeof parsedResponse === 'object' && parsedResponse !== null) {
-			debugLog.type = 'object';
-			debugLog.keys = Object.keys(parsedResponse);
-			debugLog.preview = JSON.stringify(parsedResponse, null, 2).substring(0, 500);
-		} else {
-			debugLog.type = typeof parsedResponse;
-		}
-		try {
-			// This.helpers.fs is not available, so we'll skip file writing for now.
-			// If debugging is critical, this needs to be refactored to use this.helpers.request
-			// or a different method to fetch the response for logging.
-		} catch (e) {
-			// Ignore file write errors for debugging
-		}
-		// --- END: Response Debug Logging ---
 
 		// Handle the response which contains multiple images
 		const images = [];
@@ -710,4 +621,94 @@ function validatePdfContent(docContent: string): void {
 		}
 		throw new Error('Invalid base64 content. Please ensure the PDF content is properly base64 encoded.');
 	}
+}
+
+async function getDocumentPageCount(
+	this: IExecuteFunctions,
+	docContent: string,
+	docName: string,
+): Promise<number> {
+	const metadataBody: IDataObject = {
+		docContent,
+		docName,
+		IsAsync: true,
+	};
+
+	const metadataResult = await pdf4meAsyncRequest.call(this, '/api/v2/GetPdfMetadata', metadataBody);
+	const resolvedPageCount = Number(
+		(metadataResult as IDataObject)?.PageCount ??
+		(metadataResult as IDataObject)?.pageCount ??
+		(metadataResult as IDataObject)?.Pages ??
+		(metadataResult as IDataObject)?.pages,
+	);
+
+	if (!Number.isFinite(resolvedPageCount) || resolvedPageCount < 1) {
+		throw new Error('Unable to resolve PageCount from GetPdfMetadata response.');
+	}
+
+	return Math.floor(resolvedPageCount);
+}
+
+function normalizePageToken(token: string, pageCount: number): string {
+	const lowered = token.trim().toLowerCase();
+	if (lowered === 'last') {
+		return `${pageCount}`;
+	}
+	if (lowered === 'first' || lowered === '0') {
+		return '1';
+	}
+	if (lowered === 'all' || lowered === '*') {
+		return `1-${pageCount}`;
+	}
+	return token.trim();
+}
+
+function parsePageSelectionInput(input: string, pageCount: number): { pageNrs: number[]; pageNrsString: string } {
+	const rawTokens = input.split(',').map((part) => part.trim()).filter((part) => part.length > 0);
+	if (rawTokens.length === 0) {
+		throw new Error('Please provide page numbers (examples: 1,3,5-7 or -1,last).');
+	}
+
+	const normalizedTokens = rawTokens.map((token) => normalizePageToken(token, pageCount));
+	const pageNrs: number[] = [];
+
+	for (const token of normalizedTokens) {
+		if (/^-\d+$/.test(token)) {
+			const negativeIndex = Number.parseInt(token, 10);
+			const mappedPage = pageCount + negativeIndex + 1;
+			if (mappedPage >= 1 && mappedPage <= pageCount) {
+				pageNrs.push(mappedPage);
+			}
+			continue;
+		}
+
+		if (/^\d+$/.test(token)) {
+			const page = Number.parseInt(token, 10);
+			if (page >= 1 && page <= pageCount) {
+				pageNrs.push(page);
+			}
+			continue;
+		}
+
+		const rangeMatch = token.match(/^(\d+)-(\d*)$/);
+		if (rangeMatch) {
+			const firstPage = Number.parseInt(rangeMatch[1], 10);
+			const lastPage = rangeMatch[2] === '' ? pageCount : Number.parseInt(rangeMatch[2], 10);
+
+			if (firstPage >= 1 && firstPage <= pageCount && lastPage < firstPage) {
+				pageNrs.push(firstPage);
+			}
+
+			for (let current = firstPage; current <= lastPage; current++) {
+				if (current >= 1 && current <= pageCount) {
+					pageNrs.push(current);
+				}
+			}
+		}
+	}
+
+	return {
+		pageNrs,
+		pageNrsString: normalizedTokens.join(','),
+	};
 }
