@@ -9,6 +9,53 @@ import type {
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
+/**
+ * Build a readable error string from PDF4me JSON error responses.
+ * Handles UTF-8 Buffer bodies (common when requests use arraybuffer encoding).
+ */
+function formatPdf4meHttpError(statusCode: number, body: unknown): string {
+	let raw = '';
+	if (Buffer.isBuffer(body)) {
+		raw = body.toString('utf8').trim();
+	} else if (typeof body === 'string') {
+		raw = body.trim();
+	} else if (body != null) {
+		raw = String(body);
+	}
+	if (!raw) {
+		return `HTTP ${statusCode}`;
+	}
+	try {
+		const obj = JSON.parse(raw) as IDataObject;
+		const message =
+			(typeof obj.message === 'string' && obj.message) ||
+			(typeof obj.error === 'string' && obj.error) ||
+			(typeof obj.detail === 'string' && obj.detail) ||
+			(typeof obj.title === 'string' && obj.title);
+		const extras: string[] = [];
+		if (obj.errors != null) {
+			try {
+				extras.push(`errors: ${JSON.stringify(obj.errors)}`);
+			} catch {
+				extras.push('errors: [unserializable]');
+			}
+		}
+		if (typeof obj.traceId === 'string' && obj.traceId) {
+			extras.push(`traceId: ${obj.traceId}`);
+		}
+		if (typeof obj.type === 'string' && obj.type) {
+			extras.push(`type: ${obj.type}`);
+		}
+		if (message) {
+			const combined = extras.length ? `${message} (${extras.join('; ')})` : message;
+			return `[HTTP ${statusCode}] ${combined}`;
+		}
+		return `HTTP ${statusCode}: ${raw.length > 8000 ? `${raw.slice(0, 8000)}…` : raw}`;
+	} catch {
+		return `HTTP ${statusCode}: ${raw.length > 8000 ? `${raw.slice(0, 8000)}…` : raw}`;
+	}
+}
+
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
 	url: string,
@@ -51,8 +98,8 @@ export async function pdf4meApiRequest(
 			body: options.body,
 			qs: options.qs,
 			encoding: isJsonResponse ? undefined : 'arraybuffer' as const,
-			// SSL validation is handled by n8n's httpRequestWithAuthentication
-			returnFullResponse: options.returnFullResponse,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
 			json: options.json,
 		});
 
@@ -81,18 +128,13 @@ export async function pdf4meApiRequest(
 				return Buffer.from(response.body, 'binary');
 			}
 		} else {
-			// Error response - try to parse as JSON for error details
-			let errorMessage = `HTTP ${response.statusCode}`;
-			try {
-				const errorJson = JSON.parse(response.body);
-				errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
-			} catch {
-				errorMessage = `${errorMessage}: ${response.body}`;
-			}
-			throw new Error(errorMessage);
+			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject);
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
 }
 
@@ -162,8 +204,8 @@ export async function pdf4meAsyncRequest(
 			body: options.body,
 			qs: options.qs,
 			encoding: isJsonResponse ? undefined : 'arraybuffer' as const,
-			// SSL validation is handled by n8n's httpRequestWithAuthentication
-			returnFullResponse: options.returnFullResponse,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
 			json: options.json,
 			timeout: options.timeout,
 		});
@@ -200,21 +242,13 @@ export async function pdf4meAsyncRequest(
 			// Poll the location URL until completion
 			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
 		} else {
-			let errorMessage = `API Error: ${response.statusCode}`;
-			try {
-				if (typeof response.body === 'string') {
-					const errorJson = JSON.parse(response.body);
-					errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
-				} else {
-					errorMessage = `${errorMessage}: ${response.body}`;
-				}
-			} catch {
-				errorMessage = `${errorMessage}: ${response.body}`;
-			}
-			throw new Error(errorMessage);
+			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject);
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
 }
 
@@ -371,24 +405,13 @@ export async function uploadBlobToPdf4me(
 				throw new Error('UploadBlob response missing BlobId field');
 			}
 		} else {
-			let errorMessage = `UploadBlob failed with status ${response.statusCode}`;
-			try {
-				let errorBody: IDataObject | string = response.body;
-				if (typeof response.body === 'string') {
-					errorBody = JSON.parse(response.body);
-				} else if (Buffer.isBuffer(response.body)) {
-					errorBody = JSON.parse(response.body.toString('utf8'));
-				}
-				if (typeof errorBody === 'object' && errorBody) {
-					errorMessage = (errorBody as any).message || (errorBody as any).error || errorMessage;
-				}
-			} catch {
-				// Ignore parsing errors
-			}
-			throw new Error(errorMessage);
+			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject);
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
 }
 
@@ -543,19 +566,7 @@ async function pollForCompletion(
 				// Job not found or expired
 				throw new Error('Processing job not found or expired. The document processing may have timed out.');
 			} else {
-				// Other error
-				let errorMessage = `Polling failed with status ${pollResponse.statusCode}`;
-				try {
-					if (typeof pollResponse.body === 'string') {
-						const errorJson = JSON.parse(pollResponse.body);
-						errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
-					} else {
-						errorMessage = `${errorMessage}: ${pollResponse.body}`;
-					}
-				} catch {
-					errorMessage = `${errorMessage}: ${pollResponse.body}`;
-				}
-				throw new Error(errorMessage);
+				throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
 			}
 		} catch (error) {
 			// If it's a network error, retry with minimal backoff
