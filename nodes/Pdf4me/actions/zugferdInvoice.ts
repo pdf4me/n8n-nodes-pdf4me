@@ -1,5 +1,6 @@
-import type { INodeProperties, INodeExecutionData, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, INodeExecutionData, IDataObject, JsonObject } from 'n8n-workflow';
 import type { IExecuteFunctions } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import {
 	pdf4meApiRequest,
 	pdf4meAsyncRequest,
@@ -804,6 +805,9 @@ async function downloadInvoiceDataFromUrl(this: IExecuteFunctions, dataUrl: stri
 
 		return buffer.toString('base64');
 	} catch (error) {
-		throw new Error(`Failed to download invoice data from URL: ${(error as Error).message}`);
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: `Failed to download invoice data from URL: ${error instanceof Error ? error.message : String(error)}`,
+		});
 	}
 }
