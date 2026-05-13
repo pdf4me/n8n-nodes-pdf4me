@@ -24,6 +24,11 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: 'None',
+				value: 'none',
+				description: 'Do not provide an input document',
+			},
+			{
 				name: 'Binary Data',
 				value: 'binaryData',
 				description: 'Use file from previous node',
@@ -39,6 +44,7 @@ export const description: INodeProperties[] = [
 				description: 'Provide URL to file',
 			},
 		],
+		hint: 'Create Swiss QR Bill. See our <b><a href="https://docs.pdf4me.com/integration/n8n/barcode/create-swiss-qr-bill/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Binary Property',
@@ -88,15 +94,15 @@ export const description: INodeProperties[] = [
 		name: 'fileName',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'Input file name from the source',
 		placeholder: 'document.pdf',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
+				inputDataType: ['binaryData', 'base64', 'url'],
 			},
 		},
-		hint: 'Create Swiss QR Bill. See our <b><a href="https://docs.pdf4me.com/integration/n8n/barcode/create-swiss-qr-bill/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
 		displayName: 'Amount',
@@ -191,7 +197,7 @@ export const description: INodeProperties[] = [
 		name: 'crStreetOrAddressLine1',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'The creditor\'s address line with max 70 characters',
 		placeholder: 'Test Strasse',
 		displayOptions: {
@@ -218,7 +224,7 @@ export const description: INodeProperties[] = [
 		name: 'crPostalCode',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'The Creditor\'s postal code with a max of 16 characters',
 		placeholder: '8000',
 		displayOptions: {
@@ -232,7 +238,7 @@ export const description: INodeProperties[] = [
 		name: 'crCity',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'The Creditor\'s Town/City with max 35 characters',
 		placeholder: 'Zurich',
 		displayOptions: {
@@ -246,7 +252,7 @@ export const description: INodeProperties[] = [
 		name: 'udName',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'Debtor\'s name or company according to account name',
 		placeholder: 'Test Debt AG',
 		displayOptions: {
@@ -283,7 +289,7 @@ export const description: INodeProperties[] = [
 		name: 'udStreetOrAddressLine1',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'Debtor\'s address line with max 70 characters',
 		placeholder: 'Test Deb Strasse',
 		displayOptions: {
@@ -297,7 +303,7 @@ export const description: INodeProperties[] = [
 		name: 'udStreetOrAddressLine2',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'Debtor\'s address line - For S type 16 characters and for K type 70 characters',
 		placeholder: '2',
 		displayOptions: {
@@ -311,7 +317,7 @@ export const description: INodeProperties[] = [
 		name: 'udPostalCode',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'Debtor\'s postal code',
 		placeholder: '8000',
 		displayOptions: {
@@ -325,7 +331,7 @@ export const description: INodeProperties[] = [
 		name: 'udCity',
 		type: 'string',
 		default: '',
-		required: true,
+		required: false,
 		description: 'Debtor\'s Town/City',
 		placeholder: 'Zurich',
 		displayOptions: {
@@ -419,6 +425,92 @@ export const description: INodeProperties[] = [
 				value: 'SolidLine',
 			},
 		],
+	},
+	{
+		displayName: 'Format Type',
+		name: 'formatType',
+		type: 'options',
+		required: true,
+		default: 'pdf',
+		description: 'Output format type',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreateSwissQrBill],
+			},
+		},
+		options: [
+			{
+				name: 'PDF',
+				value: 'pdf',
+			},
+			{
+				name: 'PNG',
+				value: 'png',
+			},
+			{
+				name: 'JPEG',
+				value: 'jpeg',
+			},
+			{
+				name: 'TIFF',
+				value: 'tiff',
+			},
+			{
+				name: 'Empty (null)',
+				value: '',
+			},
+		],
+	},
+	{
+		displayName: 'Paging Options',
+		name: 'pagingOptions',
+		type: 'options',
+		required: true,
+		default: 'first',
+		description: 'Where to place the Swiss QR bill page',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreateSwissQrBill],
+				formatType: ['pdf'],
+			},
+		},
+		options: [
+			{
+				name: 'First',
+				value: 'first',
+			},
+			{
+				name: 'Last',
+				value: 'last',
+			},
+			{
+				name: 'Add Page At End',
+				value: 'AddPageAtEnd',
+			},
+			{
+				name: 'Custom',
+				value: 'custom',
+			},
+		],
+	},
+	{
+		displayName: 'Custom Page',
+		name: 'pageNumber',
+		type: 'number',
+		required: false,
+		default: 1,
+		typeOptions: {
+			minValue: 1,
+			numberPrecision: 0,
+		},
+		description: 'Custom page number (only one page allowed)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.CreateSwissQrBill],
+				formatType: ['pdf'],
+				pagingOptions: ['custom'],
+			},
+		},
 	},
 
 
@@ -516,7 +608,8 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number) {
 	const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-	const fileName = this.getNodeParameter('fileName', index) as string;
+	const fileName =
+		inputDataType === 'none' ? '' : (this.getNodeParameter('fileName', index) as string);
 	const amount = this.getNodeParameter('amount', index) as string;
 	const currency = this.getNodeParameter('currency', index) as string;
 	const iban = this.getNodeParameter('iban', index) as string;
@@ -535,6 +628,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const referenceType = this.getNodeParameter('referenceType', index) as string;
 	const languageType = this.getNodeParameter('languageType', index) as string;
 	const seperatorLine = this.getNodeParameter('seperatorLine', index) as string;
+	const formatType = this.getNodeParameter('formatType', index) as string;
+	const pagingOptions = this.getNodeParameter('pagingOptions', index, 'first') as string;
 	const outputFileName = this.getNodeParameter('outputFileName', index) as string;
 	const advancedOptions = this.getNodeParameter('advancedOptions', index) as IDataObject;
 
@@ -544,7 +639,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	let inputDocName: string = '';
 
 	// Handle different input types
-	if (inputDataType === 'binaryData') {
+	if (inputDataType === 'none') {
+		blobId = '';
+		docContent = '';
+		docName = '';
+	} else if (inputDataType === 'binaryData') {
 		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
 		const item = this.getInputData(index);
 
@@ -619,14 +718,24 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		if (!docContent || docContent.trim() === '') {
 			throw new Error('File content is required');
 		}
+	} else if (inputDataType === 'none') {
+		// No input content is expected when input type is none
 	}
 
 	// Prepare payload with all required parameters for Swiss QR Bill creation (following Python logic)
 	// Use inputDocName if docName is not provided, otherwise use docName
-	const finalDocName = docName || inputDocName || fileName || 'document.pdf';
+	const finalDocName = inputDataType === 'none' ? '' : (docName || inputDocName || fileName || 'document.pdf');
+	let pageNumber: number | undefined;
+	if (formatType === 'pdf' && pagingOptions === 'custom') {
+		pageNumber = this.getNodeParameter('pageNumber', index, 1) as number;
+		if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+			throw new Error('Custom Page must be a single positive integer.');
+		}
+	}
+
 	const payload: IDataObject = {
 		docContent,							  // Binary data uses blobId format, base64 uses base64 string, URL uses URL string (Required)
-		docName: finalDocName,					// Document name (Required)
+		docName: finalDocName,					// Empty when input type is none
 		iban,									// Swiss IBAN for the creditor (Required)
 		crName,								  // Creditor name (Required)
 		crAddressType,						   // Creditor address type (S = Structured) (Required)
@@ -645,8 +754,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		referenceType,						   // Reference type (NON = No reference) (Required)
 		languageType,							// Language for the QR bill (Required)
 		seperatorLine,						   // Separator line style (Required)
+		formatType: formatType || null,		  // Output format type (pdf/png/jpeg/tiff or null)
+		pagingOptions: formatType === 'pdf' ? pagingOptions : null, // Page insertion behavior for PDF only
 		IsAsync: true,							 // Asynchronous processing as requested
 	};
+	if (formatType === 'pdf' && pagingOptions === 'custom') {
+		payload.pageNumber = pageNumber;
+	}
 
 	// Add optional parameters from advanced options if provided
 	if (advancedOptions.reference) {
