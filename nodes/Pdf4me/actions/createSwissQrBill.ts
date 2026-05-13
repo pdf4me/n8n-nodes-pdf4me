@@ -193,7 +193,7 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Creditor Address Line 1',
+		displayName: 'Creditor Street Name or Address Line 1',
 		name: 'crStreetOrAddressLine1',
 		type: 'string',
 		default: '',
@@ -207,7 +207,7 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Creditor Address Line 2',
+		displayName: 'Creditor Building Number or Address Line 2',
 		name: 'crStreetOrAddressLine2',
 		type: 'string',
 		default: '',
@@ -285,7 +285,7 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Ultimate Debtor Address Line 1',
+		displayName: 'Ultimate Debtor Street Name or Address Line 1',
 		name: 'udStreetOrAddressLine1',
 		type: 'string',
 		default: '',
@@ -299,7 +299,7 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Ultimate Debtor Address Line 2',
+		displayName: 'Ultimate Building Number or Address Line 2',
 		name: 'udStreetOrAddressLine2',
 		type: 'string',
 		default: '',
