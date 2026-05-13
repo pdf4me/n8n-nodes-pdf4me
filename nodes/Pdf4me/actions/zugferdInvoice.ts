@@ -8,6 +8,23 @@ import {
 	uploadBlobToPdf4me,
 } from '../GenericFunctions';
 
+/** ZUGFeRD 1.0 only — BASIC, COMFORT, EXTENDED */
+const zugferdConformanceLegacyLevelOptions = [
+	{ name: 'BASIC', value: 'BASIC' },
+	{ name: 'COMFORT', value: 'COMFORT' },
+	{ name: 'EXTENDED', value: 'EXTENDED' },
+];
+
+/** ZUGFeRD after 1.0 (2.0 onward) — Factur-X / CIUS style profiles (API values) */
+const zugferdConformanceAbove2LevelOptions = [
+	{ name: 'MINIMUM', value: 'MINIMUM' },
+	{ name: 'BASICWL', value: 'BASICWL' },
+	{ name: 'BASIC', value: 'BASIC' },
+	{ name: 'EN16931', value: 'EN16931' },
+	{ name: 'EXTENDED', value: 'EXTENDED' },
+	{ name: 'XRECHNUNG', value: 'XRECHNUNG' },
+];
+
 export const description: INodeProperties[] = [
 	{
 		displayName: 'Input Data Type',
@@ -131,44 +148,128 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Conformance Level',
-		name: 'conformanceLevel',
+		displayName: 'Zugferd Version',
+		name: 'zugferdVersion',
 		type: 'options',
 		required: true,
-		default: 'BASIC',
-		description: 'Zugferd conformance level',
+		default: '2.0',
+		description: 'Zugferd version sent as ZugferdVersion in the API payload',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ZugferdInvoice],
 			},
 		},
 		options: [
+			{ name: '1.0', value: '1.0' },
+			{ name: '2.0', value: '2.0' },
+			{ name: '2.1', value: '2.1' },
+			{ name: '2.2', value: '2.2' },
+			{ name: '2.4', value: '2.4' },
+			{ name: 'Custom', value: 'custom' },
+		],
+	},
+	{
+		displayName: 'Zugferd Version (Custom)',
+		name: 'zugferdVersionCustom',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Custom version string for ZugferdVersion when Zugferd Version is Custom',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ZugferdInvoice],
+				zugferdVersion: ['custom'],
+			},
+		},
+	},
+	{
+		displayName: 'Conformance (Custom Version)',
+		name: 'customConformanceRules',
+		type: 'options',
+		required: true,
+		default: 'v21plus',
+		description:
+			'Which conformance profile set applies when Zugferd Version is Custom. Use 1.0 only for legacy BASIC/COMFORT/EXTENDED; use 2.0+ for MINIMUM / BASICWL / EN16931 / …',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ZugferdInvoice],
+				zugferdVersion: ['custom'],
+			},
+		},
+		options: [
 			{
-				name: 'BASIC',
-				value: 'BASIC',
+				name: 'ZUGFeRD 1.0 only (BASIC, COMFORT, EXTENDED)',
+				value: 'legacy',
 			},
 			{
-				name: 'COMFORT',
-				value: 'COMFORT',
-			},
-			{
-				name: 'EXTENDED',
-				value: 'EXTENDED',
+				name: 'ZUGFeRD 2.0 and newer (MINIMUM, BASICWL, EN16931, …)',
+				value: 'v21plus',
 			},
 		],
 	},
 	{
-		displayName: 'Zugferd Version',
-		name: 'zugferdVersion',
-		type: 'string',
+		displayName: 'Conformance Level',
+		name: 'conformanceLevel',
+		type: 'options',
 		required: true,
-		default: '1.0',
-		description: 'Zugferd version to use',
+		default: 'BASIC',
+		description: 'For ZUGFeRD 1.0 only (sent as ConformanceLevel)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ZugferdInvoice],
+				zugferdVersion: ['1.0'],
 			},
 		},
+		options: [...zugferdConformanceLegacyLevelOptions],
+	},
+	{
+		displayName: 'Conformance Level',
+		name: 'conformanceLevelLegacyCustom',
+		type: 'options',
+		required: true,
+		default: 'BASIC',
+		description: 'For custom ZUGFeRD 1.0-style version only (sent as ConformanceLevel)',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ZugferdInvoice],
+				zugferdVersion: ['custom'],
+				customConformanceRules: ['legacy'],
+			},
+		},
+		options: [...zugferdConformanceLegacyLevelOptions],
+	},
+	{
+		displayName: 'Conformance Level',
+		name: 'conformanceLevelAbove2',
+		type: 'options',
+		required: true,
+		default: 'EN16931',
+		description:
+			'For ZUGFeRD 2.0 and later: 2.0, 2.1, 2.2, 2.4 (sent as ConformanceLevel). MINIMUM: minimal machine-readable core. BASICWL: basic without line items. BASIC: line items, broader CII subset. EN16931: EU e-invoice baseline. EXTENDED: EN 16931 plus extensions. XRECHNUNG: German CIUS on EN 16931.',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ZugferdInvoice],
+				zugferdVersion: ['2.0', '2.1', '2.2', '2.4'],
+			},
+		},
+		options: [...zugferdConformanceAbove2LevelOptions],
+	},
+	{
+		displayName: 'Conformance Level',
+		name: 'conformanceLevelAbove2Custom',
+		type: 'options',
+		required: true,
+		default: 'EN16931',
+		description:
+			'For custom ZUGFeRD 2.0+ version (sent as ConformanceLevel). MINIMUM: minimal machine-readable core. BASICWL: basic without line items. BASIC: line items, broader CII subset. EN16931: EU e-invoice baseline. EXTENDED: EN 16931 plus extensions. XRECHNUNG: German CIUS on EN 16931.',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.ZugferdInvoice],
+				zugferdVersion: ['custom'],
+				customConformanceRules: ['v21plus'],
+			},
+		},
+		options: [...zugferdConformanceAbove2LevelOptions],
 	},
 	{
 		displayName: 'Language',
@@ -450,8 +551,30 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 	const docName = this.getNodeParameter('docName', index) as string;
 	const outputMode = this.getNodeParameter('outputMode', index) as string;
-	const conformanceLevel = this.getNodeParameter('conformanceLevel', index) as string;
-	const zugferdVersion = this.getNodeParameter('zugferdVersion', index) as string;
+	const zugferdVersionMode = this.getNodeParameter('zugferdVersion', index) as string;
+	const zugferdVersion =
+		zugferdVersionMode === 'custom'
+			? String(this.getNodeParameter('zugferdVersionCustom', index)).trim()
+			: zugferdVersionMode;
+	if (zugferdVersionMode === 'custom' && !zugferdVersion) {
+		throw new Error('Zugferd Version (Custom) is required when Zugferd Version is Custom');
+	}
+
+	const usesV21Conformance =
+		zugferdVersionMode === '2.0' ||
+		zugferdVersionMode === '2.1' ||
+		zugferdVersionMode === '2.2' ||
+		zugferdVersionMode === '2.4' ||
+		(zugferdVersionMode === 'custom' &&
+			(this.getNodeParameter('customConformanceRules', index) as string) === 'v21plus');
+
+	const conformanceLevel = usesV21Conformance
+		? (zugferdVersionMode === 'custom'
+			? (this.getNodeParameter('conformanceLevelAbove2Custom', index) as string)
+			: (this.getNodeParameter('conformanceLevelAbove2', index) as string))
+		: zugferdVersionMode === 'custom'
+			? (this.getNodeParameter('conformanceLevelLegacyCustom', index) as string)
+			: (this.getNodeParameter('conformanceLevel', index) as string);
 	const language = this.getNodeParameter('language', index) as string;
 	const renderInvoiceOnPdf = this.getNodeParameter('renderInvoiceOnPdf', index) as boolean;
 	const inputFormat = this.getNodeParameter('inputFormat', index) as string;
