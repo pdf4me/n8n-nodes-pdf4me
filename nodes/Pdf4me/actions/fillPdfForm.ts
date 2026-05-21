@@ -5,6 +5,14 @@ import {
 	ActionConstants,
 	uploadBlobToPdf4me,
 } from '../GenericFunctions';
+import {
+	COLLECTION_PLACEHOLDER,
+	FILL_PDF_FORM,
+	pdfFileUrlField,
+	PDF_FILE,
+} from '../pdf4mePlaceholders';
+
+const fillPdfFormOp = ActionConstants.FillPdfForm;
 
 function normalizeParsedFormData(parsed: unknown): IDataObject {
 	if (parsed === null || parsed === undefined) {
@@ -114,7 +122,7 @@ export const description: INodeProperties[] = [
 		required: true,
 		default: '',
 		description: 'Base64 encoded PDF content',
-		placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...',
+		placeholder: PDF_FILE.base64Sample,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.FillPdfForm],
@@ -122,21 +130,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'PDF URL',
-		name: 'pdfUrl',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'URL to the PDF file',
-		placeholder: 'https://example.com/template.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.FillPdfForm],
-				pdfInputDataType: ['url'],
-			},
-		},
-	},
+	pdfFileUrlField(fillPdfFormOp, 'pdfUrl', 'pdfInputDataType'),
 	{
 		displayName: 'Select Input Type',
 		name: 'selectInputType',
@@ -199,7 +193,7 @@ export const description: INodeProperties[] = [
 		name: 'formDataJson',
 		type: 'json',
 		required: true,
-		default: '{"firstname": "John", "lastname": "Doe", "email": "john@example.com"}',
+		default: FILL_PDF_FORM.formDataJsonDefault,
 		description: 'JSON object containing form field names and values',
 		displayOptions: {
 			show: {
@@ -235,7 +229,7 @@ export const description: INodeProperties[] = [
 		required: true,
 		default: '',
 		description: 'Base64 encoded JSON content',
-		placeholder: 'eyJmaXJzdG5hbWUiOiJKb2huIn0=',
+		placeholder: FILL_PDF_FORM.formDataBase64,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.FillPdfForm],
@@ -247,7 +241,7 @@ export const description: INodeProperties[] = [
 	{
 		displayName: 'Form Fields',
 		name: 'formFields',
-		placeholder: 'Add Form Field',
+		placeholder: COLLECTION_PLACEHOLDER.addFormField,
 		type: 'fixedCollection',
 		default: {},
 		typeOptions: {
@@ -270,7 +264,7 @@ export const description: INodeProperties[] = [
 						name: 'fieldName',
 						type: 'string',
 						default: '',
-						placeholder: 'e.g., firstname',
+						placeholder: FILL_PDF_FORM.formFieldName,
 						description: 'PDF form field name',
 						required: true,
 					},
@@ -279,7 +273,7 @@ export const description: INodeProperties[] = [
 						name: 'fieldValue',
 						type: 'string',
 						default: '',
-						placeholder: 'e.g., John',
+						placeholder: FILL_PDF_FORM.formFieldValue,
 						description: 'Value to set for this field',
 						required: true,
 					},
@@ -288,36 +282,12 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Meta Data',
-		name: 'metaData',
-		type: 'string',
-		default: '',
-		description: 'Additional metadata for the PDF (must be string format)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.FillPdfForm],
-			},
-		},
-	},
-	{
-		displayName: 'Meta Data JSON',
-		name: 'metaDataJson',
-		type: 'string',
-		default: '',
-		description: 'Additional JSON metadata for the PDF (must be string format)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.FillPdfForm],
-			},
-		},
-	},
-	{
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
 		default: 'filled_form_output.pdf',
 		description: 'Name for the output PDF file',
-		placeholder: 'my-filled-form.pdf',
+		placeholder: FILL_PDF_FORM.outputFileName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.FillPdfForm],
@@ -337,24 +307,12 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Async',
-		name: 'async',
-		type: 'boolean',
-		default: true,
-		description: 'Whether to enable asynchronous processing',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.FillPdfForm],
-			},
-		},
-	},
-	{
 		displayName: 'Binary Data Output Name',
 		name: 'binaryDataName',
 		type: 'string',
 		default: 'data',
 		description: 'Custom name for the binary data in n8n output',
-		placeholder: 'filled-pdf',
+		placeholder: FILL_PDF_FORM.binaryDataName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.FillPdfForm],
@@ -420,20 +378,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	}
 
 	const selectInputType = this.getNodeParameter('selectInputType', index) as string;
-	const metaData = this.getNodeParameter('metaData', index) as string;
-	const metaDataJson = this.getNodeParameter('metaDataJson', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-	const isAsync = this.getNodeParameter('async', index, true) as boolean;
 	const keepPdfEditable = this.getNodeParameter('keepPdfEditable', index, false) as boolean;
 
 	const finalDocName = docName || inputDocName || 'template.pdf';
 	const base: IDataObject = {
 		templateDocName: finalDocName,
 		templateDocContent: docContent,
-		metaData: metaData || '',
-		metaDataJson: metaDataJson || '',
 		KeepPdfEditable: keepPdfEditable,
-		IsAsync: isAsync,
+		IsAsync: true,
 	};
 
 	let body: IDataObject;

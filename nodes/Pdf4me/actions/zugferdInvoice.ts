@@ -8,6 +8,15 @@ import {
 	ActionConstants,
 	uploadBlobToPdf4me,
 } from '../GenericFunctions';
+import {
+	COLLECTION_PLACEHOLDER,
+	CUSTOM_PROFILES_PLACEHOLDER,
+	PDF_FILE,
+	zugferdInvoiceDataUrlFields,
+	ZUGFERD,
+} from '../pdf4mePlaceholders';
+
+const zugferdInvoiceOp = ActionConstants.ZugferdInvoice;
 
 /** ZUGFeRD 1.0 only — BASIC, COMFORT, EXTENDED */
 const zugferdConformanceLegacyLevelOptions = [
@@ -100,7 +109,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'URL to the file to process',
-		placeholder: 'https://example.com/document.pdf',
+		placeholder: PDF_FILE.documentUrl,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ZugferdInvoice],
@@ -115,7 +124,7 @@ export const description: INodeProperties[] = [
 		default: 'invoice.pdf',
 		required: true,
 		description: 'Name of the document',
-		placeholder: 'invoice.pdf',
+		placeholder: ZUGFERD.docName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ZugferdInvoice],
@@ -429,21 +438,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Invoice Data URL',
-		name: 'invoiceDataUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'URL to the invoice data file (XML/JSON/CSV)',
-		placeholder: 'https://example.com/invoice.xml',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ZugferdInvoice],
-				invoiceDataInputType: ['url'],
-			},
-		},
-	},
+	...zugferdInvoiceDataUrlFields(zugferdInvoiceOp),
 	{
 		displayName: 'Invoice XML Data',
 		name: 'invoiceXmlData',
@@ -504,7 +499,7 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: 'zugferd_invoice.pdf',
 		description: 'Name for the output Zugferd invoice file',
-		placeholder: 'zugferd_invoice.pdf',
+		placeholder: ZUGFERD.outputFileName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ZugferdInvoice],
@@ -527,7 +522,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
-		placeholder: 'Add Option',
+		placeholder: COLLECTION_PLACEHOLDER.addOption,
 		default: {},
 		displayOptions: {
 			show: {
@@ -541,7 +536,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: '{ \'outputDataFormat\': \'base64\' }',
+				placeholder: CUSTOM_PROFILES_PLACEHOLDER,
 			},
 		],
 	},

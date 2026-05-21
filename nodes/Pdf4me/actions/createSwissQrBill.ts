@@ -6,6 +6,16 @@ import {
 	ActionConstants,
 	uploadBlobToPdf4me,
 } from '../GenericFunctions';
+import {
+	COLLECTION_PLACEHOLDER,
+	CUSTOM_PROFILES_PLACEHOLDER,
+	PDF_FILE,
+	pdfFileUrlField,
+	swissQrOutputFileNameFields,
+	SWISS_QR_BILL,
+} from '../pdf4mePlaceholders';
+
+const createSwissQrBillOp = ActionConstants.CreateSwissQrBill;
 
 // Make Node.js globals available
 
@@ -74,21 +84,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'File URL',
-		name: 'fileUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'URL to the file to process',
-		placeholder: 'https://example.com/document.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CreateSwissQrBill],
-				inputDataType: ['url'],
-			},
-		},
-	},
+	pdfFileUrlField(createSwissQrBillOp, 'fileUrl', 'inputDataType'),
 	{
 		displayName: 'File Name',
 		name: 'fileName',
@@ -96,7 +92,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'Input file name from the source',
-		placeholder: 'document.pdf',
+		placeholder: PDF_FILE.documentName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -111,7 +107,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'The amount needs to be entered without leading zeroes',
-		placeholder: '1000',
+		placeholder: SWISS_QR_BILL.amount,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -148,7 +144,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'IBAN of the creditor',
-		placeholder: 'CH0200700110003765824',
+		placeholder: SWISS_QR_BILL.iban,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -162,7 +158,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'The Creditor\'s name or company according to the account name',
-		placeholder: 'Test AG',
+		placeholder: SWISS_QR_BILL.creditorName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -199,7 +195,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'The creditor\'s address line with max 70 characters',
-		placeholder: 'Test Strasse',
+		placeholder: SWISS_QR_BILL.creditorStreet,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -212,7 +208,7 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		description: 'The creditor\'s address line - For S type 16 characters and for K type 70 characters',
-		placeholder: '1',
+		placeholder: SWISS_QR_BILL.creditorBuilding,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -226,7 +222,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'The Creditor\'s postal code with a max of 16 characters',
-		placeholder: '8000',
+		placeholder: SWISS_QR_BILL.postalCode,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -240,7 +236,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'The Creditor\'s Town/City with max 35 characters',
-		placeholder: 'Zurich',
+		placeholder: SWISS_QR_BILL.city,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -254,7 +250,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'Debtor\'s name or company according to account name',
-		placeholder: 'Test Debt AG',
+		placeholder: SWISS_QR_BILL.debtorName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -291,7 +287,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'Debtor\'s address line with max 70 characters',
-		placeholder: 'Test Deb Strasse',
+		placeholder: SWISS_QR_BILL.debtorStreet,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -305,7 +301,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'Debtor\'s address line - For S type 16 characters and for K type 70 characters',
-		placeholder: '2',
+		placeholder: SWISS_QR_BILL.debtorBuilding,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -319,7 +315,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'Debtor\'s postal code',
-		placeholder: '8000',
+		placeholder: SWISS_QR_BILL.postalCode,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -333,7 +329,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: false,
 		description: 'Debtor\'s Town/City',
-		placeholder: 'Zurich',
+		placeholder: SWISS_QR_BILL.city,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -516,19 +512,7 @@ export const description: INodeProperties[] = [
 
 
 
-	{
-		displayName: 'Output File Name',
-		name: 'outputFileName',
-		type: 'string',
-		default: 'swissqr_bill.pdf',
-		description: 'Name for the output Swiss QR Bill PDF file',
-		placeholder: 'swissqr_bill.pdf',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.CreateSwissQrBill],
-			},
-		},
-	},
+	...swissQrOutputFileNameFields(createSwissQrBillOp),
 	{
 		displayName: 'Output Binary Field Name',
 		name: 'binaryDataName',
@@ -545,7 +529,7 @@ export const description: INodeProperties[] = [
 		displayName: 'Advanced Options',
 		name: 'advancedOptions',
 		type: 'collection',
-		placeholder: 'Add Option',
+		placeholder: COLLECTION_PLACEHOLDER.addOption,
 		default: {},
 		displayOptions: {
 			show: {
@@ -559,7 +543,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Reference, maximum 27 characters',
-				placeholder: 'REF123456789',
+				placeholder: SWISS_QR_BILL.reference,
 			},
 			{
 				displayName: 'Unstructured Message',
@@ -567,7 +551,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Unstructured Message, maximum 140 characters permitted',
-				placeholder: 'Thank you for your business',
+				placeholder: SWISS_QR_BILL.unstructuredMessage,
 			},
 			{
 				displayName: 'Billing Info',
@@ -575,7 +559,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Billing info of the customer',
-				placeholder: 'Invoice for services rendered',
+				placeholder: SWISS_QR_BILL.billingInfo,
 			},
 			{
 				displayName: 'AV1 Parameter',
@@ -583,7 +567,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Alternative scheme parameter',
-				placeholder: 'AV1',
+				placeholder: SWISS_QR_BILL.av1,
 			},
 			{
 				displayName: 'AV2 Parameter',
@@ -591,7 +575,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Alternative scheme parameter',
-				placeholder: 'AV2',
+				placeholder: SWISS_QR_BILL.av2,
 			},
 			{
 				displayName: 'Custom Profiles',
@@ -599,7 +583,7 @@ export const description: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
-				placeholder: '{ \'outputDataFormat\': \'base64\' }',
+				placeholder: CUSTOM_PROFILES_PLACEHOLDER,
 			},
 		],
 	},
