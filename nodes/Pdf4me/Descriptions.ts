@@ -19,6 +19,7 @@ import * as aiProcessCreditCard from './actions/aiProcessCreditCard';
 import * as aiProcessMarriageCertificate from './actions/aiProcessMarriageCertificate';
 import * as aiProcessMortgageDocument from './actions/aiProcessMortgageDocument';
 import * as aiProcessPayStub from './actions/aiProcessPayStub';
+import * as aiAutoCropDocument from './actions/aiAutoCropDocument';
 import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as deleteBlankPagesFromPdf from './actions/deleteBlankPagesFromPdf';
@@ -85,6 +86,7 @@ import * as convertVisio from './actions/convertVisio';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as aiDocumentParser from './actions/aiDocumentParser';
 import * as processUniversalDocument from './actions/processUniversalDocument';
 import * as processShippingLabel from './actions/processShippingLabel';
 import * as processOrder from './actions/processOrder';
@@ -268,6 +270,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.AiProcessPayStub,
 					description: 'Extract structured data from pay stubs using AI/ML technology for payroll processing',
 					action: 'AI-Process Pay Stub',
+				},
+				{
+					name: 'AI Auto Crop Document',
+					value: ActionConstants.AiAutoCropDocument,
+					description: 'Automatically crop a document using AI to remove borders and unwanted areas',
+					action: 'AI auto crop document',
 				},
 				{
 					name: 'AI - Universal Document Data Extraction',
@@ -566,6 +574,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.ParseDocument,
 					description: 'Parse documents to extract structured data using template-based parsing',
 					action: 'Parse document',
+				},
+				{
+					name: 'AI Document Parser',
+					value: ActionConstants.AiDocumentParser,
+					description: 'Parse documents using AI analyzer configurations from the PDF4me dashboard',
+					action: 'AI document parser',
 				},
 			],
 			default: ActionConstants.ExtractResources,
@@ -1064,6 +1078,7 @@ export const descriptions: INodeTypeDescription = {
 		...aiProcessMarriageCertificate.description,
 		...aiProcessMortgageDocument.description,
 		...aiProcessPayStub.description,
+		...aiAutoCropDocument.description,
 		...classifyDocument.description,
 		...compressImage.description,
 		...compressPdf.description,
@@ -1110,6 +1125,7 @@ export const descriptions: INodeTypeDescription = {
 		...mergeMultiplePDFs.description,
 		...overlayPDFs.description,
 		...parseDocument.description,
+		...aiDocumentParser.description,
 		...processUniversalDocument.description,
 		...processShippingLabel.description,
 		...processOrder.description,
