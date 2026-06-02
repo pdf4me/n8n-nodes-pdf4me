@@ -3,6 +3,7 @@ import type {
 	IExecuteFunctions,
 	IHookFunctions,
 	ILoadOptionsFunctions,
+	INodePropertyOptions,
 	JsonObject,
 	IHttpRequestMethods,
 	IHttpRequestOptions,
@@ -69,7 +70,8 @@ export async function pdf4meApiRequest(
 		url.includes('/ProcessContract') || url.includes('/ProcessBankCheque') ||
 		url.includes('/ProcessCreditCard') || url.includes('/ProcessMarriageCertificate') ||
 		url.includes('/ProcessMortgageDocument') || url.includes('/ProcessPayStub') ||
-		url.includes('/ParseDocument') || url.includes('/ClassifyDocument');
+		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') ||
+		url.includes('/AiDocumentParser') || url.includes('/GetAnalyzerId');
 
 	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
@@ -172,7 +174,8 @@ export async function pdf4meAsyncRequest(
 		url.includes('/ProcessUniversalDocument') || url.includes('/ProcessShippingLabel') ||
 		url.includes('/ProcessOrder') || url.includes('/ProcessReceipt') || url.includes('/ProcessTaxDocument') ||
 		url.includes('/ProcessBankStatement') ||
-		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') || url.includes('/GetTrackingChangesInWord') ||
+		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') || url.includes('/AiDocumentParser') ||
+		url.includes('/GetTrackingChangesInWord') ||
 		url.includes('/ExtractResources') || url.includes('/ExtractPdfFormData') ||
 		url.includes('/GetPdfMetadata') || url.includes('/ExtractTextByExpression') ||
 		url.includes('/ExtractAttachmentFromPdf') || url.includes('/GetImageMetadata') ||
@@ -250,6 +253,135 @@ export async function pdf4meAsyncRequest(
 			message: error instanceof Error ? error.message : String(error),
 		});
 	}
+}
+
+/**
+ * Normalize GET /api/v2/GetAnalyzerId response into dropdown options.
+ * API body is typically a string array; each item is used as both label and value.
+ */
+function parseGetAnalyzerIdOptions(body: unknown): INodePropertyOptions[] {
+	const items = extractGetAnalyzerIdItems(body);
+	const seen = new Set<string>();
+
+	return items.reduce<INodePropertyOptions[]>((options, item) => {
+		const trimmed = item.trim();
+		if (!trimmed || seen.has(trimmed)) {
+			return options;
+		}
+		seen.add(trimmed);
+		options.push({
+			name: trimmed,
+			value: trimmed,
+		});
+		return options;
+	}, []);
+}
+
+function extractGetAnalyzerIdItems(body: unknown): string[] {
+	if (body == null) {
+		return [];
+	}
+
+	let data: unknown = body;
+
+	if (Buffer.isBuffer(data)) {
+		data = data.toString('utf8');
+	}
+
+	if (typeof data === 'string') {
+		const trimmed = data.trim();
+		if (!trimmed) {
+			return [];
+		}
+
+		try {
+			return extractGetAnalyzerIdItems(JSON.parse(trimmed));
+		} catch {
+			if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+				return [];
+			}
+			if (trimmed.includes('\n')) {
+				return trimmed.split('\n').map((line) => line.trim()).filter(Boolean);
+			}
+			if (trimmed.includes(',')) {
+				return trimmed.split(',').map((part) => part.trim()).filter(Boolean);
+			}
+			return [trimmed];
+		}
+	}
+
+	if (Array.isArray(data)) {
+		return data.flatMap((item) => {
+			if (typeof item === 'string') {
+				return item.trim() ? [item.trim()] : [];
+			}
+			if (typeof item === 'number' || typeof item === 'boolean') {
+				return [String(item)];
+			}
+			if (item && typeof item === 'object') {
+				const entry = item as IDataObject;
+				const value =
+					entry.name ??
+					entry.Name ??
+					entry.label ??
+					entry.Label ??
+					entry.analyzerId ??
+					entry.AnalyzerId ??
+					entry.id ??
+					entry.Id ??
+					entry.templateName ??
+					entry.TemplateName ??
+					entry.value ??
+					entry.Value ??
+					entry.customisationNote ??
+					entry.customisationNote;
+				if (typeof value === 'string' && value.trim()) {
+					return [value.trim()];
+				}
+				if (typeof value === 'number' || typeof value === 'boolean') {
+					return [String(value)];
+				}
+			}
+			return [];
+		});
+	}
+
+	if (typeof data === 'object') {
+		const record = data as IDataObject;
+		const nestedKeys = ['body', 'items', 'data', 'results', 'analyzers', 'analyzerIds', 'analyzerList'];
+		for (const key of nestedKeys) {
+			if (record[key] != null) {
+				return extractGetAnalyzerIdItems(record[key]);
+			}
+		}
+
+		const stringValues = Object.values(record).filter(
+			(value): value is string => typeof value === 'string' && value.trim() !== '',
+		);
+		if (stringValues.length > 0) {
+			return stringValues.map((value) => value.trim());
+		}
+
+		return Object.keys(record).map((key) => key.trim()).filter(Boolean);
+	}
+
+	return [];
+}
+
+/**
+ * Load AI analyzer options for the node dropdown via GET /api/v2/GetAnalyzerId.
+ */
+export async function getAnalyzerIdList(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
+	const body = await pdf4meApiRequest.call(this, '/api/v2/GetAnalyzerId', {}, 'GET');
+	const options = parseGetAnalyzerIdOptions(body);
+
+	if (options.length === 0) {
+		throw new Error('GetAnalyzerId returned no analyzer options');
+	}
+
+	return options;
 }
 
 export function sanitizeProfiles(data: IDataObject): void {
@@ -438,6 +570,8 @@ export const ActionConstants = {
 	AiProcessMarriageCertificate: 'AI-Process Marriage Certificate',
 	AiProcessMortgageDocument: 'AI-Process Mortgage Document',
 	AiProcessPayStub: 'AI-Process Pay Stub',
+	AiAutoCropDocument: 'AI Auto Crop Document',
+	AiDocumentParser: 'AI Document Parser',
 	ClassifyDocument: 'Classify Document',
 	CompressImage: 'Compress Image',
 	CompressPdf: 'Compress PDF',
