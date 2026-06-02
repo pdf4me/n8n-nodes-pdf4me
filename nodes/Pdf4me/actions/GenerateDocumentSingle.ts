@@ -13,8 +13,91 @@
 
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
+import {
+	documentDataFileNameFields,
+	documentDataFileUrlFields,
+	documentDataTextFields,
+	GENERATE_DOCUMENT,
+	HTML_TEMPLATE_PLACEHOLDER,
+	templateFileNameFields,
+	templateFileUrlFields,
+} from '../pdf4mePlaceholders';
+
+const generateDocumentSingleOp = ActionConstants.GenerateDocumentSingle;
 
 export const description: INodeProperties[] = [
+	{
+		displayName: 'Template File Type',
+		name: 'templateFileType',
+		type: 'options',
+		required: true,
+		default: 'Docx',
+		description: 'Template file type. Set this value when sending a Word, HTML, PDF, Mail Merge, or Google Docs template',
+		options: [
+			{ name: 'PDF4me Word Template', value: 'Docx' },
+			{ name: 'HTML', value: 'HTML' },
+			{ name: 'Pdf Form', value: 'PDF' },
+			{ name: 'Mail Merge', value: 'MailMerge' },
+			{ name: 'Google Docs', value: 'GoogleDocs' },
+		],
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentSingle],
+			},
+		},
+	},
+	{
+		displayName: 'Output Type',
+		name: 'outputType',
+		type: 'options',
+		required: true,
+		default: 'PDF',
+		description: 'Format of the generated document',
+		options: [
+			{ name: 'PDF', value: 'PDF' },
+			{ name: 'Word', value: 'Docx' },
+		],
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentSingle],
+				templateFileType: ['Docx', 'MailMerge', 'GoogleDocs'],
+			},
+		},
+	},
+	{
+		displayName: 'Output Type',
+		name: 'outputType',
+		type: 'options',
+		required: true,
+		default: 'HTML',
+		description: 'Format of the generated document',
+		options: [
+			{ name: 'HTML', value: 'HTML' },
+		],
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentSingle],
+				templateFileType: ['HTML'],
+			},
+		},
+	},
+	{
+		displayName: 'Output Type',
+		name: 'outputType',
+		type: 'options',
+		required: true,
+		default: 'PDF',
+		description: 'Format of the generated document',
+		options: [
+			{ name: 'PDF', value: 'PDF' },
+		],
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentSingle],
+				templateFileType: ['PDF'],
+			},
+		},
+	},
 	{
 		displayName: 'Template File Input Type',
 		name: 'templateInputDataType',
@@ -66,20 +149,7 @@ export const description: INodeProperties[] = [
 		},
 		hint: 'Generate document using a template file. See our <b><a href="https://docs.pdf4me.com/integration/n8n/generate/generate-document-single/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
-	{
-		displayName: 'Template File Name',
-		name: 'templateFileName',
-		type: 'string',
-		default: '',
-		description: 'Name of the template file (including extension)',
-		placeholder: 'template.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
-				templateInputDataType: ['binaryData'],
-			},
-		},
-	},
+	...templateFileNameFields(generateDocumentSingleOp, 'templateFileName', ['binaryData']),
 	{
 		displayName: 'Template Base64 Content',
 		name: 'templateBase64Content',
@@ -94,36 +164,10 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Template File Name',
-		name: 'templateFileNameRequired',
-		type: 'string',
-		default: '',
+	...templateFileNameFields(generateDocumentSingleOp, 'templateFileNameRequired', ['base64', 'url', 'htmlCode'], {
 		required: true,
-		description: 'Name of the template file (including extension)',
-		placeholder: 'template.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
-				templateInputDataType: ['base64', 'url', 'htmlCode'],
-			},
-		},
-	},
-	{
-		displayName: 'Template File URL',
-		name: 'templateFileUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'URL of the template file',
-		placeholder: 'https://example.com/template.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
-				templateInputDataType: ['url'],
-			},
-		},
-	},
+	}),
+	...templateFileUrlFields(generateDocumentSingleOp),
 	{
 		displayName: 'HTML Code',
 		name: 'templateHtmlCode',
@@ -134,30 +178,12 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'Write your HTML template code here. It will be automatically converted to base64.',
-		placeholder: '<!DOCTYPE html><html><head><title>{{title}}</title></head><body><h1>{{heading}}</h1><p>{{content}}</p></body></html>',
+		placeholder: HTML_TEMPLATE_PLACEHOLDER,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentSingle],
 				templateInputDataType: ['htmlCode'],
 				templateFileType: ['HTML'],
-			},
-		},
-	},
-	{
-		displayName: 'Template File Type',
-		name: 'templateFileType',
-		type: 'options',
-		required: true,
-		default: 'Docx',
-		description: 'Template file type. Set this value when sending a Word, HTML, or PDF template',
-		options: [
-			{ name: 'Word', value: 'Docx' },
-			{ name: 'HTML', value: 'HTML' },
-			{ name: 'PDF', value: 'PDF' },
-		],
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
 			},
 		},
 	},
@@ -202,10 +228,11 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		default: 'Json',
 		required: true,
-		description: 'The data type for the template. Choose JSON or XML format',
+		description: 'The data type for the template. Choose JSON, XML, or CSV format',
 		options: [
 			{ name: 'JSON', value: 'Json' },
 			{ name: 'XML', value: 'XML' },
+			{ name: 'CSV', value: 'Csv' },
 		],
 		displayOptions: {
 			show: {
@@ -213,23 +240,10 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Document Data Text',
-		name: 'documentDataText',
-		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		default: '',
-		description: 'Manual data entry for the template in JSON or XML format (required if Document Data File is not provided)',
-		placeholder: 'Enter your JSON or XML data here. Example JSON: {"name": "John Doe", "email": "john@example.com", "items": [{"product": "Widget", "price": 29.99}]}',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
-				documentInputDataType: ['text'],
-			},
-		},
-	},
+	...documentDataTextFields(generateDocumentSingleOp, ['Json', 'XML', 'Csv'], {
+		description:
+			'Manual data entry for the template in JSON, XML, or CSV format (required if Document Data File is not provided)',
+	}),
 	{
 		displayName: 'Document Binary Property',
 		name: 'documentBinaryPropertyName',
@@ -244,20 +258,11 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Document Data File Name',
-		name: 'documentDataFileName',
-		type: 'string',
-		default: '',
-		description: 'Name of the data file (including extension)',
-		placeholder: 'data.json',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
-				documentInputDataType: ['binaryData'],
-			},
-		},
-	},
+	...documentDataFileNameFields(generateDocumentSingleOp, 'documentDataFileName', ['binaryData'], [
+		'Json',
+		'XML',
+		'Csv',
+	]),
 	{
 		displayName: 'Document Base64 Content',
 		name: 'documentBase64Content',
@@ -272,33 +277,24 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	...documentDataFileNameFields(
+		generateDocumentSingleOp,
+		'documentDataFileNameRequired',
+		['base64', 'url'],
+		['Json', 'XML', 'Csv'],
+		true,
+	),
+	...documentDataFileUrlFields(generateDocumentSingleOp, ['Json', 'XML', 'Csv']),
 	{
-		displayName: 'Document Data File Name',
-		name: 'documentDataFileNameRequired',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'Name of the data file (including extension)',
-		placeholder: 'data.json',
+		displayName: 'Keep PDF Editable',
+		name: 'keepPdfEditable',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to keep the generated PDF form fields editable',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentSingle],
-				documentInputDataType: ['base64', 'url'],
-			},
-		},
-	},
-	{
-		displayName: 'Document Data File URL',
-		name: 'documentDataFileUrl',
-		type: 'string',
-		default: '',
-		required: true,
-		description: 'URL of the data file',
-		placeholder: 'https://example.com/data.json',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.GenerateDocumentSingle],
-				documentInputDataType: ['url'],
+				outputType: ['PDF'],
 			},
 		},
 	},
@@ -308,7 +304,7 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: 'data',
 		description: 'Custom name for the binary data in n8n output',
-		placeholder: 'generated-document',
+		placeholder: GENERATE_DOCUMENT.binaryDataName,
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentSingle],
@@ -323,19 +319,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const documentInputDataType = this.getNodeParameter('documentInputDataType', index) as string;
 	const documentDataType = this.getNodeParameter('documentDataType', index) as string;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-
-	// Auto-set output type based on template file type
-	let outputType: string;
-	if (templateFileType === 'HTML') {
-		outputType = 'HTML';
-	} else if (templateFileType === 'PDF') {
-		outputType = 'PDF';
-	} else if (templateFileType === 'Docx') {
-		outputType = 'Docx';
-	} else {
-		// Fallback to user selection if template type is not one of the auto-mapped types
-		outputType = this.getNodeParameter('outputType', index) as string;
-	}
+	const outputType = this.getNodeParameter('outputType', index) as string;
+	const keepPdfEditable = outputType === 'PDF'
+		? (this.getNodeParameter('keepPdfEditable', index, false) as boolean)
+		: false;
 
 	let templateFileData: string;
 	let templateFileName: string;
@@ -378,7 +365,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		templateFileName = this.getNodeParameter('templateFileNameRequired', index) as string;
 		templateBlobId = '';
 	} else if (templateInputDataType === 'htmlCode') {
-		// Validate that template file type is HTML
 		if (templateFileType !== 'HTML') {
 			throw new Error('HTML Code input type is only available when Template File Type is set to HTML');
 		}
@@ -534,6 +520,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			if (!documentDataText.trim().startsWith('<') || !documentDataText.trim().includes('>')) {
 				throw new Error('Invalid XML format in Document Data Text: XML must start with < and contain proper tags');
 			}
+		} else if (documentDataType === 'Csv') {
+			if (!documentDataText.trim()) {
+				throw new Error('Document Data Text cannot be empty when Document Data Type is CSV');
+			}
 		}
 	}
 
@@ -556,6 +546,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		outputType,
 		documentDataFile: documentDataFile || undefined, // Binary data uses blobId format, base64 uses base64 string, URL uses URL string
 		documentDataText: documentDataText || undefined,
+		KeepPdfEditable: keepPdfEditable,
 		IsAsync: true,
 	};
 

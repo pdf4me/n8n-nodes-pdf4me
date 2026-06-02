@@ -1,5 +1,6 @@
 import {
 	IExecuteFunctions,
+	ILoadOptionsFunctions,
 	INodeType,
 	INodeTypeDescription,
 	INodeTypeBaseDescription,
@@ -7,6 +8,7 @@ import {
 } from 'n8n-workflow';
 
 import { descriptions } from './Descriptions';
+import { getAnalyzerIdList } from './GenericFunctions';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
 import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
@@ -26,6 +28,7 @@ import * as aiProcessCreditCard from './actions/aiProcessCreditCard';
 import * as aiProcessMarriageCertificate from './actions/aiProcessMarriageCertificate';
 import * as aiProcessMortgageDocument from './actions/aiProcessMortgageDocument';
 import * as aiProcessPayStub from './actions/aiProcessPayStub';
+import * as aiAutoCropDocument from './actions/aiAutoCropDocument';
 import * as barcodeGenerator from './actions/barcodeGenerator';
 import * as cropImage from './actions/cropImage';
 import * as mergeMultiplePDFs from './actions/MergeMultiplePDFs';
@@ -91,6 +94,7 @@ import * as convertPdfToExcel from './actions/convertPdfToExcel';
 import * as convertVisio from './actions/convertVisio';
 import * as uploadFile from './actions/uploadFile';
 import * as parseDocument from './actions/parseDocument';
+import * as aiDocumentParser from './actions/aiDocumentParser';
 import * as processUniversalDocument from './actions/processUniversalDocument';
 import * as processShippingLabel from './actions/processShippingLabel';
 import * as processOrder from './actions/processOrder';
@@ -104,6 +108,14 @@ import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
 	description: INodeTypeDescription;
+
+	methods = {
+		loadOptions: {
+			async getAnalyzerIds(this: ILoadOptionsFunctions) {
+				return await getAnalyzerIdList.call(this);
+			},
+		},
+	};
 
 	constructor(baseDescription: INodeTypeBaseDescription) {
 		this.description = {
@@ -138,6 +150,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await aiProcessMortgageDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.AiProcessPayStub) {
 					operationResult.push(...(await aiProcessPayStub.execute.call(this, i)));
+				} else if (action === ActionConstants.AiAutoCropDocument) {
+					operationResult.push(...(await aiAutoCropDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.BarcodeGenerator) {
 					operationResult.push(...(await barcodeGenerator.execute.call(this, i)));
 				} else if (action === ActionConstants.ClassifyDocument) {
@@ -290,6 +304,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await uploadFile.execute.call(this, i)));
 				} else if (action === ActionConstants.ParseDocument) {
 					operationResult.push(...(await parseDocument.execute.call(this, i)));
+				} else if (action === ActionConstants.AiDocumentParser) {
+					operationResult.push(...(await aiDocumentParser.execute.call(this, i)));
 				} else if (action === ActionConstants.ProcessUniversalDocument) {
 					operationResult.push(...(await processUniversalDocument.execute.call(this, i)));
 				} else if (action === ActionConstants.ProcessShippingLabel) {
