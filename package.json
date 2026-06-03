@@ -14,7 +14,10 @@
     "url": "git+https://github.com/pdf4me/n8n-nodes-pdf4me.git"
   },
   "license": "MIT",
-  "author": "PDF4me <support@pdf4me.com>",
+  "author": {
+    "name": "PDF4me",
+    "email": "support@pdf4me.com"
+  },
   "type": "commonjs",
   "main": "index.js",
   "files": [

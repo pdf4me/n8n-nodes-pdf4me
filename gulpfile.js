@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 const { task, src, dest, series } = require('gulp');
 const merge = require('merge-stream');
 
@@ -24,16 +23,6 @@ function copyConfig() {
 	// Copy ESLint configuration files and tsconfig.json to dist directory
 	const configStream = src(['.eslintrc.js', '.eslintrc.prepublish.js', 'tsconfig.json'])
 		.pipe(dest('dist'));
-
-	// Create custom package.json for dist directory
-	const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-	packageJson.scripts.prepublishOnly = 'eslint -c .eslintrc.prepublish.js package.json';
-	
-	// Fix the n8n paths for the dist package.json
-	packageJson.n8n.credentials = packageJson.n8n.credentials.map(path => path.replace('dist/', ''));
-	packageJson.n8n.nodes = packageJson.n8n.nodes.map(path => path.replace('dist/', ''));
-	
-	fs.writeFileSync('dist/package.json', JSON.stringify(packageJson, null, 4));
 
 	// Return the configStream to signal async completion
 	return configStream;
