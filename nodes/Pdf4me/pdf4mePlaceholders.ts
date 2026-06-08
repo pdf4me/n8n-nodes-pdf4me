@@ -17,7 +17,7 @@ export const COLLECTION_PLACEHOLDER = {
 	addFormField: 'Add Form Field',
 } as const;
 
-export const CUSTOM_PROFILES_PLACEHOLDER = "{ 'outputDataFormat': 'base64' }";
+export const CUSTOM_PROFILES_PLACEHOLDER = '{ \'outputDataFormat\': \'base64\' }';
 
 // ---------------------------------------------------------------------------
 // Fill PDF Form
