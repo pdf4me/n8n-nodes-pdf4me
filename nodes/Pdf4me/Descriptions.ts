@@ -69,6 +69,7 @@ import * as createSwissQrBill from './actions/createSwissQrBill';
 import * as zugferdInvoice from './actions/zugferdInvoice';
 import * as replaceTextWithImageInWord from './actions/replaceTextWithImageInWord';
 import * as generateDocumentSingle from './actions/GenerateDocumentSingle';
+import * as generateDocumentFromTemplate from './actions/generateDocumentFromTemplate';
 import * as generateDocumentsMultiple from './actions/GenerateDocumentsMultiple';
 import * as getTrackingChangesInWord from './actions/GetTrackingChangesInWord';
 import * as SplitPdfByBarcode from './actions/SplitPdfByBarcode';
@@ -694,6 +695,12 @@ export const descriptions: INodeTypeDescription = {
 					action: 'Generate document (single)',
 				},
 				{
+					name: 'Generate Document From Template',
+					value: ActionConstants.GenerateDocumentFromTemplate,
+					description: 'Generate a document using a dashboard-stored template and JSON/XML/CSV data',
+					action: 'Generate document from template',
+				},
+				{
 					name: 'Generate Documents (Multiple)',
 					value: ActionConstants.GenerateDocumentsMultiple,
 					description: 'Generate multiple documents from template with different data sets',
@@ -1115,6 +1122,7 @@ export const descriptions: INodeTypeDescription = {
 		...flattenPdf.description,
 		...barcodeGenerator.description,
 		...generateDocumentSingle.description,
+		...generateDocumentFromTemplate.description,
 		...generateDocumentsMultiple.description,
 		...get_document_from_pdf4me.description,
 		...getImageMetadata.description,

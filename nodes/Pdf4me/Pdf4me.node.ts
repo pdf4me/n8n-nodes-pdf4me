@@ -8,7 +8,7 @@ import {
 } from 'n8n-workflow';
 
 import { descriptions } from './Descriptions';
-import { getAnalyzerIdList } from './GenericFunctions';
+import { getAnalyzerIdList, getTemplateNameList } from './GenericFunctions';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
 import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
@@ -78,6 +78,7 @@ import * as createSwissQrBill from './actions/createSwissQrBill';
 import * as zugferdInvoice from './actions/zugferdInvoice';
 import * as replaceTextWithImageInWord from './actions/replaceTextWithImageInWord';
 import * as generateDocumentSingle from './actions/GenerateDocumentSingle';
+import * as generateDocumentFromTemplate from './actions/generateDocumentFromTemplate';
 import * as generateDocumentsMultiple from './actions/GenerateDocumentsMultiple';
 import * as getTrackingChangesInWord from './actions/GetTrackingChangesInWord';
 import * as SplitPdfByBarcode from './actions/SplitPdfByBarcode';
@@ -113,6 +114,9 @@ export class Pdf4me implements INodeType {
 		loadOptions: {
 			async getAnalyzerIds(this: ILoadOptionsFunctions) {
 				return await getAnalyzerIdList.call(this);
+			},
+			async getTemplateNames(this: ILoadOptionsFunctions) {
+				return await getTemplateNameList.call(this);
 			},
 		},
 	};
@@ -272,6 +276,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await replaceTextWithImageInWord.execute.call(this, i)));
 				} else if (action === ActionConstants.GenerateDocumentSingle) {
 					operationResult.push(...(await generateDocumentSingle.execute.call(this, i)));
+				} else if (action === ActionConstants.GenerateDocumentFromTemplate) {
+					operationResult.push(...(await generateDocumentFromTemplate.execute.call(this, i)));
 				} else if (action === ActionConstants.GenerateDocumentsMultiple) {
 					operationResult.push(...(await generateDocumentsMultiple.execute.call(this, i)));
 				} else if (action === ActionConstants.GetTrackingChangesInWord) {
