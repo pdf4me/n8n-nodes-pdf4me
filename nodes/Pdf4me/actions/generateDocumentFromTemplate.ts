@@ -23,25 +23,25 @@ const generateDocumentFromTemplateOp = ActionConstants.GenerateDocumentFromTempl
 function inferMimeType(fileName: string): string {
 	const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
 	switch (ext) {
-		case 'pdf':
-			return 'application/pdf';
-		case 'docx':
-			return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-		case 'doc':
-			return 'application/msword';
-		case 'xlsx':
-			return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-		case 'html':
-		case 'htm':
-			return 'text/html';
-		case 'xml':
-			return 'application/xml';
-		case 'csv':
-			return 'text/csv';
-		case 'json':
-			return 'application/json';
-		default:
-			return 'application/octet-stream';
+	case 'pdf':
+		return 'application/pdf';
+	case 'docx':
+		return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+	case 'doc':
+		return 'application/msword';
+	case 'xlsx':
+		return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+	case 'html':
+	case 'htm':
+		return 'text/html';
+	case 'xml':
+		return 'application/xml';
+	case 'csv':
+		return 'text/csv';
+	case 'json':
+		return 'application/json';
+	default:
+		return 'application/octet-stream';
 	}
 }
 
