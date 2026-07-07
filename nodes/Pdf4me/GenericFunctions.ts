@@ -71,7 +71,8 @@ export async function pdf4meApiRequest(
 		url.includes('/ProcessCreditCard') || url.includes('/ProcessMarriageCertificate') ||
 		url.includes('/ProcessMortgageDocument') || url.includes('/ProcessPayStub') ||
 		url.includes('/ParseDocument') || url.includes('/ClassifyDocument') ||
-		url.includes('/AiDocumentParser') || url.includes('/GetAnalyzerId');
+		url.includes('/AiDocumentParser') || url.includes('/GetAnalyzerId') ||
+		url.includes('/GetTemplateName') || url.includes('/GenerateDocumentSingleV2');
 
 	let options: IHttpRequestOptions = {
 		baseURL: 'https://api.pdf4me.com',
@@ -384,6 +385,388 @@ export async function getAnalyzerIdList(
 	return options;
 }
 
+/**
+ * Load template name options for the node dropdown via GET /api/v2/GetTemplateName.
+ */
+export async function getTemplateNameList(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
+	const body = await pdf4meApiRequest.call(this, '/api/v2/GetTemplateName', {}, 'GET');
+	const options = parseGetAnalyzerIdOptions(body);
+
+	if (options.length === 0) {
+		throw new Error('GetTemplateName returned no template options');
+	}
+
+	return options;
+}
+
+interface GenerateDocumentV2Result {
+	name: string;
+	docData: string;
+}
+
+function bufferFromV2ResponseBody(body: unknown): Buffer | null {
+	if (Buffer.isBuffer(body)) {
+		return body.length > 0 ? body : null;
+	}
+	if (body instanceof ArrayBuffer) {
+		return Buffer.from(body);
+	}
+	if (body instanceof Uint8Array) {
+		return Buffer.from(body);
+	}
+	if (typeof body === 'string') {
+		const trimmed = body.trim();
+		if (!trimmed) {
+			return null;
+		}
+		if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+			return null;
+		}
+		return Buffer.from(body, 'latin1');
+	}
+	return null;
+}
+
+function isLikelyBinaryDocument(buffer: Buffer): boolean {
+	if (buffer.length < 4) {
+		return false;
+	}
+	if (buffer.subarray(0, 4).toString('ascii') === '%PDF') {
+		return true;
+	}
+	if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
+		return true;
+	}
+	const start = buffer.subarray(0, Math.min(buffer.length, 20)).toString('utf8').toLowerCase();
+	return start.includes('<!doctype') || start.startsWith('<html');
+}
+
+function parseV2JsonBody(body: unknown): IDataObject {
+	if (body && typeof body === 'object' && !Buffer.isBuffer(body)) {
+		return body as IDataObject;
+	}
+
+	const buffer = bufferFromV2ResponseBody(body);
+	if (!buffer || isLikelyBinaryDocument(buffer)) {
+		return {};
+	}
+
+	const raw = buffer.toString('utf8').trim();
+	if (!raw) {
+		return {};
+	}
+
+	try {
+		return JSON.parse(raw) as IDataObject;
+	} catch {
+		return {};
+	}
+}
+
+function resolveV2FileName(headers: unknown, templateFileName?: string): string {
+	if (headers && typeof headers === 'object') {
+		const headerRecord = headers as IDataObject;
+		const nestedHeaders =
+			headerRecord.headers && typeof headerRecord.headers === 'object'
+				? (headerRecord.headers as IDataObject)
+				: undefined;
+		const disposition =
+			headerRecord['content-disposition'] ??
+			headerRecord['Content-Disposition'] ??
+			nestedHeaders?.['content-disposition'] ??
+			nestedHeaders?.['Content-Disposition'];
+
+		if (typeof disposition === 'string') {
+			const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+			if (match?.[1]) {
+				return decodeURIComponent(match[1].trim());
+			}
+		}
+
+		const contentType =
+			headerRecord['content-type'] ??
+			headerRecord['Content-Type'] ??
+			nestedHeaders?.['content-type'] ??
+			nestedHeaders?.['Content-Type'];
+		if (typeof contentType === 'string') {
+			if (contentType.includes('pdf')) {
+				return 'generated_document.pdf';
+			}
+			if (contentType.includes('wordprocessingml')) {
+				return 'generated_document.docx';
+			}
+			if (contentType.includes('html')) {
+				return 'generated_document.html';
+			}
+		}
+	}
+
+	if (templateFileName) {
+		const baseName = templateFileName.replace(/\.[^.]+$/, '');
+		return `${baseName}_generated.pdf`;
+	}
+
+	return 'generated_document.pdf';
+}
+
+function documentFromV2BinaryResponse(
+	body: unknown,
+	headers: unknown,
+	templateFileName?: string,
+): GenerateDocumentV2Result | null {
+	const buffer = bufferFromV2ResponseBody(body);
+	if (!buffer || !isLikelyBinaryDocument(buffer)) {
+		return null;
+	}
+
+	return {
+		name: resolveV2FileName(headers, templateFileName),
+		docData: buffer.toString('base64'),
+	};
+}
+
+function extractV2Document(doc: unknown, fallbackName?: string): GenerateDocumentV2Result | null {
+	if (!doc || typeof doc !== 'object') {
+		return null;
+	}
+	const entry = doc as IDataObject;
+	const name = (entry.name ??
+		entry.Name ??
+		entry.fileName ??
+		entry.FileName ??
+		entry.docName ??
+		entry.DocName) as string | undefined;
+	const docData = (entry.docData ??
+		entry.DocData ??
+		entry.data ??
+		entry.Data ??
+		entry.content ??
+		entry.Content ??
+		entry.streamFile ??
+		entry.StreamFile ??
+		entry.fileContent ??
+		entry.FileContent ??
+		entry.docContent ??
+		entry.DocContent) as string | undefined;
+	if (!docData) {
+		return null;
+	}
+	return {
+		name: name || fallbackName || 'generated_document.pdf',
+		docData,
+	};
+}
+
+function isV2CallInProgress(status: string): boolean {
+	const normalized = status.trim().toLowerCase();
+	return normalized === 'callinit' || normalized === 'inprogress' || normalized === 'processing';
+}
+
+function resolveV2DocumentFromBody(body: IDataObject, fallbackName?: string): GenerateDocumentV2Result | null {
+	const direct = extractV2Document(body, fallbackName);
+	if (direct) {
+		return direct;
+	}
+
+	const nestedSources = [
+		body.document,
+		body.Document,
+		body.output,
+		body.Output,
+		body.result,
+		body.Result,
+	];
+
+	for (const source of nestedSources) {
+		const doc = extractV2Document(source, fallbackName);
+		if (doc) {
+			return doc;
+		}
+
+		if (source && typeof source === 'object') {
+			const wrapped = source as IDataObject;
+			const wrappedDoc = extractV2Document(wrapped.document ?? wrapped.Document, fallbackName);
+			if (wrappedDoc) {
+				return wrappedDoc;
+			}
+		}
+	}
+
+	const documents = body.documents ?? body.Documents;
+	if (Array.isArray(documents) && documents.length > 0) {
+		return extractV2Document(documents[0], fallbackName);
+	}
+
+	const outputDocuments = body.outputDocuments ?? body.OutputDocuments;
+	if (Array.isArray(outputDocuments) && outputDocuments.length > 0) {
+		return extractV2Document(outputDocuments[0], fallbackName);
+	}
+
+	return null;
+}
+
+function resolveV2StatusUrl(body: IDataObject, responseHeaders?: unknown): string | null {
+	const statusUrl = body.statusUrl ?? body.StatusUrl;
+	if (statusUrl && String(statusUrl).trim()) {
+		return String(statusUrl);
+	}
+
+	if (!responseHeaders || typeof responseHeaders !== 'object') {
+		return null;
+	}
+
+	const headers = responseHeaders as IDataObject;
+	const nestedHeaders =
+		headers.headers && typeof headers.headers === 'object'
+			? (headers.headers as IDataObject)
+			: undefined;
+	const location = headers.location ?? nestedHeaders?.location;
+	if (location && String(location).trim()) {
+		return String(location);
+	}
+
+	return null;
+}
+
+function formatV2ResponseForError(body: IDataObject): string {
+	try {
+		const serialized = JSON.stringify(body);
+		return serialized.length > 1000 ? `${serialized.slice(0, 1000)}…` : serialized;
+	} catch {
+		return '[unserializable response body]';
+	}
+}
+
+/**
+ * Poll V2 statusUrl until the job completes or times out.
+ */
+async function pollV2StatusUrl(
+	this: IExecuteFunctions,
+	statusUrl: string,
+	templateFileName: string,
+	maxRetries: number = 720,
+): Promise<GenerateDocumentV2Result> {
+	let retryCount = 0;
+	let pollBody: IDataObject = {};
+	const fallbackName = templateFileName
+		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+		: 'generated_document.pdf';
+
+	while (retryCount < maxRetries) {
+		const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: statusUrl,
+			method: 'GET',
+			encoding: 'arraybuffer' as const,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
+		});
+
+		if (pollResponse.statusCode === 404 || pollResponse.statusCode === 202) {
+			retryCount++;
+			await delayAsync.call(this);
+			continue;
+		}
+
+		if (pollResponse.statusCode !== 200) {
+			throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
+		}
+
+		const pollBinaryDocument = documentFromV2BinaryResponse(
+			pollResponse.body,
+			pollResponse.headers,
+			templateFileName,
+		);
+		if (pollBinaryDocument) {
+			return pollBinaryDocument;
+		}
+
+		pollBody = parseV2JsonBody(pollResponse.body);
+		const status = String(pollBody.status ?? pollBody.Status ?? '');
+		const completedDocument = resolveV2DocumentFromBody(pollBody, fallbackName);
+
+		if (completedDocument) {
+			return completedDocument;
+		}
+
+		if (isV2CallInProgress(status)) {
+			retryCount++;
+			await delayAsync.call(this);
+			continue;
+		}
+
+		throw new Error(
+			`GenerateDocumentSingleV2 job finished with status "${status || 'unknown'}" but no document could be parsed: ${formatV2ResponseForError(pollBody)}`,
+		);
+	}
+
+	throw new Error(
+		`GenerateDocumentSingleV2 polling timed out after ${maxRetries} attempts. Last status: ${
+			String(pollBody.status ?? pollBody.Status ?? 'unknown')
+		}. Last body: ${formatV2ResponseForError(pollBody)}`,
+	);
+}
+
+/**
+ * Call GenerateDocumentSingleV2 and handle sync or statusUrl-based async polling.
+ */
+export async function pdf4meGenerateDocumentV2Request(
+	this: IExecuteFunctions,
+	url: string,
+	payload: IDataObject,
+): Promise<GenerateDocumentV2Result> {
+	const templateFileName = String(payload.TemplateFileName ?? '');
+
+	const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+		url: `https://api.pdf4me.com${url}`,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: payload,
+		encoding: 'arraybuffer' as const,
+		returnFullResponse: true,
+		ignoreHttpStatusErrors: true,
+	});
+
+	if (response.statusCode !== 200 && response.statusCode !== 202) {
+		throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
+	}
+
+	const body = parseV2JsonBody(response.body);
+	const statusUrl = resolveV2StatusUrl(body, response.headers);
+
+	if (statusUrl) {
+		return await pollV2StatusUrl.call(this, statusUrl, templateFileName);
+	}
+
+	if (response.statusCode === 202) {
+		throw new Error('No polling URL found in async GenerateDocumentSingleV2 response');
+	}
+
+	const binaryDocument = documentFromV2BinaryResponse(
+		response.body,
+		response.headers,
+		templateFileName,
+	);
+	if (binaryDocument) {
+		return binaryDocument;
+	}
+
+	const fallbackName = templateFileName
+		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+		: 'generated_document.pdf';
+	const document = resolveV2DocumentFromBody(body, fallbackName);
+	if (!document) {
+		throw new Error(
+			`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
+		);
+	}
+
+	return document;
+}
+
 export function sanitizeProfiles(data: IDataObject): void {
 	// Convert profiles to a trimmed string (or empty string if not provided)
 	const profilesValue = data.profiles ? String(data.profiles).trim() : '';
@@ -608,6 +991,7 @@ export const ActionConstants = {
 	FlattenPdf: 'Flatten PDF',
 	BarcodeGenerator: 'Generate Barcode',
 	GenerateDocumentSingle: 'Generate Document Single',
+	GenerateDocumentFromTemplate: 'Generate Document From Template',
 	GenerateDocumentsMultiple: 'Generate Documents Multiple',
 	GetDocumentFromPdf4me: 'Get Document From Pdf4me',
 	GetImageMetadata: 'Get Image Metadata',
