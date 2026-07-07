@@ -527,7 +527,7 @@ function documentFromV2BinaryResponse(
 	};
 }
 
-function extractV2Document(doc: unknown): GenerateDocumentV2Result | null {
+function extractV2Document(doc: unknown, fallbackName?: string): GenerateDocumentV2Result | null {
 	if (!doc || typeof doc !== 'object') {
 		return null;
 	}
@@ -550,14 +550,22 @@ function extractV2Document(doc: unknown): GenerateDocumentV2Result | null {
 		entry.FileContent ??
 		entry.docContent ??
 		entry.DocContent) as string | undefined;
-	if (!name || !docData) {
+	if (!docData) {
 		return null;
 	}
-	return { name, docData };
+	return {
+		name: name || fallbackName || 'generated_document.pdf',
+		docData,
+	};
 }
 
-function resolveV2DocumentFromBody(body: IDataObject): GenerateDocumentV2Result | null {
-	const direct = extractV2Document(body);
+function isV2CallInProgress(status: string): boolean {
+	const normalized = status.trim().toLowerCase();
+	return normalized === 'callinit' || normalized === 'inprogress' || normalized === 'processing';
+}
+
+function resolveV2DocumentFromBody(body: IDataObject, fallbackName?: string): GenerateDocumentV2Result | null {
+	const direct = extractV2Document(body, fallbackName);
 	if (direct) {
 		return direct;
 	}
@@ -572,14 +580,14 @@ function resolveV2DocumentFromBody(body: IDataObject): GenerateDocumentV2Result 
 	];
 
 	for (const source of nestedSources) {
-		const doc = extractV2Document(source);
+		const doc = extractV2Document(source, fallbackName);
 		if (doc) {
 			return doc;
 		}
 
 		if (source && typeof source === 'object') {
 			const wrapped = source as IDataObject;
-			const wrappedDoc = extractV2Document(wrapped.document ?? wrapped.Document);
+			const wrappedDoc = extractV2Document(wrapped.document ?? wrapped.Document, fallbackName);
 			if (wrappedDoc) {
 				return wrappedDoc;
 			}
@@ -588,7 +596,12 @@ function resolveV2DocumentFromBody(body: IDataObject): GenerateDocumentV2Result 
 
 	const documents = body.documents ?? body.Documents;
 	if (Array.isArray(documents) && documents.length > 0) {
-		return extractV2Document(documents[0]);
+		return extractV2Document(documents[0], fallbackName);
+	}
+
+	const outputDocuments = body.outputDocuments ?? body.OutputDocuments;
+	if (Array.isArray(outputDocuments) && outputDocuments.length > 0) {
+		return extractV2Document(outputDocuments[0], fallbackName);
 	}
 
 	return null;
@@ -627,6 +640,75 @@ function formatV2ResponseForError(body: IDataObject): string {
 }
 
 /**
+ * Poll V2 statusUrl until the job completes or times out.
+ */
+async function pollV2StatusUrl(
+	this: IExecuteFunctions,
+	statusUrl: string,
+	templateFileName: string,
+	maxRetries: number = 720,
+): Promise<GenerateDocumentV2Result> {
+	let retryCount = 0;
+	let pollBody: IDataObject = {};
+	const fallbackName = templateFileName
+		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+		: 'generated_document.pdf';
+
+	while (retryCount < maxRetries) {
+		const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: statusUrl,
+			method: 'GET',
+			encoding: 'arraybuffer' as const,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
+		});
+
+		if (pollResponse.statusCode === 404 || pollResponse.statusCode === 202) {
+			retryCount++;
+			await delayAsync.call(this);
+			continue;
+		}
+
+		if (pollResponse.statusCode !== 200) {
+			throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
+		}
+
+		const pollBinaryDocument = documentFromV2BinaryResponse(
+			pollResponse.body,
+			pollResponse.headers,
+			templateFileName,
+		);
+		if (pollBinaryDocument) {
+			return pollBinaryDocument;
+		}
+
+		pollBody = parseV2JsonBody(pollResponse.body);
+		const status = String(pollBody.status ?? pollBody.Status ?? '');
+		const completedDocument = resolveV2DocumentFromBody(pollBody, fallbackName);
+
+		if (completedDocument) {
+			return completedDocument;
+		}
+
+		if (isV2CallInProgress(status)) {
+			retryCount++;
+			await delayAsync.call(this);
+			continue;
+		}
+
+		throw new Error(
+			`GenerateDocumentSingleV2 job finished with status "${status || 'unknown'}" but no document could be parsed: ${formatV2ResponseForError(pollBody)}`,
+		);
+	}
+
+	throw new Error(
+		`GenerateDocumentSingleV2 polling timed out after ${maxRetries} attempts. Last status: ${
+			String(pollBody.status ?? pollBody.Status ?? 'unknown')
+		}. Last body: ${formatV2ResponseForError(pollBody)}`,
+	);
+}
+
+/**
  * Call GenerateDocumentSingleV2 and handle sync or statusUrl-based async polling.
  */
 export async function pdf4meGenerateDocumentV2Request(
@@ -652,6 +734,17 @@ export async function pdf4meGenerateDocumentV2Request(
 		throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 	}
 
+	const body = parseV2JsonBody(response.body);
+	const statusUrl = resolveV2StatusUrl(body, response.headers);
+
+	if (statusUrl) {
+		return await pollV2StatusUrl.call(this, statusUrl, templateFileName);
+	}
+
+	if (response.statusCode === 202) {
+		throw new Error('No polling URL found in async GenerateDocumentSingleV2 response');
+	}
+
 	const binaryDocument = documentFromV2BinaryResponse(
 		response.body,
 		response.headers,
@@ -661,69 +754,13 @@ export async function pdf4meGenerateDocumentV2Request(
 		return binaryDocument;
 	}
 
-	const body = parseV2JsonBody(response.body);
-	const statusUrl = resolveV2StatusUrl(body, response.headers);
-
-	if (!statusUrl) {
-		const document = resolveV2DocumentFromBody(body);
-		if (!document) {
-			throw new Error(
-				`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
-			);
-		}
-		return document;
-	}
-
-	let pollBody = body;
-	let retryCount = 0;
-	const maxRetries = 720;
-
-	while (retryCount < maxRetries) {
-		const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			url: statusUrl,
-			method: 'GET',
-			encoding: 'arraybuffer' as const,
-			returnFullResponse: true,
-			ignoreHttpStatusErrors: true,
-		});
-
-		if (pollResponse.statusCode !== 200) {
-			throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
-		}
-
-		const pollBinaryDocument = documentFromV2BinaryResponse(
-			pollResponse.body,
-			pollResponse.headers,
-			templateFileName,
-		);
-		if (pollBinaryDocument) {
-			return pollBinaryDocument;
-		}
-
-		pollBody = parseV2JsonBody(pollResponse.body);
-		const status = pollBody.status ?? pollBody.Status;
-
-		const completedDocument = resolveV2DocumentFromBody(pollBody);
-		if (completedDocument && status !== 'callInit') {
-			return completedDocument;
-		}
-
-		if (status !== 'callInit') {
-			break;
-		}
-
-		retryCount++;
-		await delayAsync.call(this);
-	}
-
-	if (retryCount >= maxRetries) {
-		throw new Error('GenerateDocumentSingleV2 polling timed out after maximum retries');
-	}
-
-	const document = resolveV2DocumentFromBody(pollBody);
+	const fallbackName = templateFileName
+		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+		: 'generated_document.pdf';
+	const document = resolveV2DocumentFromBody(body, fallbackName);
 	if (!document) {
 		throw new Error(
-			`No documents found in async GenerateDocumentSingleV2 response: ${formatV2ResponseForError(pollBody)}`,
+			`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
 		);
 	}
 

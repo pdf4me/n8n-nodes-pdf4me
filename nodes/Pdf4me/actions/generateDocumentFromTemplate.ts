@@ -186,6 +186,18 @@ export const description: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Keep PDF Editable',
+		name: 'keepPdfEditable',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to keep the generated PDF form fields editable',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.GenerateDocumentFromTemplate],
+			},
+		},
+	},
+	{
 		displayName: 'Output Binary Property',
 		name: 'binaryDataName',
 		type: 'string',
@@ -204,6 +216,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const documentInputDataType = this.getNodeParameter('documentInputDataType', index) as string;
 	const documentDataType = this.getNodeParameter('documentDataType', index) as string;
 	const metaDataJsonRaw = this.getNodeParameter('metaDataJson', index);
+	const keepPdfEditable = this.getNodeParameter('keepPdfEditable', index, false) as boolean;
 	const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 
 	let documentDataFile = '';
@@ -297,6 +310,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		DocumentDataText: documentDataText || '',
 		DocumentDataFile: documentDataFile || '',
 		MetaDataJson: metaDataJson || '',
+		KeepPdfEditable: keepPdfEditable,
 		IsAsync: true,
 	};
 
