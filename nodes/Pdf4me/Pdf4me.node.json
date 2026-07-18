@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-base.Pdf4me",
+	"node": "n8n-nodes-pdf4me.Pdf4me",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": [

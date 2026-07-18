@@ -101,7 +101,7 @@ import { ActionConstants } from './GenericFunctions';
 export const descriptions: INodeTypeDescription = {
 	displayName: 'PDF4me',
 	name: 'PDF4me',
-	description: 'Comprehensive PDF and document processing: generate barcodes, convert files, extract data, manipulate images, and automate workflows with the PDF4ME API',
+	description: 'PDF4me for n8n automates document workflows: AI-powered parsing, classification, and data extraction, plus PDF conversion, generation, merge/split, editing, forms, stamps, signatures, OCR, barcodes and Swiss QR, invoices, image processing, security, and Word tools.',
 	defaults: {
 		name: 'PDF4me',
 	},

@@ -391,14 +391,21 @@ export async function getAnalyzerIdList(
 export async function getTemplateNameList(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
-	const body = await pdf4meApiRequest.call(this, '/api/v2/GetTemplateName', {}, 'GET');
-	const options = parseGetAnalyzerIdOptions(body);
+	try {
+		const body = await pdf4meApiRequest.call(this, '/api/v2/GetTemplateName', {}, 'GET');
+		const options = parseGetAnalyzerIdOptions(body);
 
-	if (options.length === 0) {
-		throw new Error('GetTemplateName returned no template options');
+		if (options.length === 0) {
+			throw new Error('GetTemplateName returned no template options');
+		}
+
+		return options;
+	} catch (error) {
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
-
-	return options;
 }
 
 interface GenerateDocumentV2Result {
@@ -648,64 +655,71 @@ async function pollV2StatusUrl(
 	templateFileName: string,
 	maxRetries: number = 720,
 ): Promise<GenerateDocumentV2Result> {
-	let retryCount = 0;
-	let pollBody: IDataObject = {};
-	const fallbackName = templateFileName
-		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
-		: 'generated_document.pdf';
+	try {
+		let retryCount = 0;
+		let pollBody: IDataObject = {};
+		const fallbackName = templateFileName
+			? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+			: 'generated_document.pdf';
 
-	while (retryCount < maxRetries) {
-		const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			url: statusUrl,
-			method: 'GET',
-			encoding: 'arraybuffer' as const,
-			returnFullResponse: true,
-			ignoreHttpStatusErrors: true,
-		});
+		while (retryCount < maxRetries) {
+			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+				url: statusUrl,
+				method: 'GET',
+				encoding: 'arraybuffer' as const,
+				returnFullResponse: true,
+				ignoreHttpStatusErrors: true,
+			});
 
-		if (pollResponse.statusCode === 404 || pollResponse.statusCode === 202) {
-			retryCount++;
-			await delayAsync.call(this);
-			continue;
-		}
+			if (pollResponse.statusCode === 404 || pollResponse.statusCode === 202) {
+				retryCount++;
+				await delayAsync.call(this);
+				continue;
+			}
 
-		if (pollResponse.statusCode !== 200) {
-			throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
-		}
+			if (pollResponse.statusCode !== 200) {
+				throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
+			}
 
-		const pollBinaryDocument = documentFromV2BinaryResponse(
-			pollResponse.body,
-			pollResponse.headers,
-			templateFileName,
-		);
-		if (pollBinaryDocument) {
-			return pollBinaryDocument;
-		}
+			const pollBinaryDocument = documentFromV2BinaryResponse(
+				pollResponse.body,
+				pollResponse.headers,
+				templateFileName,
+			);
+			if (pollBinaryDocument) {
+				return pollBinaryDocument;
+			}
 
-		pollBody = parseV2JsonBody(pollResponse.body);
-		const status = String(pollBody.status ?? pollBody.Status ?? '');
-		const completedDocument = resolveV2DocumentFromBody(pollBody, fallbackName);
+			pollBody = parseV2JsonBody(pollResponse.body);
+			const status = String(pollBody.status ?? pollBody.Status ?? '');
+			const completedDocument = resolveV2DocumentFromBody(pollBody, fallbackName);
 
-		if (completedDocument) {
-			return completedDocument;
-		}
+			if (completedDocument) {
+				return completedDocument;
+			}
 
-		if (isV2CallInProgress(status)) {
-			retryCount++;
-			await delayAsync.call(this);
-			continue;
+			if (isV2CallInProgress(status)) {
+				retryCount++;
+				await delayAsync.call(this);
+				continue;
+			}
+
+			throw new Error(
+				`GenerateDocumentSingleV2 job finished with status "${status || 'unknown'}" but no document could be parsed: ${formatV2ResponseForError(pollBody)}`,
+			);
 		}
 
 		throw new Error(
-			`GenerateDocumentSingleV2 job finished with status "${status || 'unknown'}" but no document could be parsed: ${formatV2ResponseForError(pollBody)}`,
+			`GenerateDocumentSingleV2 polling timed out after ${maxRetries} attempts. Last status: ${
+				String(pollBody.status ?? pollBody.Status ?? 'unknown')
+			}. Last body: ${formatV2ResponseForError(pollBody)}`,
 		);
+	} catch (error) {
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
-
-	throw new Error(
-		`GenerateDocumentSingleV2 polling timed out after ${maxRetries} attempts. Last status: ${
-			String(pollBody.status ?? pollBody.Status ?? 'unknown')
-		}. Last body: ${formatV2ResponseForError(pollBody)}`,
-	);
 }
 
 /**
@@ -716,55 +730,62 @@ export async function pdf4meGenerateDocumentV2Request(
 	url: string,
 	payload: IDataObject,
 ): Promise<GenerateDocumentV2Result> {
-	const templateFileName = String(payload.TemplateFileName ?? '');
+	try {
+		const templateFileName = String(payload.TemplateFileName ?? '');
 
-	const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-		url: `https://api.pdf4me.com${url}`,
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: payload,
-		encoding: 'arraybuffer' as const,
-		returnFullResponse: true,
-		ignoreHttpStatusErrors: true,
-	});
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: `https://api.pdf4me.com${url}`,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: payload,
+			encoding: 'arraybuffer' as const,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
+		});
 
-	if (response.statusCode !== 200 && response.statusCode !== 202) {
-		throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
-	}
+		if (response.statusCode !== 200 && response.statusCode !== 202) {
+			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
+		}
 
-	const body = parseV2JsonBody(response.body);
-	const statusUrl = resolveV2StatusUrl(body, response.headers);
+		const body = parseV2JsonBody(response.body);
+		const statusUrl = resolveV2StatusUrl(body, response.headers);
 
-	if (statusUrl) {
-		return await pollV2StatusUrl.call(this, statusUrl, templateFileName);
-	}
+		if (statusUrl) {
+			return await pollV2StatusUrl.call(this, statusUrl, templateFileName);
+		}
 
-	if (response.statusCode === 202) {
-		throw new Error('No polling URL found in async GenerateDocumentSingleV2 response');
-	}
+		if (response.statusCode === 202) {
+			throw new Error('No polling URL found in async GenerateDocumentSingleV2 response');
+		}
 
-	const binaryDocument = documentFromV2BinaryResponse(
-		response.body,
-		response.headers,
-		templateFileName,
-	);
-	if (binaryDocument) {
-		return binaryDocument;
-	}
-
-	const fallbackName = templateFileName
-		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
-		: 'generated_document.pdf';
-	const document = resolveV2DocumentFromBody(body, fallbackName);
-	if (!document) {
-		throw new Error(
-			`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
+		const binaryDocument = documentFromV2BinaryResponse(
+			response.body,
+			response.headers,
+			templateFileName,
 		);
-	}
+		if (binaryDocument) {
+			return binaryDocument;
+		}
 
-	return document;
+		const fallbackName = templateFileName
+			? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+			: 'generated_document.pdf';
+		const document = resolveV2DocumentFromBody(body, fallbackName);
+		if (!document) {
+			throw new Error(
+				`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
+			);
+		}
+
+		return document;
+	} catch (error) {
+		if (error instanceof NodeApiError) throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
+	}
 }
 
 export function sanitizeProfiles(data: IDataObject): void {
