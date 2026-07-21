@@ -1,5 +1,4 @@
-import { IExecuteFunctions } from 'n8n-workflow';
-import { IDataObject, INodeExecutionData, INodeProperties } from 'n8n-workflow';
+import { IExecuteFunctions, IDataObject, INodeExecutionData, INodeProperties  } from 'n8n-workflow';
 import { pdf4meAsyncRequest, ActionConstants, uploadBlobToPdf4me } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [

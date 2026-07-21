@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -22,16 +21,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use tax document file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide tax document content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use tax document file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to tax document file',
@@ -114,74 +113,74 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'None',
-				value: '',
-				description: 'No specific tax model',
-			},
-			{
-				name: 'W2',
-				value: 'W2',
-				description: 'W2 tax form',
-			},
-			{
-				name: '1099',
-				value: '1099',
-				description: '1099 tax form',
-			},
-			{
-				name: '1099-SSA',
-				value: '1099-SSA',
-				description: '1099-SSA tax form',
-			},
-			{
 				name: '1040',
 				value: '1040',
 				description: '1040 tax form',
 			},
-			{
-				name: '1040-SR',
-				value: '1040-SR',
-				description: '1040-SR tax form',
-			},
-			{
+{
 				name: '1040-NR',
 				value: '1040-NR',
 				description: '1040-NR tax form',
 			},
-			{
-				name: '1098',
-				value: '1098',
-				description: '1098 tax form',
+{
+				name: '1040-SR',
+				value: '1040-SR',
+				description: '1040-SR tax form',
 			},
-			{
-				name: '1098-E',
-				value: '1098-E',
-				description: '1098-E tax form',
-			},
-			{
-				name: '1098-T',
-				value: '1098-T',
-				description: '1098-T tax form',
-			},
-			{
+{
 				name: '1095A',
 				value: '1095A',
 				description: '1095A tax form',
 			},
-			{
+{
 				name: '1095C',
 				value: '1095C',
 				description: '1095C tax form',
 			},
-			{
+{
+				name: '1098',
+				value: '1098',
+				description: '1098 tax form',
+			},
+{
+				name: '1098-E',
+				value: '1098-E',
+				description: '1098-E tax form',
+			},
+{
+				name: '1098-T',
+				value: '1098-T',
+				description: '1098-T tax form',
+			},
+{
+				name: '1099',
+				value: '1099',
+				description: '1099 tax form',
+			},
+{
+				name: '1099-SSA',
+				value: '1099-SSA',
+				description: '1099-SSA tax form',
+			},
+{
+				name: 'None',
+				value: '',
+				description: 'No specific tax model',
+			},
+{
+				name: 'UnifiedTaxUS',
+				value: 'UnifiedTaxUS',
+				description: 'Unified Tax US',
+			},
+{
 				name: 'W-4',
 				value: 'W-4',
 				description: 'W-4 tax form',
 			},
-			{
-				name: 'UnifiedTaxUS',
-				value: 'UnifiedTaxUS',
-				description: 'Unified Tax US',
+{
+				name: 'W2',
+				value: 'W2',
+				description: 'W2 tax form',
 			},
 		],
 	},

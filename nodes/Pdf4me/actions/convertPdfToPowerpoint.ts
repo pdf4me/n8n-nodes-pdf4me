@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -159,7 +158,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'High',
 				value: 'High',
-				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page.',
 			},
 		],
 	},

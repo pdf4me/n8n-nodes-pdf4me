@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject, INodeExecutionData  } from 'n8n-workflow';
 import {
 	sanitizeProfiles,
 	ActionConstants,
@@ -140,7 +139,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Split Action Number',
 		name: 'splitActionNumber',
 		type: 'number',
-		required: false,
 		default: 1,
 		description: 'Page number for split action (e.g., split after page 1, or every N pages)',
 		displayOptions: {
@@ -154,7 +152,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Split Sequence',
 		name: 'splitSequence',
 		type: 'string',
-		required: false,
 		default: '',
 		description: 'Comma-separated list of page numbers to split at (e.g., 1,3,8)',
 		displayOptions: {
@@ -168,7 +165,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Split Ranges',
 		name: 'splitRanges',
 		type: 'string',
-		required: false,
 		default: '',
 		description: 'Page ranges to extract (e.g., 1-4,10-21)',
 		displayOptions: {

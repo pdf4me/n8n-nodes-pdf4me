@@ -130,7 +130,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'High',
 				value: 'High',
-				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page.',
 			},
 		],
 
@@ -156,7 +156,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		required: true,
 		default: true,
-		description: 'Combine all Excel sheets into one (True) or separate sheets (False)',
+		description: 'Whether to combine all Excel sheets into one (True) or separate sheets (False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToExcel],
@@ -169,7 +169,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		required: true,
 		default: true,
-		description: 'Preserve original formatting when possible',
+		description: 'Whether to preserve original formatting when possible',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToExcel],
@@ -182,7 +182,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		required: true,
 		default: true,
-		description: 'Use OCR (Optical Character Recognition) for scanned PDFs',
+		description: 'Whether to use OCR (Optical Character Recognition) for scanned PDFs',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToExcel],

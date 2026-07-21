@@ -3,12 +3,15 @@ import {
 	ILoadOptionsFunctions,
 	INodeType,
 	INodeTypeDescription,
-	INodeTypeBaseDescription,
 	INodeExecutionData,
+	JsonObject,
+	NodeConnectionType,
+	NodeApiError,
+	NodeOperationError,
 } from 'n8n-workflow';
 
-import { descriptions } from './Descriptions';
-import { getAnalyzerIdList, getTemplateNameList } from './GenericFunctions';
+import { nodeProperties } from './Descriptions';
+import { getAnalyzerIdList, getTemplateNameList, ActionConstants  } from './GenericFunctions';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
 import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
@@ -105,10 +108,31 @@ import * as processBankStatement from './actions/processBankStatement';
 import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import * as convertWordToPdfForm from './actions/convertWordToPdfForm';
-import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
-	description: INodeTypeDescription;
+	description: INodeTypeDescription = {
+		displayName: 'PDF4me',
+		name: 'pdf4me',
+		description:
+			'PDF4me for n8n automates document workflows: AI-powered parsing, classification, and data extraction, plus PDF conversion, generation, merge/split, editing, forms, stamps, signatures, OCR, barcodes and Swiss QR, invoices, image processing, security, and Word tools.',
+		defaults: {
+			name: 'PDF4me',
+		},
+		group: ['transform'],
+		icon: 'file:300.svg',
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
+		credentials: [
+			{
+				name: 'pdf4meApi',
+				required: true,
+			},
+		],
+		properties: nodeProperties,
+		subtitle: '={{$parameter["resource"]}} / {{$parameter["operation"]}}',
+		version: 1,
+		usableAsTool: true,
+	};
 
 	methods = {
 		loadOptions: {
@@ -120,13 +144,6 @@ export class Pdf4me implements INodeType {
 			},
 		},
 	};
-
-	constructor(baseDescription: INodeTypeBaseDescription) {
-		this.description = {
-			...baseDescription,
-			...descriptions,
-		};
-	}
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
@@ -331,9 +348,16 @@ export class Pdf4me implements INodeType {
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {
-					operationResult.push({ json: this.getInputData(i)[0].json, error: err });
+					operationResult.push({
+						json: this.getInputData(i)[0].json,
+						error: err,
+						pairedItem: { item: i },
+					});
 				} else {
-					throw err;
+					if (err instanceof NodeApiError || err instanceof NodeOperationError) {
+						throw err;
+					}
+					throw new NodeOperationError(this.getNode(), err as JsonObject);
 				}
 			}
 		}

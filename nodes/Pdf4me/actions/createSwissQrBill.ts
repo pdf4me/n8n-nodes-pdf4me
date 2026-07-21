@@ -1,5 +1,4 @@
-import type { INodeProperties, INodeExecutionData } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, INodeExecutionData, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -34,21 +33,21 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'None',
-				value: 'none',
-				description: 'Do not provide an input document',
-			},
-			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide file content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use file from previous node',
+			},
+{
+				name: 'None',
+				value: 'none',
+				description: 'Do not provide an input document',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to file',
@@ -90,7 +89,6 @@ export const description: INodeProperties[] = [
 		name: 'fileName',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Input file name from the source',
 		placeholder: PDF_FILE.documentName,
 		displayOptions: {
@@ -128,12 +126,12 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Swiss Franc',
-				value: 'CHF',
-			},
-			{
 				name: 'Euro',
 				value: 'EUR',
+			},
+{
+				name: 'Swiss Franc',
+				value: 'CHF',
 			},
 		],
 	},
@@ -179,12 +177,12 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Structured',
-				value: 'S',
-			},
-			{
 				name: 'Combined',
 				value: 'K',
+			},
+{
+				name: 'Structured',
+				value: 'S',
 			},
 		],
 	},
@@ -193,7 +191,6 @@ export const description: INodeProperties[] = [
 		name: 'crStreetOrAddressLine1',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'The creditor\'s address line with max 70 characters',
 		placeholder: SWISS_QR_BILL.creditorStreet,
 		displayOptions: {
@@ -220,7 +217,6 @@ export const description: INodeProperties[] = [
 		name: 'crPostalCode',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'The Creditor\'s postal code with a max of 16 characters',
 		placeholder: SWISS_QR_BILL.postalCode,
 		displayOptions: {
@@ -234,7 +230,6 @@ export const description: INodeProperties[] = [
 		name: 'crCity',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'The Creditor\'s Town/City with max 35 characters',
 		placeholder: SWISS_QR_BILL.city,
 		displayOptions: {
@@ -248,7 +243,6 @@ export const description: INodeProperties[] = [
 		name: 'udName',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Debtor\'s name or company according to account name',
 		placeholder: SWISS_QR_BILL.debtorName,
 		displayOptions: {
@@ -271,12 +265,12 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Structured',
-				value: 'S',
-			},
-			{
 				name: 'Combined',
 				value: 'K',
+			},
+{
+				name: 'Structured',
+				value: 'S',
 			},
 		],
 	},
@@ -285,7 +279,6 @@ export const description: INodeProperties[] = [
 		name: 'udStreetOrAddressLine1',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Debtor\'s address line with max 70 characters',
 		placeholder: SWISS_QR_BILL.debtorStreet,
 		displayOptions: {
@@ -299,7 +292,6 @@ export const description: INodeProperties[] = [
 		name: 'udStreetOrAddressLine2',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Debtor\'s address line - For S type 16 characters and for K type 70 characters',
 		placeholder: SWISS_QR_BILL.debtorBuilding,
 		displayOptions: {
@@ -313,7 +305,6 @@ export const description: INodeProperties[] = [
 		name: 'udPostalCode',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Debtor\'s postal code',
 		placeholder: SWISS_QR_BILL.postalCode,
 		displayOptions: {
@@ -327,7 +318,6 @@ export const description: INodeProperties[] = [
 		name: 'udCity',
 		type: 'string',
 		default: '',
-		required: false,
 		description: 'Debtor\'s Town/City',
 		placeholder: SWISS_QR_BILL.city,
 		displayOptions: {
@@ -343,7 +333,6 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'NON',
-		description: 'Reference Type',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.CreateSwissQrBill],
@@ -351,16 +340,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: 'Creditor Reference',
+				value: 'SCOR',
+			},
+{
 				name: 'No Reference',
 				value: 'NON',
 			},
-			{
+{
 				name: 'QR Reference',
 				value: 'QRR',
-			},
-			{
-				name: 'Creditor Reference',
-				value: 'SCOR',
 			},
 		],
 	},
@@ -381,15 +370,15 @@ export const description: INodeProperties[] = [
 				name: 'English',
 				value: 'English',
 			},
-			{
-				name: 'German',
-				value: 'German',
-			},
-			{
+{
 				name: 'French',
 				value: 'French',
 			},
-			{
+{
+				name: 'German',
+				value: 'German',
+			},
+{
 				name: 'Italian',
 				value: 'Italian',
 			},
@@ -409,14 +398,14 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Line With Scissor',
-				value: 'LineWithScissor',
-			},
-			{
 				name: 'Dotted Line',
 				value: 'DottedLine',
 			},
-			{
+{
+				name: 'Line With Scissor',
+				value: 'LineWithScissor',
+			},
+{
 				name: 'Solid Line',
 				value: 'SolidLine',
 			},
@@ -436,24 +425,24 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'PDF',
-				value: 'pdf',
+				name: 'Empty (Null)',
+				value: '',
 			},
-			{
-				name: 'PNG',
-				value: 'png',
-			},
-			{
+{
 				name: 'JPEG',
 				value: 'jpeg',
 			},
-			{
+{
+				name: 'PDF',
+				value: 'pdf',
+			},
+{
+				name: 'PNG',
+				value: 'png',
+			},
+{
 				name: 'TIFF',
 				value: 'tiff',
-			},
-			{
-				name: 'Empty (null)',
-				value: '',
 			},
 		],
 	},
@@ -472,20 +461,20 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'First',
-				value: 'first',
-			},
-			{
-				name: 'Last',
-				value: 'last',
-			},
-			{
 				name: 'Add Page At End',
 				value: 'AddPageAtEnd',
 			},
-			{
+{
 				name: 'Custom',
 				value: 'custom',
+			},
+{
+				name: 'First',
+				value: 'first',
+			},
+{
+				name: 'Last',
+				value: 'last',
 			},
 		],
 	},
@@ -493,7 +482,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Custom Page',
 		name: 'pageNumber',
 		type: 'number',
-		required: false,
 		default: 1,
 		typeOptions: {
 			minValue: 1,
@@ -538,30 +526,6 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Reference',
-				name: 'reference',
-				type: 'string',
-				default: '',
-				description: 'Reference, maximum 27 characters',
-				placeholder: SWISS_QR_BILL.reference,
-			},
-			{
-				displayName: 'Unstructured Message',
-				name: 'unstructuredMessage',
-				type: 'string',
-				default: '',
-				description: 'Unstructured Message, maximum 140 characters permitted',
-				placeholder: SWISS_QR_BILL.unstructuredMessage,
-			},
-			{
-				displayName: 'Billing Info',
-				name: 'billingInfo',
-				type: 'string',
-				default: '',
-				description: 'Billing info of the customer',
-				placeholder: SWISS_QR_BILL.billingInfo,
-			},
-			{
 				displayName: 'AV1 Parameter',
 				name: 'av1',
 				type: 'string',
@@ -569,7 +533,7 @@ export const description: INodeProperties[] = [
 				description: 'Alternative scheme parameter',
 				placeholder: SWISS_QR_BILL.av1,
 			},
-			{
+{
 				displayName: 'AV2 Parameter',
 				name: 'av2',
 				type: 'string',
@@ -577,13 +541,37 @@ export const description: INodeProperties[] = [
 				description: 'Alternative scheme parameter',
 				placeholder: SWISS_QR_BILL.av2,
 			},
-			{
+{
+				displayName: 'Billing Info',
+				name: 'billingInfo',
+				type: 'string',
+				default: '',
+				description: 'Billing info of the customer',
+				placeholder: SWISS_QR_BILL.billingInfo,
+			},
+{
 				displayName: 'Custom Profiles',
 				name: 'profiles',
 				type: 'string',
 				default: '',
 				description: 'Use "JSON" to adjust custom properties. Review Profiles at https://dev.pdf4me.com/apiv2/documentation/ to set extra options for API calls.',
 				placeholder: CUSTOM_PROFILES_PLACEHOLDER,
+			},
+{
+				displayName: 'Reference',
+				name: 'reference',
+				type: 'string',
+				default: '',
+				description: 'Reference, maximum 27 characters',
+				placeholder: SWISS_QR_BILL.reference,
+			},
+{
+				displayName: 'Unstructured Message',
+				name: 'unstructuredMessage',
+				type: 'string',
+				default: '',
+				description: 'Unstructured Message, maximum 140 characters permitted',
+				placeholder: SWISS_QR_BILL.unstructuredMessage,
 			},
 		],
 	},

@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	uploadBlobToPdf4me,
@@ -41,7 +40,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Input Binary Field',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: false,
 		default: 'data',
 		description: 'Name of the binary property that contains the marriage certificate file',
 		displayOptions: {
@@ -102,7 +100,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Verify Authenticity',
 		name: 'verifyAuthenticity',
 		type: 'boolean',
-		required: false,
 		default: false,
 		description: 'Whether to verify the authenticity of the marriage certificate',
 		displayOptions: {

@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -63,10 +62,34 @@ export const description: INodeProperties[] = [
 				name: 'pdfFile',
 				values: [
 					{
+						displayName: 'Base64 Content',
+						name: 'base64Content',
+						type: 'string',
+						default: '',
+						description: 'Base64 encoded PDF content',
+						placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
+					},
+					{
+						displayName: 'Binary Property Name',
+						name: 'binaryPropertyName',
+						type: 'string',
+						default: 'data',
+						description: 'Name of the binary property containing the PDF file',
+						placeholder: 'data',
+					},
+					{
+						displayName: 'File Name',
+						name: 'fileName',
+						type: 'string',
+						default: '',
+						description: 'Optional name for the PDF file (for reference)',
+						placeholder: 'document1.pdf',
+					},
+					{
 						displayName: 'Input Type',
 						name: 'inputType',
 						type: 'options',
-						required: true,
+							required:	true,
 						default: 'binaryData',
 						description: 'Choose how to provide this PDF file',
 						options: [
@@ -85,36 +108,7 @@ export const description: INodeProperties[] = [
 								value: 'url',
 								description: 'Provide URL to PDF file',
 							},
-						],
-					},
-					{
-						displayName: 'Binary Property Name',
-						name: 'binaryPropertyName',
-						type: 'string',
-						default: 'data',
-						description: 'Name of the binary property containing the PDF file',
-						placeholder: 'data',
-						displayOptions: {
-							show: {
-								inputType: ['binaryData'],
-							},
-						},
-					},
-					{
-						displayName: 'Base64 Content',
-						name: 'base64Content',
-						type: 'string',
-						typeOptions: {
-							alwaysOpenEditWindow: true,
-						},
-						default: '',
-						description: 'Base64 encoded PDF content',
-						placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
-						displayOptions: {
-							show: {
-								inputType: ['base64'],
-							},
-						},
+						]
 					},
 					{
 						displayName: 'PDF URL',
@@ -123,21 +117,8 @@ export const description: INodeProperties[] = [
 						default: '',
 						description: 'URL to the PDF file',
 						placeholder: 'https://example.com/document.pdf',
-						displayOptions: {
-							show: {
-								inputType: ['url'],
-							},
-						},
 					},
-					{
-						displayName: 'File Name',
-						name: 'fileName',
-						type: 'string',
-						default: '',
-						description: 'Optional name for the PDF file (for reference)',
-						placeholder: 'document1.pdf',
-					},
-				],
+			],
 			},
 		],
 
@@ -148,7 +129,7 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		required: true,
-		description: 'Expression that returns an array of PDFs. Use base64 strings or URLs. E.g. {{ $json.pdfArray }}',
+		description: 'Expression that returns an array of PDFs. Use base64 strings or URLs. E.g. {{ $JSON.pdfArray }}',
 		placeholder: '{{ $json.pdfArray }}',
 		displayOptions: {
 			show: {
@@ -184,7 +165,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Objects with URL or Base64',
 				value: 'mixed',
-				description: 'Array of objects with "url" or "base64" property per item',
+				description: 'Array of objects with "URL" or "base64" property per item',
 			},
 		],
 	},

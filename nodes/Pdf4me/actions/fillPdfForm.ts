@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -192,8 +191,8 @@ export const description: INodeProperties[] = [
 		displayName: 'Form Data (JSON)',
 		name: 'formDataJson',
 		type: 'json',
+		default: '{"firstname": "John", "lastname": "Doe", "email": "john@example.com"}',
 		required: true,
-		default: FILL_PDF_FORM.formDataJsonDefault,
 		description: 'JSON object containing form field names and values',
 		displayOptions: {
 			show: {

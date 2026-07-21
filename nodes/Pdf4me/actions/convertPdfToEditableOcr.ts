@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -107,7 +106,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'High',
 				value: 'High',
-				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page.',
 			},
 		],
 		hint: 'Convert PDF to editable PDF using OCR. See our <b><a href="https://docs.pdf4me.com/integration/n8n/find-search/convert-pdf-to-editable-pdf-using-ocr/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
@@ -142,7 +141,7 @@ export const description: INodeProperties[] = [
 		name: 'language',
 		type: 'string',
 		default: 'English',
-		description: 'Language of the text in the source file. Only use if output is not recognizable',
+		description: 'Language of the text in the source file. Only use if output is not recognizable.',
 		placeholder: 'English',
 		displayOptions: {
 			show: {
@@ -168,7 +167,7 @@ export const description: INodeProperties[] = [
 		name: 'mergeAllSheets',
 		type: 'boolean',
 		default: true,
-		description: 'Merge all sheets if applicable',
+		description: 'Whether to merge all sheets if applicable',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertPdfToEditableOcr],

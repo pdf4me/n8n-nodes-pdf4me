@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -22,16 +21,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use receipt file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide receipt content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use receipt file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to receipt file',
@@ -114,64 +113,64 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'None',
-				value: '',
-				description: 'No specific receipt type',
-			},
-			{
-				name: 'Meal',
-				value: 'meal',
-				description: 'Meal receipt',
-			},
-			{
-				name: 'Supplies',
-				value: 'supplies',
-				description: 'Supplies receipt',
-			},
-			{
-				name: 'Hotel',
-				value: 'hotel',
-				description: 'Hotel receipt',
-			},
-			{
-				name: 'Fuel and Energy',
-				value: 'fuel and energy',
-				description: 'Fuel and energy receipt',
-			},
-			{
-				name: 'Transportation',
-				value: 'transportation',
-				description: 'Transportation receipt',
-			},
-			{
 				name: 'Communication',
 				value: 'communication',
 				description: 'Communication receipt',
 			},
-			{
-				name: 'Subscriptions',
-				value: 'subscriptions',
-				description: 'Subscriptions receipt',
-			},
-			{
+{
 				name: 'Entertainment',
 				value: 'entertainment',
 				description: 'Entertainment receipt',
 			},
-			{
-				name: 'Training',
-				value: 'training',
-				description: 'Training receipt',
+{
+				name: 'Fuel and Energy',
+				value: 'fuel and energy',
+				description: 'Fuel and energy receipt',
 			},
-			{
+{
+				name: 'Generic',
+				value: 'generic',
+				description: 'Generic receipt',
+			},
+{
 				name: 'Healthcare',
 				value: 'healthcare',
 				description: 'Healthcare receipt',
 			},
-			{
-				name: 'Generic',
-				value: 'generic',
-				description: 'Generic receipt',
+{
+				name: 'Hotel',
+				value: 'hotel',
+				description: 'Hotel receipt',
+			},
+{
+				name: 'Meal',
+				value: 'meal',
+				description: 'Meal receipt',
+			},
+{
+				name: 'None',
+				value: '',
+				description: 'No specific receipt type',
+			},
+{
+				name: 'Subscriptions',
+				value: 'subscriptions',
+				description: 'Subscriptions receipt',
+			},
+{
+				name: 'Supplies',
+				value: 'supplies',
+				description: 'Supplies receipt',
+			},
+{
+				name: 'Training',
+				value: 'training',
+				description: 'Training receipt',
+			},
+{
+				name: 'Transportation',
+				value: 'transportation',
+				description: 'Transportation receipt',
 			},
 		],
 	},

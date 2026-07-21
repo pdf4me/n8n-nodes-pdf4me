@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -23,16 +22,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -103,7 +102,7 @@ export const description: INodeProperties[] = [
 		hint: 'Convert PDF to images. See our <b><a href="https://docs.pdf4me.com/integration/n8n/image/create-image-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
-		displayName: 'Image Width (pixels)',
+		displayName: 'Image Width (Pixels)',
 		name: 'widthPixel',
 		type: 'number',
 		default: 800,
@@ -126,56 +125,56 @@ export const description: INodeProperties[] = [
 		description: 'Output format for the images',
 		options: [
 			{
-				name: 'JPG',
-				value: 'jpg',
-				description: 'JPEG image format',
-			},
-			{
-				name: 'JPEG',
-				value: 'jpeg',
-				description: 'JPEG image format',
-			},
-			{
 				name: 'BMP',
 				value: 'bmp',
 				description: 'Bitmap image format',
 			},
-			{
+{
 				name: 'GIF',
 				value: 'gif',
 				description: 'GIF image format',
 			},
-			{
+{
 				name: 'JB2',
 				value: 'jb2',
 				description: 'JBIG2 image format',
 			},
-			{
+{
 				name: 'JP2',
 				value: 'jp2',
 				description: 'JPEG 2000 image format',
 			},
-			{
+{
+				name: 'JPEG',
+				value: 'jpeg',
+				description: 'JPEG image format',
+			},
+{
 				name: 'JPF',
 				value: 'jpf',
 				description: 'JPEG 2000 image format',
 			},
-			{
+{
+				name: 'JPG',
+				value: 'jpg',
+				description: 'JPEG image format',
+			},
+{
 				name: 'JPX',
 				value: 'jpx',
 				description: 'JPEG 2000 image format',
 			},
-			{
+{
 				name: 'PNG',
 				value: 'png',
 				description: 'PNG image format',
 			},
-			{
+{
 				name: 'TIF',
 				value: 'tif',
 				description: 'TIFF image format',
 			},
-			{
+{
 				name: 'TIFF',
 				value: 'tiff',
 				description: 'TIFF image format',
@@ -204,15 +203,15 @@ export const description: INodeProperties[] = [
 				value: 'all',
 				description: 'Convert all pages to images',
 			},
-			{
-				name: 'Specific Pages',
-				value: 'specific',
-				description: 'Convert only specific page numbers',
-			},
-			{
+{
 				name: 'Page Range',
 				value: 'range',
 				description: 'Convert a range of pages',
+			},
+{
+				name: 'Specific Pages',
+				value: 'specific',
+				description: 'Convert only specific page numbers',
 			},
 		],
 	},

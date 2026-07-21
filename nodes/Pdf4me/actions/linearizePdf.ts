@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -25,16 +24,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -129,49 +128,49 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Web',
-				value: 'web',
-				description: 'Optimized for web viewing (fast loading, progressive display)',
-			},
-			{
-				name: 'Max',
-				value: 'Max',
-				description: 'Maximum compression (smallest file size, slower processing)',
-			},
-			{
-				name: 'Print',
-				value: 'Print',
-				description: 'Optimized for printing (correct fonts, colors, resolution)',
-			},
-			{
-				name: 'Default',
-				value: 'Default',
-				description: 'Standard optimization balance',
-			},
-			{
-				name: 'WebMax',
-				value: 'WebMax',
-				description: 'Maximum web optimization (best for online viewing)',
-			},
-			{
-				name: 'PrintMax',
-				value: 'PrintMax',
-				description: 'Maximum print optimization (best quality for printing)',
-			},
-			{
-				name: 'PrintGray',
-				value: 'PrintGray',
-				description: 'Print optimized with grayscale conversion',
-			},
-			{
 				name: 'Compress',
 				value: 'Compress',
 				description: 'General compression without specific optimization',
 			},
-			{
+{
 				name: 'CompressMax',
 				value: 'CompressMax',
 				description: 'Maximum compression with aggressive size reduction',
+			},
+{
+				name: 'Default',
+				value: 'Default',
+				description: 'Standard optimization balance',
+			},
+{
+				name: 'Max',
+				value: 'Max',
+				description: 'Maximum compression (smallest file size, slower processing)',
+			},
+{
+				name: 'Print',
+				value: 'Print',
+				description: 'Optimized for printing (correct fonts, colors, resolution)',
+			},
+{
+				name: 'PrintGray',
+				value: 'PrintGray',
+				description: 'Print optimized with grayscale conversion',
+			},
+{
+				name: 'PrintMax',
+				value: 'PrintMax',
+				description: 'Maximum print optimization (best quality for printing)',
+			},
+{
+				name: 'Web',
+				value: 'web',
+				description: 'Optimized for web viewing (fast loading, progressive display)',
+			},
+{
+				name: 'WebMax',
+				value: 'WebMax',
+				description: 'Maximum web optimization (best for online viewing)',
 			},
 		],
 	},

@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -68,7 +67,7 @@ export const description: INodeProperties[] = [
 		},
 		required: true,
 		default: '',
-		description: 'Provide the Markdown content already encoded in base64 format (not raw Markdown code). Example: IyBTYW1wbGUgTWFya2Rvd24KCkZvciBleGFtcGxlLCB0aGlzIGlzIGEgKipib2xkKiogdGV4dC4=',
+		description: 'Provide the Markdown content already encoded in base64 format (not raw Markdown code). Example: IyBTYW1wbGUgTWFya2Rvd24KCkZvciBleGFtcGxlLCB0aGlzIGlzIGEgKipib2xkKiogdGV4dC4=.',
 		placeholder: 'IyBTYW1wbGUgTWFya2Rvd24KCkZvciBleGFtcGxlLCB0aGlzIGlzIGEgKipib2xkKiogdGV4dC4=',
 		displayOptions: {
 			show: {

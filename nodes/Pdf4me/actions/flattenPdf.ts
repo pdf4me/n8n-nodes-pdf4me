@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -25,16 +24,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -129,39 +128,39 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Flatten Forms',
-				name: 'flattenForms',
-				type: 'boolean',
-				default: true,
-				description: 'Convert form fields to static text (no longer editable)',
-			},
-			{
 				displayName: 'Flatten Annotations',
 				name: 'flattenAnnotations',
 				type: 'boolean',
 				default: true,
-				description: 'Convert annotations to permanent marks (comments become part of document)',
-			},
-			{
-				displayName: 'Flatten Layers',
-				name: 'flattenLayers',
-				type: 'boolean',
-				default: true,
-				description: 'Merge all layers into a single layer',
+				description: 'Whether to convert annotations to permanent marks (comments become part of document)',
 			},
 			{
 				displayName: 'Flatten Digital Signatures',
 				name: 'flattenSignatures',
 				type: 'boolean',
 				default: true,
-				description: 'Convert digital signatures to visual representation only',
+				description: 'Whether to convert digital signatures to visual representation only',
+			},
+			{
+				displayName: 'Flatten Forms',
+				name: 'flattenForms',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to convert form fields to static text (no longer editable)',
 			},
 			{
 				displayName: 'Flatten Interactive Elements',
 				name: 'flattenInteractive',
 				type: 'boolean',
 				default: true,
-				description: 'Convert buttons, links, and other interactive elements to static content',
+				description: 'Whether to convert buttons, links, and other interactive elements to static content',
+			},
+			{
+				displayName: 'Flatten Layers',
+				name: 'flattenLayers',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to merge all layers into a single layer',
 			},
 		],
 	},

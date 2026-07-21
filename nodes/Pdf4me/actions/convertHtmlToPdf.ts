@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -22,21 +21,21 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use HTML file from previous node (binary data)',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide HTML content already encoded in base64 format',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use HTML file from previous node (binary data)',
+			},
+{
 				name: 'HTML Code',
 				value: 'htmlCode',
 				description: 'Write raw HTML code manually (will be converted to base64)',
 			},
-			{
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to HTML file (will be downloaded and converted)',
@@ -66,7 +65,7 @@ export const description: INodeProperties[] = [
 		},
 		required: true,
 		default: '',
-		description: 'Provide the HTML content already encoded in base64 format (not raw HTML code). Example: PGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tIj5MaW5rPC9hPg==',
+		description: 'Provide the HTML content already encoded in base64 format (not raw HTML code). Example: PGEgaHJlZj0iaHR0cDovL2V4YW1wbGUuY29tIj5MaW5rPC9hPg==.',
 		placeholder: 'PGh0bWw+PGhlYWQ+PHRpdGxlPlNhbXBsZTwvdGl0bGU+PC9oZWFkPjxib2R5PkhlbGxvIFdvcmxkPC9ib2R5PjwvaHRtbD4=',
 		displayOptions: {
 			show: {
@@ -126,7 +125,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Index File Path',
 		name: 'indexFilePath',
 		type: 'string',
-		required: false,
 		default: '',
 		description: 'Index file path required when the input file is ZIP',
 		placeholder: 'index.html',
@@ -151,14 +149,14 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Portrait',
-				value: 'Portrait',
-				description: 'Vertical orientation (taller than wide)',
-			},
-			{
 				name: 'Landscape',
 				value: 'Landscape',
 				description: 'Horizontal orientation (wider than tall)',
+			},
+{
+				name: 'Portrait',
+				value: 'Portrait',
+				description: 'Vertical orientation (taller than wide)',
 			},
 		],
 	},
@@ -176,18 +174,18 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{ name: 'A0', value: 'A0' },
-			{ name: 'A1', value: 'A1' },
-			{ name: 'A2', value: 'A2' },
-			{ name: 'A3', value: 'A3' },
-			{ name: 'A4', value: 'A4' },
-			{ name: 'A5', value: 'A5' },
-			{ name: 'A6', value: 'A6' },
-			{ name: 'A7', value: 'A7' },
-			{ name: 'A8', value: 'A8' },
-			{ name: 'Tabloid', value: 'Tabloid' },
-			{ name: 'Legal', value: 'Legal' },
-			{ name: 'Statement', value: 'Statement' },
-			{ name: 'Executive', value: 'Executive' },
+{ name: 'A1', value: 'A1' },
+{ name: 'A2', value: 'A2' },
+{ name: 'A3', value: 'A3' },
+{ name: 'A4', value: 'A4' },
+{ name: 'A5', value: 'A5' },
+{ name: 'A6', value: 'A6' },
+{ name: 'A7', value: 'A7' },
+{ name: 'A8', value: 'A8' },
+{ name: 'Executive', value: 'Executive' },
+{ name: 'Legal', value: 'Legal' },
+{ name: 'Statement', value: 'Statement' },
+{ name: 'Tabloid', value: 'Tabloid' },
 		],
 	},
 	{
@@ -270,7 +268,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		required: true,
 		default: false,
-		description: 'Select true to PrintBackground in PDF and select false for PrintBackground will not display in PDF',
+		description: 'Whether to printBackground in PDF',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertHtmlToPdf],
@@ -283,7 +281,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		required: true,
 		default: false,
-		description: 'Select true to DisplayHeaderFooter in PDF and select false for DisplayHeaderFooter will not display in PDF',
+		description: 'Whether to displayHeaderFooter in PDF',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertHtmlToPdf],

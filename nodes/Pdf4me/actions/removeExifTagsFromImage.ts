@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -122,7 +121,7 @@ export const description: INodeProperties[] = [
 		name: 'async',
 		type: 'boolean',
 		default: true,
-		description: 'Enable asynchronous processing',
+		description: 'Whether to enable asynchronous processing',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.RemoveExifTagsFromImage],

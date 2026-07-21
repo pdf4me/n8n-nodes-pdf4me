@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	uploadBlobToPdf4me,
@@ -23,16 +22,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use image file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide image content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use image file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to image file',
@@ -101,16 +100,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use watermark image from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide watermark image content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use watermark image from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to watermark image',
@@ -187,14 +186,14 @@ export const description: INodeProperties[] = [
 		default: 'topright',
 		description: 'Position of the watermark on the image',
 		options: [
-			{ name: 'Top Right', value: 'topright' },
-			{ name: 'Top Left', value: 'topleft' },
-			{ name: 'Bottom Right', value: 'bottomright' },
 			{ name: 'Bottom Left', value: 'bottomleft' },
-			{ name: 'Central Horizontal', value: 'centralhorizontal' },
-			{ name: 'Central Vertical', value: 'centralvertical' },
-			{ name: 'Diagonal', value: 'diagonal' },
-			{ name: 'Custom', value: 'custom' },
+{ name: 'Bottom Right', value: 'bottomright' },
+{ name: 'Central Horizontal', value: 'centralhorizontal' },
+{ name: 'Central Vertical', value: 'centralvertical' },
+{ name: 'Custom', value: 'custom' },
+{ name: 'Diagonal', value: 'diagonal' },
+{ name: 'Top Left', value: 'topleft' },
+{ name: 'Top Right', value: 'topright' },
 		],
 		displayOptions: {
 			show: {

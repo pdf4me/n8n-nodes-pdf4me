@@ -1,5 +1,5 @@
-/* eslint-disable n8n-nodes-base/node-filename-against-convention, n8n-nodes-base/node-param-default-missing */
-import { INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
+/* eslint-disable n8n-nodes-base/node-param-default-missing */
+import { INodeProperties } from 'n8n-workflow';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
 import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
 import * as addFormFieldsToPdf from './actions/addFormFieldsToPdf';
@@ -98,24 +98,7 @@ import * as linearizePdf from './actions/linearizePdf';
 import * as flattenPdf from './actions/flattenPdf';
 import { ActionConstants } from './GenericFunctions';
 
-export const descriptions: INodeTypeDescription = {
-	displayName: 'PDF4me',
-	name: 'PDF4me',
-	description: 'PDF4me for n8n automates document workflows: AI-powered parsing, classification, and data extraction, plus PDF conversion, generation, merge/split, editing, forms, stamps, signatures, OCR, barcodes and Swiss QR, invoices, image processing, security, and Word tools.',
-	defaults: {
-		name: 'PDF4me',
-	},
-	group: ['transform'],
-	icon: 'file:300.svg',
-	inputs: [NodeConnectionType.Main],
-	outputs: [NodeConnectionType.Main],
-	credentials: [
-		{
-			name: 'pdf4meApi',
-			required: true,
-		},
-	], // eslint-disable-line n8n-nodes-base/node-param-default-missing
-	properties: [
+export const nodeProperties: INodeProperties[] = [
 		{
 			displayName: 'Resource',
 			name: 'resource',
@@ -127,82 +110,82 @@ export const descriptions: INodeTypeDescription = {
 					value: 'ai',
 					description: 'AI-powered document processing and classification',
 				},
-				{
+{
 					name: 'Barcode',
 					value: 'barcode',
 					description: 'Generate QR codes and barcodes for use in documents',
 				},
-				{
+{
 					name: 'Convert',
 					value: 'convert',
 					description: 'Convert various document formats to and from PDF',
 				},
-				{
+{
 					name: 'Edit',
 					value: 'edit',
 					description: 'Edit PDF documents: add attachments, headers, footers, stamps, and signatures',
 				},
-				{
+{
 					name: 'Extract',
 					value: 'extract',
 					description: 'Extract data, text, tables, and attachments from documents',
 				},
-				{
-					name: 'Invoice',
-					value: 'invoice',
-					description: 'Create compliant invoices: Swiss QR Bills and Zugferd invoices',
-				},
-				{
+{
 					name: 'Find Search',
 					value: 'findSearch',
 					description: 'Find and replace text, convert PDF to editable format using OCR',
 				},
-				{
-					name: 'Forms',
+{
+					name: 'Form',
 					value: 'forms',
 					description: 'Create, fill, and manage PDF forms',
 				},
-				{
+{
 					name: 'Generate',
 					value: 'generate',
 					description: 'Generate PDFs from templates with data, manage Word documents',
 				},
-				{
+{
 					name: 'Image',
 					value: 'image',
 					description: 'Process and manipulate images: resize, crop, rotate, compress, and extract text',
 				},
-				{
+{
+					name: 'Invoice',
+					value: 'invoice',
+					description: 'Create compliant invoices: Swiss QR Bills and Zugferd invoices',
+				},
+{
 					name: 'Merge & Split',
 					value: 'mergeSplit',
 					description: 'Merge multiple PDFs or split PDFs by various criteria',
 				},
-				{
+{
 					name: 'Optimize Compress',
 					value: 'optimizeCompress',
 					description: 'Compress and optimize PDF files',
 				},
-				{
+{
 					name: 'Organize',
 					value: 'organize',
 					description: 'Organize PDF pages: delete, extract, and rotate pages',
 				},
-				{
-					name: 'PDF4me',
-					value: 'pdf4me',
-					description: 'PDF4me-specific operations: upload files, get documents, and update hyperlinks',
-				},
-				{
+{
 					name: 'PDF',
 					value: 'pdf',
 					description: 'Get PDF metadata and repair PDF documents',
 				},
-				{
+{
+					name: 'PDF4me',
+					value: 'pdf4me',
+					description: 'PDF4me-specific operations: upload files, get documents, and update hyperlinks',
+				},
+{
 					name: 'Security',
 					value: 'security',
 					description: 'Protect and unlock PDF documents',
 				},
-				{
+{
 					name: 'Word',
 					value: 'word',
 					description: 'Manage Word document tracking changes',
@@ -225,94 +208,94 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'AI-Invoice Parser',
-					value: ActionConstants.AiInvoiceParser,
-					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
-					action: 'AI-Invoice Parser',
-				},
-				{
-					name: 'AI-Process Bank Cheque',
-					value: ActionConstants.AiProcessBankCheque,
-					description: 'Extract structured data from bank cheques using AI/ML technology for payment processing',
-					action: 'AI-Process Bank Cheque',
-				},
-				{
-					name: 'AI-Process Credit Card',
-					value: ActionConstants.AiProcessCreditCard,
-					description: 'Extract structured data from credit cards using AI/ML technology for payment processing',
-					action: 'AI-Process Credit Card',
-				},
-				{
-					name: 'AI-Process Contract',
-					value: ActionConstants.AiProcessContract,
-					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
-					action: 'AI-Process Contract',
-				},
-				{
-					name: 'AI-Process HealthCard',
-					value: ActionConstants.AiProcessHealthCard,
-					description: 'Extract structured data from health cards using AI/ML technology for member management',
-					action: 'AI-Process HealthCard',
-				},
-				{
-					name: 'AI-Process Marriage Certificate',
-					value: ActionConstants.AiProcessMarriageCertificate,
-					description: 'Extract structured data from marriage certificates using AI/ML technology for document verification',
-					action: 'AI-Process Marriage Certificate',
-				},
-				{
-					name: 'AI-Process Mortgage Document',
-					value: ActionConstants.AiProcessMortgageDocument,
-					description: 'Extract structured data from mortgage documents using AI/ML technology for loan processing',
-					action: 'AI-Process Mortgage Document',
-				},
-				{
-					name: 'AI-Process Pay Stub',
-					value: ActionConstants.AiProcessPayStub,
-					description: 'Extract structured data from pay stubs using AI/ML technology for payroll processing',
-					action: 'AI-Process Pay Stub',
-				},
-				{
-					name: 'AI Auto Crop Document',
-					value: ActionConstants.AiAutoCropDocument,
-					description: 'Automatically crop a document using AI to remove borders and unwanted areas',
-					action: 'AI auto crop document',
-				},
-				{
 					name: 'AI - Universal Document Data Extraction',
 					value: ActionConstants.ProcessUniversalDocument,
 					description: 'Extract specified fields from documents using universal document processing',
-					action: 'AI - Universal Document Data Extraction',
+					action: 'Ai universal document data extraction',
 				},
-				{
-					name: 'AI-Process Shipping Label',
-					value: ActionConstants.ProcessShippingLabel,
-					description: 'Process shipping labels to extract and analyze shipping information',
-					action: 'AI-Process Shipping Label',
+{
+					name: 'AI Auto Crop Document',
+					value: ActionConstants.AiAutoCropDocument,
+					description: 'Automatically crop a document using AI to remove borders and unwanted areas',
+					action: 'Ai auto crop document',
 				},
-				{
-					name: 'AI-Process Order',
-					value: ActionConstants.ProcessOrder,
-					description: 'Process order documents to extract and analyze order information',
-					action: 'AI-Process Order',
+{
+					name: 'AI-Invoice Parser',
+					value: ActionConstants.AiInvoiceParser,
+					description: 'Extract structured data from invoices using AI/ML technology for automated data entry',
+					action: 'Ai invoice parser',
 				},
-				{
-					name: 'AI-Process Receipt',
-					value: ActionConstants.ProcessReceipt,
-					description: 'Process receipt documents to extract items, merchant info, totals, and custom fields',
-					action: 'AI-Process Receipt',
+{
+					name: 'AI-Process Bank Cheque',
+					value: ActionConstants.AiProcessBankCheque,
+					description: 'Extract structured data from bank cheques using AI/ML technology for payment processing',
+					action: 'Ai process bank cheque',
 				},
-				{
-					name: 'AI-Process Tax Document',
-					value: ActionConstants.ProcessTaxDocument,
-					description: 'Process tax documents (W2, 1099, 1040, etc.) to extract tax information and custom fields',
-					action: 'AI-Process Tax Document',
-				},
-				{
+{
 					name: 'AI-Process Bank Statement',
 					value: ActionConstants.ProcessBankStatement,
 					description: 'Process bank statement documents to extract transactions, analyze patterns, and custom fields',
-					action: 'AI-Process Bank Statement',
+					action: 'Ai process bank statement',
+				},
+{
+					name: 'AI-Process Contract',
+					value: ActionConstants.AiProcessContract,
+					description: 'Extract structured data from contracts using AI/ML technology for legal document analysis',
+					action: 'Ai process contract',
+				},
+{
+					name: 'AI-Process Credit Card',
+					value: ActionConstants.AiProcessCreditCard,
+					description: 'Extract structured data from credit cards using AI/ML technology for payment processing',
+					action: 'Ai process credit card',
+				},
+{
+					name: 'AI-Process HealthCard',
+					value: ActionConstants.AiProcessHealthCard,
+					description: 'Extract structured data from health cards using AI/ML technology for member management',
+					action: 'Ai process health card',
+				},
+{
+					name: 'AI-Process Marriage Certificate',
+					value: ActionConstants.AiProcessMarriageCertificate,
+					description: 'Extract structured data from marriage certificates using AI/ML technology for document verification',
+					action: 'Ai process marriage certificate',
+				},
+{
+					name: 'AI-Process Mortgage Document',
+					value: ActionConstants.AiProcessMortgageDocument,
+					description: 'Extract structured data from mortgage documents using AI/ML technology for loan processing',
+					action: 'Ai process mortgage document',
+				},
+{
+					name: 'AI-Process Order',
+					value: ActionConstants.ProcessOrder,
+					description: 'Process order documents to extract and analyze order information',
+					action: 'Ai process order',
+				},
+{
+					name: 'AI-Process Pay Stub',
+					value: ActionConstants.AiProcessPayStub,
+					description: 'Extract structured data from pay stubs using AI/ML technology for payroll processing',
+					action: 'Ai process pay stub',
+				},
+{
+					name: 'AI-Process Receipt',
+					value: ActionConstants.ProcessReceipt,
+					description: 'Process receipt documents to extract items, merchant info, totals, and custom fields',
+					action: 'Ai process receipt',
+				},
+{
+					name: 'AI-Process Shipping Label',
+					value: ActionConstants.ProcessShippingLabel,
+					description: 'Process shipping labels to extract and analyze shipping information',
+					action: 'Ai process shipping label',
+				},
+{
+					name: 'AI-Process Tax Document',
+					value: ActionConstants.ProcessTaxDocument,
+					description: 'Process tax documents (W2, 1099, 1040, etc.) to extract tax information and custom fields',
+					action: 'Ai process tax document',
 				},
 			],
 			default: ActionConstants.AiInvoiceParser,
@@ -336,23 +319,23 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Add barcodes to existing PDF documents with positioning and styling options',
 					action: 'Add barcode to PDF',
 				},
-				{
+{
 					name: 'Create Barcode',
 					value: ActionConstants.BarcodeGenerator,
 					description: 'Generate various types of barcodes including QR codes, Code 128, Code 39, and more',
 					action: 'Create barcode',
 				},
-				{
-					name: 'Read SwissQR Code',
-					value: ActionConstants.ReadSwissQrCode,
-					description: 'Read Swiss QR code data from PDF documents',
-					action: 'Read SwissQR code',
-				},
-				{
-					name: 'Read Barcode from PDF',
+{
+					name: 'Read Barcode From PDF',
 					value: ActionConstants.ReadBarcodeFromPdf,
 					description: 'Read single or multiple Barcodes or QR Codes from your PDF file',
 					action: 'Read barcode from PDF',
+				},
+{
+					name: 'Read SwissQR Code',
+					value: ActionConstants.ReadSwissQrCode,
+					description: 'Read Swiss QR code data from PDF documents',
+					action: 'Read swiss qr code',
 				},
 			],
 			default: ActionConstants.BarcodeGenerator,
@@ -371,82 +354,82 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
+					name: 'Convert Html to PDF',
+					value: ActionConstants.ConvertHtmlToPdf,
+					description: 'Convert HTML files to PDF documents',
+					action: 'Convert html to pdf',
+				},
+{
 					name: 'Convert JSON To Excel',
 					value: ActionConstants.JsonToExcel,
 					description: 'Convert JSON data to Excel format',
-					action: 'Convert JSON to Excel',
+					action: 'Convert json to excel',
 				},
-				{
+{
+					name: 'Convert Markdown To PDF',
+					value: ActionConstants.ConvertMarkdownToPdf,
+					description: 'Convert Markdown files to PDF documents',
+					action: 'Convert markdown to pdf',
+				},
+{
+					name: 'Convert PDF to Excel',
+					value: ActionConstants.ConvertPdfToExcel,
+					description: 'Convert PDF documents to Excel spreadsheets',
+					action: 'Convert pdf to excel',
+				},
+{
+					name: 'Convert PDF to PowerPoint',
+					value: ActionConstants.ConvertPdfToPowerpoint,
+					description: 'Convert PDF documents to PowerPoint format with OCR support',
+					action: 'Convert pdf to power point',
+				},
+{
+					name: 'Convert PDF to Word',
+					value: ActionConstants.ConvertPdfToWord,
+					description: 'Convert PDF documents to Word format with OCR support',
+					action: 'Convert pdf to word',
+				},
+{
 					name: 'Convert to PDF',
 					value: ActionConstants.ConvertToPdf,
 					description: 'Convert various document formats to PDF',
 					action: 'Convert to PDF',
 				},
-				{
+{
+					name: 'Convert Url to PDF',
+					value: ActionConstants.UrlToPdf,
+					description: 'Convert web pages to PDF while preserving layout, styling, and content',
+					action: 'Convert url to pdf',
+				},
+{
 					name: 'Convert VISIO',
 					value: ActionConstants.ConvertVisio,
 					description: 'Convert VISIO files (.vsdx, .vsd) to PDF format with advanced conversion options',
 					action: 'Convert VISIO',
 				},
-				{
+{
 					name: 'Convert Word to PDF Form',
 					value: ActionConstants.ConvertWordToPdfForm,
 					description: 'Convert Word documents to PDF forms',
-					action: 'Convert Word to PDF Form',
+					action: 'Convert word to pdf form',
 				},
-				{
+{
 					name: 'Create PDF/A',
 					value: ActionConstants.CreatePdfA,
 					description: 'Convert PDF to PDF/A for long-term archiving and compliance',
 					action: 'Create PDF/A',
 				},
-				{
+{
 					name: 'Flatten PDF',
 					value: ActionConstants.FlattenPdf,
 					description: 'Convert interactive PDF elements into static, non-editable content',
 					action: 'Flatten PDF',
 				},
-				{
-					name: 'Convert Html to PDF',
-					value: ActionConstants.ConvertHtmlToPdf,
-					description: 'Convert HTML files to PDF documents',
-					action: 'Convert Html to PDF',
-				},
-				{
+{
 					name: 'Linearize PDF',
 					value: ActionConstants.LinearizePdf,
 					description: 'Optimize PDFs for web viewing with faster loading and progressive display',
 					action: 'Linearize PDF',
-				},
-				{
-					name: 'Convert Markdown To PDF',
-					value: ActionConstants.ConvertMarkdownToPdf,
-					description: 'Convert Markdown files to PDF documents',
-					action: 'Convert Markdown To PDF',
-				},
-				{
-					name: 'Convert PDF to Excel',
-					value: ActionConstants.ConvertPdfToExcel,
-					description: 'Convert PDF documents to Excel spreadsheets',
-					action: 'Convert PDF to Excel',
-				},
-				{
-					name: 'Convert PDF to PowerPoint',
-					value: ActionConstants.ConvertPdfToPowerpoint,
-					description: 'Convert PDF documents to PowerPoint format with OCR support',
-					action: 'Convert PDF to PowerPoint',
-				},
-				{
-					name: 'Convert PDF to Word',
-					value: ActionConstants.ConvertPdfToWord,
-					description: 'Convert PDF documents to Word format with OCR support',
-					action: 'Convert PDF to Word',
-				},
-				{
-					name: 'Convert Url to PDF',
-					value: ActionConstants.UrlToPdf,
-					description: 'Convert web pages to PDF while preserving layout, styling, and content',
-					action: 'Convert Url to PDF',
 				},
 			],
 			default: ActionConstants.ConvertToPdf,
@@ -470,47 +453,47 @@ export const descriptions: INodeTypeDescription = {
 					description: 'Add file attachments to PDF documents',
 					action: 'Add attachment to PDF',
 				},
-				{
+{
 					name: 'Add HTML Header Footer to PDF',
 					value: ActionConstants.AddHtmlHeaderFooter,
 					description: 'Add HTML-based headers and footers to PDF documents',
 					action: 'Add HTML header footer to PDF',
 				},
-				{
-					name: 'Add Margin to PDF',
-					value: ActionConstants.AddMarginToPdf,
-					description: 'Add margins to PDF documents',
-					action: 'Add margin to PDF',
-				},
-				{
-					name: 'Add Page Number to PDF',
-					value: ActionConstants.AddPageNumberToPdf,
-					description: 'Add page numbers to PDF documents',
-					action: 'Add page number to PDF',
-				},
-				{
+{
 					name: 'Add Image Stamp To PDF',
 					value: ActionConstants.AddImageStampToPdf,
 					description: 'Add image stamps or watermarks to PDF documents',
 					action: 'Add image stamp to PDF',
 				},
-				{
-					name: 'Send Document for Signing',
-					value: ActionConstants.SignDocument,
-					description: 'Send document for e-signature via email',
-					action: 'Send Document for Signing',
+{
+					name: 'Add Margin to PDF',
+					value: ActionConstants.AddMarginToPdf,
+					description: 'Add margins to PDF documents',
+					action: 'Add margin to PDF',
 				},
-				{
-					name: 'Sign PDF',
-					value: ActionConstants.SignPdf,
-					description: 'Digitally sign PDF documents',
-					action: 'Sign PDF',
+{
+					name: 'Add Page Number to PDF',
+					value: ActionConstants.AddPageNumberToPdf,
+					description: 'Add page numbers to PDF documents',
+					action: 'Add page number to PDF',
 				},
-				{
+{
 					name: 'Add Text Stamp To PDF',
 					value: ActionConstants.AddTextStampToPdf,
 					description: 'Add text stamps or watermarks to PDF documents',
 					action: 'Add text stamp to PDF',
+				},
+{
+					name: 'Send Document for Signing',
+					value: ActionConstants.SignDocument,
+					description: 'Send document for e-signature via email',
+					action: 'Send document for signing',
+				},
+{
+					name: 'Sign PDF',
+					value: ActionConstants.SignPdf,
+					description: 'Digitally sign PDF documents',
+					action: 'Sign PDF',
 				},
 			],
 			default: ActionConstants.AddAttachmentToPdf,
@@ -529,58 +512,58 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
+					name: 'AI Document Parser',
+					value: ActionConstants.AiDocumentParser,
+					description: 'Parse documents using AI analyzer configurations from the PDF4me dashboard',
+					action: 'Ai document parser',
+				},
+{
 					name: 'Classify Document',
 					value: ActionConstants.ClassifyDocument,
 					description: 'Classify documents using AI to determine document type and extract relevant information',
 					action: 'Classify document',
 				},
-				{
+{
 					name: 'Extract Attachment From PDF',
 					value: ActionConstants.ExtractAttachmentFromPdf,
 					description: 'Extract file attachments from PDF documents',
 					action: 'Extract attachment from PDF',
 				},
-				{
+{
 					name: 'Extract Form Data From PDF',
 					value: ActionConstants.ExtractFormDataFromPdf,
 					description: 'Extract form field data from PDF documents',
 					action: 'Extract form data from PDF',
 				},
-				{
+{
 					name: 'Extract Resources',
 					value: ActionConstants.ExtractResources,
 					description: 'Extract text and images from PDF documents',
 					action: 'Extract resources',
 				},
-				{
+{
 					name: 'Extract Table From PDF',
 					value: ActionConstants.ExtractTableFromPdf,
 					description: 'Extract tables from PDF documents',
 					action: 'Extract table from PDF',
 				},
-				{
+{
 					name: 'Extract Text by Expression',
 					value: ActionConstants.ExtractTextByExpression,
 					description: 'Extract text from PDF using regular expressions',
 					action: 'Extract text by expression',
 				},
-				{
-					name: 'Extract Text from word',
+{
+					name: 'Extract Text From Word',
 					value: ActionConstants.ExtractTextFromWord,
 					description: 'Extract text content from Word documents',
 					action: 'Extract text from word',
 				},
-				{
+{
 					name: 'Parse Document',
 					value: ActionConstants.ParseDocument,
 					description: 'Parse documents to extract structured data using template-based parsing',
 					action: 'Parse document',
-				},
-				{
-					name: 'AI Document Parser',
-					value: ActionConstants.AiDocumentParser,
-					description: 'Parse documents using AI analyzer configurations from the PDF4me dashboard',
-					action: 'AI document parser',
 				},
 			],
 			default: ActionConstants.ExtractResources,
@@ -602,13 +585,13 @@ export const descriptions: INodeTypeDescription = {
 					name: 'Create SwissQR Bill',
 					value: ActionConstants.CreateSwissQrBill,
 					description: 'Create Swiss QR Bills using all compliance standards for digital payment transactions',
-					action: 'Create SwissQR bill',
+					action: 'Create swiss qr bill',
 				},
 				{
 					name: 'Create Zugferd Invoice',
 					value: ActionConstants.ZugferdInvoice,
 					description: 'Create Zugferd compliant invoices from XML, JSON, or CSV data',
-					action: 'Create Zugferd invoice',
+					action: 'Create zugferd invoice',
 				},
 			],
 			default: ActionConstants.CreateSwissQrBill,
@@ -627,16 +610,16 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
+					name: 'Convert PDF to Editable PDF Using OCR',
+					value: ActionConstants.ConvertPdfToEditableOcr,
+					description: 'Convert PDF to editable PDF using OCR for scanned documents',
+					action: 'Convert PDF to editable PDF using OCR',
+				},
+{
 					name: 'Find and Replace Text',
 					value: ActionConstants.FindAndReplaceText,
 					description: 'Find and replace text in PDF documents',
 					action: 'Find and replace text',
-				},
-				{
-					name: 'Convert PDF to editable PDF using OCR',
-					value: ActionConstants.ConvertPdfToEditableOcr,
-					description: 'Convert PDF to editable PDF using OCR for scanned documents',
-					action: 'Convert PDF to editable PDF using OCR',
 				},
 			],
 			default: ActionConstants.FindAndReplaceText,
@@ -683,7 +666,7 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'Enable Tracking changes in word',
+					name: 'Enable Tracking Changes in Word',
 					value: ActionConstants.EnableTrackingChangesInWord,
 					description: 'Enable tracking changes in Word documents',
 					action: 'Enable tracking changes in word',
@@ -692,7 +675,7 @@ export const descriptions: INodeTypeDescription = {
 					name: 'Generate Document (Single)',
 					value: ActionConstants.GenerateDocumentSingle,
 					description: 'Generate a single document from template with data',
-					action: 'Generate document (single)',
+					action: 'Generate document single',
 				},
 				{
 					name: 'Generate Document From Template',
@@ -704,7 +687,7 @@ export const descriptions: INodeTypeDescription = {
 					name: 'Generate Documents (Multiple)',
 					value: ActionConstants.GenerateDocumentsMultiple,
 					description: 'Generate multiple documents from template with different data sets',
-					action: 'Generate documents (multiple)',
+					action: 'Generate documents multiple',
 				},
 				{
 					name: 'Get Tracking Changes In Word',
@@ -735,94 +718,94 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'Add Image watermark To Image',
+					name: 'Add Image Watermark To Image',
 					value: ActionConstants.AddImageWatermarkToImage,
 					description: 'Add image watermark to image documents',
 					action: 'Add image watermark to image',
 				},
-				{
-					name: 'Add Text watermark To Image',
+{
+					name: 'Add Text Watermark To Image',
 					value: ActionConstants.AddTextWatermarkToImage,
 					description: 'Add text watermarks to images with positioning and styling options',
 					action: 'Add text watermark to image',
 				},
-				{
+{
 					name: 'Compress Image',
 					value: ActionConstants.CompressImage,
 					description: 'Compress image documents',
 					action: 'Compress image',
 				},
-				{
+{
 					name: 'Convert Image Format',
 					value: ActionConstants.ConvertImageFormat,
 					description: 'Convert image format (BMP, GIF, JPG, PNG, TIFF)',
 					action: 'Convert image format',
 				},
-				{
-					name: 'Create Image from PDF',
+{
+					name: 'Create Image From PDF',
 					value: ActionConstants.CreateImagesFromPdf,
 					description: 'Create images from PDF pages',
 					action: 'Create image from PDF',
 				},
-				{
+{
 					name: 'Crop Image',
 					value: ActionConstants.CropImage,
 					description: 'Crop images with border or rectangle cropping options',
 					action: 'Crop image',
 				},
-				{
+{
 					name: 'Flip Image',
 					value: ActionConstants.FlipImage,
 					description: 'Flip image documents horizontally, vertically, or both',
 					action: 'Flip image',
 				},
-				{
+{
 					name: 'Get Image Metadata',
 					value: ActionConstants.GetImageMetadata,
 					description: 'Extract metadata information from images including EXIF data and properties',
 					action: 'Get image metadata',
 				},
-				{
+{
 					name: 'Image Extract Text',
 					value: ActionConstants.ImageExtractText,
 					description: 'Extract text content from images using OCR (Optical Character Recognition)',
 					action: 'Image extract text',
 				},
-				{
-					name: 'Replace Text with Image',
-					value: ActionConstants.ReplaceTextWithImage,
-					description: 'Replace specific text in PDF documents with images',
-					action: 'Replace text with image',
-				},
-				{
-					name: 'Resize Image',
-					value: ActionConstants.ResizeImage,
-					description: 'Resize images by percentage or specific dimensions with aspect ratio control',
-					action: 'Resize image',
-				},
-				{
-					name: 'Rotate Image By Exif Data',
-					value: ActionConstants.RotateImageByExifData,
-					description: 'Rotate image automatically based on EXIF orientation metadata',
-					action: 'Rotate image by exif data',
-				},
-				{
-					name: 'Rotate Image',
-					value: ActionConstants.RotateImage,
-					description: 'Rotate images with custom angle, background color, and proportionate resize options',
-					action: 'Rotate image',
-				},
-				{
+{
 					name: 'Read Barcode From Image',
 					value: ActionConstants.ReadBarcodeFromImage,
 					description: 'Read barcodes from images using OCR',
 					action: 'Read barcode from image',
 				},
-				{
+{
 					name: 'Remove EXIF Tags From Image',
 					value: ActionConstants.RemoveExifTagsFromImage,
 					description: 'Remove metadata/EXIF tags from images for privacy and file size reduction',
 					action: 'Remove EXIF tags from image',
+				},
+{
+					name: 'Replace Text with Image',
+					value: ActionConstants.ReplaceTextWithImage,
+					description: 'Replace specific text in PDF documents with images',
+					action: 'Replace text with image',
+				},
+{
+					name: 'Resize Image',
+					value: ActionConstants.ResizeImage,
+					description: 'Resize images by percentage or specific dimensions with aspect ratio control',
+					action: 'Resize image',
+				},
+{
+					name: 'Rotate Image',
+					value: ActionConstants.RotateImage,
+					description: 'Rotate images with custom angle, background color, and proportionate resize options',
+					action: 'Rotate image',
+				},
+{
+					name: 'Rotate Image By Exif Data',
+					value: ActionConstants.RotateImageByExifData,
+					description: 'Rotate image automatically based on EXIF orientation metadata',
+					action: 'Rotate image by exif data',
 				},
 			],
 			default: ActionConstants.CompressImage,
@@ -841,15 +824,14 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'Merge Multiple PDF files into Single PDF',
+					name: 'Merge Multiple PDF Files Into Single PDF',
 					value: ActionConstants.MergeMultiplePDFs,
 					description: 'Combine multiple PDF files into a single PDF document',
 					action: 'Merge multiple PDF files into single PDF',
 				},
 				{
-					name: 'Merge two PDF files one over another as Overlay',
+					name: 'Merge Two PDF Files One over Another as Overlay',
 					value: ActionConstants.OverlayPDFs,
-					description: 'Merge two PDF files one over another as overlay',
 					action: 'Merge two PDF files one over another as overlay',
 				},
 				{
@@ -868,7 +850,7 @@ export const descriptions: INodeTypeDescription = {
 					name: 'Split PDF by Swiss QR',
 					value: ActionConstants.SplitPdfBySwissQR,
 					description: 'Split PDF documents by Swiss QR code and output as ZIP',
-					action: 'Split PDF by Swiss QR',
+					action: 'Split pdf by swiss qr',
 				},
 				{
 					name: 'Split PDF by Text',
@@ -915,34 +897,34 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'Delete Blank Pages from PDF',
+					name: 'Delete Blank Pages From PDF',
 					value: ActionConstants.DeleteBlankPagesFromPdf,
 					description: 'Remove blank pages from PDF documents based on specified criteria',
 					action: 'Delete blank pages from PDF',
 				},
-				{
-					name: 'Delete unwanted Pages from PDF',
+{
+					name: 'Delete Unwanted Pages From PDF',
 					value: ActionConstants.DeleteUnwantedPagesFromPdf,
 					description: 'Remove specific pages from PDF documents by page numbers',
 					action: 'Delete unwanted pages from PDF',
 				},
-				{
+{
 					name: 'Extract Pages',
 					value: ActionConstants.ExtractPagesFromPdf,
 					description: 'Extract specific pages from PDF documents',
 					action: 'Extract pages',
 				},
-				{
-					name: 'Rotate Page',
-					value: ActionConstants.RotatePage,
-					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
-					action: 'Rotate page',
-				},
-				{
+{
 					name: 'Rotate Document',
 					value: ActionConstants.RotateDocument,
 					description: 'Rotate entire PDF documents by 90, 180, or 270 degrees',
 					action: 'Rotate document',
+				},
+{
+					name: 'Rotate Page',
+					value: ActionConstants.RotatePage,
+					description: 'Rotate specific pages in PDF documents by 90, 180, or 270 degrees',
+					action: 'Rotate page',
 				},
 			],
 			default: ActionConstants.DeleteBlankPagesFromPdf,
@@ -961,22 +943,22 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'Upload File To PDF4me',
-					value: ActionConstants.UploadFile,
-					description: 'Upload a file to PDF4me storage for processing',
-					action: 'Upload file to PDF4me',
-				},
-				{
-					name: 'Get Document from PDF4me',
+					name: 'Get Document From PDF4me',
 					value: ActionConstants.GetDocumentFromPdf4me,
 					description: 'Retrieve a document from PDF4me storage',
-					action: 'Get document from PDF4me',
+					action: 'Get document from pdf4me',
 				},
-				{
+{
 					name: 'Update Hyperlinks Annotation',
 					value: ActionConstants.UpdateHyperlinksAnnotation,
 					description: 'Update hyperlinks in PDF documents',
 					action: 'Update hyperlinks annotation',
+				},
+{
+					name: 'Upload File To PDF4me',
+					value: ActionConstants.UploadFile,
+					description: 'Upload a file to PDF4me storage for processing',
+					action: 'Upload file to pdf4me',
 				},
 			],
 			default: ActionConstants.GetDocumentFromPdf4me,
@@ -1057,7 +1039,7 @@ export const descriptions: INodeTypeDescription = {
 			},
 			options: [
 				{
-					name: 'Disable Tracking changes In Word',
+					name: 'Disable Tracking Changes In Word',
 					value: ActionConstants.DisableTrackingChangesInWord,
 					description: 'Disable tracking changes in Word documents',
 					action: 'Disable tracking changes in word',
@@ -1163,7 +1145,4 @@ export const descriptions: INodeTypeDescription = {
 		...update_hyperlinks_annotation.description,
 		...uploadFile.description,
 		...zugferdInvoice.description,
-	],
-	subtitle: '={{$parameter["resource"]}} / {{$parameter["operation"]}}',
-	version: 1,
-};
+];

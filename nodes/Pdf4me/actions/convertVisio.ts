@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -153,7 +152,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Make PDF compliant with standards',
+		description: 'Whether to make PDF compliant with standards',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -196,7 +195,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Include hidden pages (True/False)',
+		description: 'Whether to include hidden pages (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -209,7 +208,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Save foreground elements (True/False)',
+		description: 'Whether to save foreground elements (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -222,7 +221,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Include toolbar (True/False)',
+		description: 'Whether to include toolbar (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -235,7 +234,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Auto-fit content to page (True/False)',
+		description: 'Whether to auto-fit content to page (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -248,7 +247,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Enable asynchronous processing',
+		description: 'Whether to enable asynchronous processing',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],

@@ -1,5 +1,4 @@
-import type { INodeProperties, INodeExecutionData, IDataObject, JsonObject } from 'n8n-workflow';
-import type { IExecuteFunctions } from 'n8n-workflow';
+import type { INodeProperties, INodeExecutionData, IDataObject, JsonObject, IExecuteFunctions  } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 import {
 	pdf4meApiRequest,
@@ -50,21 +49,21 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'None',
-				value: 'none',
-				description: 'No document input required (XML/JSON/CSV only)',
-			},
-			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide file content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use file from previous node',
+			},
+{
+				name: 'None',
+				value: 'none',
+				description: 'No document input required (XML/JSON/CSV only)',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to file',
@@ -198,8 +197,7 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'v21plus',
-		description:
-			'Which conformance profile set applies when Zugferd Version is Custom. Use 1.0 only for legacy BASIC/COMFORT/EXTENDED; use 2.0+ for MINIMUM / BASICWL / EN16931 / …',
+		description: 'Which conformance profile set applies when Zugferd Version is Custom. Use 1.0 only for legacy BASIC/COMFORT/EXTENDED; use 2.0+ for MINIMUM / BASICWL / EN16931 / ….',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ZugferdInvoice],
@@ -212,7 +210,7 @@ export const description: INodeProperties[] = [
 				value: 'legacy',
 			},
 			{
-				name: 'ZUGFeRD 2.0 and newer (MINIMUM, BASICWL, EN16931, …)',
+				name: 'ZUGFeRD 2.0 and Newer (MINIMUM, BASICWL, EN16931, …)',
 				value: 'v21plus',
 			},
 		],
@@ -295,40 +293,40 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'German',
-				value: 'de',
+				name: 'Czech',
+				value: 'cs',
 			},
-			{
-				name: 'French',
-				value: 'fr',
-			},
-			{
-				name: 'Italian',
-				value: 'it',
-			},
-			{
-				name: 'English',
-				value: 'en',
-			},
-			{
-				name: 'Spanish',
-				value: 'es',
-			},
-			{
+{
 				name: 'Dutch',
 				value: 'nl',
 			},
-			{
+{
+				name: 'English',
+				value: 'en',
+			},
+{
+				name: 'French',
+				value: 'fr',
+			},
+{
+				name: 'German',
+				value: 'de',
+			},
+{
+				name: 'Italian',
+				value: 'it',
+			},
+{
 				name: 'Polish',
 				value: 'pl',
 			},
-			{
+{
 				name: 'Portuguese',
 				value: 'pt',
 			},
-			{
-				name: 'Czech',
-				value: 'cs',
+{
+				name: 'Spanish',
+				value: 'es',
 			},
 		],
 	},
@@ -359,16 +357,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'XML',
-				value: 'XML',
+				name: 'CSV',
+				value: 'CSV',
 			},
-			{
+{
 				name: 'JSON',
 				value: 'JSON',
 			},
-			{
-				name: 'CSV',
-				value: 'CSV',
+{
+				name: 'XML',
+				value: 'XML',
 			},
 		],
 	},
@@ -386,21 +384,21 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Direct Text',
-				value: 'directText',
-				description: 'Copy and paste the invoice data directly',
-			},
-			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide invoice data as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use file from previous node',
+			},
+{
+				name: 'Direct Text',
+				value: 'directText',
+				description: 'Copy and paste the invoice data directly',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to invoice data file',

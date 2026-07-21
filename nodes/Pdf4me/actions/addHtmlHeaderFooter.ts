@@ -1,5 +1,4 @@
-import type { INodeProperties, INodeExecutionData } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, INodeExecutionData, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
