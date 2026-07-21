@@ -304,7 +304,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/FlattenPdf', body);

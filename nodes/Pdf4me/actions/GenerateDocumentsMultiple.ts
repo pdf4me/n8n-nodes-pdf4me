@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 import {
@@ -385,7 +386,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(templateFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the template file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the template file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in templateFileData - no download or conversion
@@ -456,7 +457,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentDataFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the document data file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the document data file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in documentDataFile - no download or conversion
@@ -529,7 +530,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			} catch (parseError) {
 				// If JSON parsing fails, treat as single binary document
 				if (responseData.length < 100) {
-					throw new Error(`Response too small (${responseData.length} bytes). This might indicate an error response.`);
+										throw new NodeOperationError(this.getNode(), `Response too small (${responseData.length} bytes). This might indicate an error response.`, { itemIndex: index });
 				}
 
 				// Create single document from binary data
@@ -577,7 +578,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					outputDocuments = [parsedJson];
 				}
 			} catch (parseError) {
-				throw new Error('Response is not valid JSON and not binary data');
+								throw new NodeOperationError(this.getNode(), 'Response is not valid JSON and not binary data', { itemIndex: index });
 			}
 		} else if (typeof responseData === 'object') {
 			// Object response

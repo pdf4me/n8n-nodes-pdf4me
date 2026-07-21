@@ -203,7 +203,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Replace direct API call with helper
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/DeletePages', body);

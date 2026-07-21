@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -192,7 +193,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the order file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the order file.', { itemIndex: index });
 		}
 
 		// 3. Extract filename from URL
@@ -223,7 +224,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ProcessOrder', body);

@@ -5,8 +5,7 @@ import {
 	INodeTypeDescription,
 	INodeExecutionData,
 	JsonObject,
-	NodeConnectionType,
-	NodeApiError,
+	NodeConnectionTypes,
 	NodeOperationError,
 } from 'n8n-workflow';
 
@@ -119,9 +118,12 @@ export class Pdf4me implements INodeType {
 			name: 'PDF4me',
 		},
 		group: ['transform'],
-		icon: 'file:300.svg',
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		icon: {
+			light: 'file:300.light.svg',
+			dark: 'file:300.dark.svg',
+		},
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'pdf4meApi',
@@ -354,10 +356,7 @@ export class Pdf4me implements INodeType {
 						pairedItem: { item: i },
 					});
 				} else {
-					if (err instanceof NodeApiError || err instanceof NodeOperationError) {
-						throw err;
-					}
-					throw new NodeOperationError(this.getNode(), err as JsonObject);
+					throw new NodeOperationError(this.getNode(), err as JsonObject, { itemIndex: i });
 				}
 			}
 		}

@@ -8,7 +8,7 @@ import type {
 	IHttpRequestMethods,
 	IHttpRequestOptions,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 /**
  * Build a readable error string from PDF4me JSON error responses.
@@ -125,7 +125,10 @@ export async function pdf4meApiRequest(
 				try {
 					return Buffer.from(response.body, 'base64');
 				} catch (error) {
-					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+					throw new NodeOperationError(
+						this.getNode(),
+						`API returned unexpected string response: ${response.body.substring(0, 100)}...`,
+					);
 				}
 			} else {
 				return Buffer.from(response.body, 'binary');
@@ -134,7 +137,6 @@ export async function pdf4meApiRequest(
 			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -229,7 +231,7 @@ export async function pdf4meAsyncRequest(
 					try {
 						return Buffer.from(response.body, 'base64');
 					} catch {
-						throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+												throw new NodeOperationError(this.getNode(), `API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 					}
 				} else {
 					return Buffer.from(response.body, 'binary');
@@ -249,7 +251,6 @@ export async function pdf4meAsyncRequest(
 			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -401,7 +402,6 @@ export async function getTemplateNameList(
 
 		return options;
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -715,7 +715,6 @@ async function pollV2StatusUrl(
 			}. Last body: ${formatV2ResponseForError(pollBody)}`,
 		);
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -781,14 +780,13 @@ export async function pdf4meGenerateDocumentV2Request(
 
 		return document;
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
 	}
 }
 
-export function sanitizeProfiles(data: IDataObject): void {
+export function sanitizeProfiles(this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions, data: IDataObject): void {
 	// Convert profiles to a trimmed string (or empty string if not provided)
 	const profilesValue = data.profiles ? String(data.profiles).trim() : '';
 
@@ -809,7 +807,8 @@ export function sanitizeProfiles(data: IDataObject): void {
 		}
 		data.profiles = sanitized;
 	} catch (error) {
-		throw new Error(
+		throw new NodeOperationError(
+			this.getNode(),
 			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
@@ -930,7 +929,7 @@ export async function uploadBlobToPdf4me(
 					responseBody = response.body as IDataObject;
 				}
 			} catch (parseError) {
-				throw new Error(`Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
 			}
 
 			// Check for BlobId (capital B) first, then fallback to blobId for backward compatibility
@@ -944,7 +943,6 @@ export async function uploadBlobToPdf4me(
 			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -1089,7 +1087,7 @@ async function pollForCompletion(
 						try {
 							return Buffer.from(pollResponse.body, 'base64');
 						} catch {
-							throw new Error(`API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
+														throw new NodeOperationError(this.getNode(), `API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
 						}
 					} else {
 						return Buffer.from(pollResponse.body, 'binary');
@@ -1112,14 +1110,16 @@ async function pollForCompletion(
 			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
 				retryCount++;
 				if (retryCount >= maxRetries) {
-					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
+										throw new NodeOperationError(this.getNode(), `Network error during polling after ${maxRetries} attempts: ${error.message}`);
 				}
 				// Use PDF4ME's DelayAsync endpoint for 10 second delay on network errors
 				await delayAsync.call(this);
 				continue;
 			}
 			// For other errors, throw immediately
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject, {
+				message: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 

@@ -242,7 +242,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const inline = advancedOptions?.inline as boolean | undefined;
 	if (inline !== undefined) body.inline = inline;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/CreateBarcode', body);
 

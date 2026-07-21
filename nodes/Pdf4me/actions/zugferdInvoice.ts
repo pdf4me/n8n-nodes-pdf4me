@@ -1,5 +1,5 @@
 import type { INodeProperties, INodeExecutionData, IDataObject, JsonObject, IExecuteFunctions  } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import {
 	pdf4meApiRequest,
 	pdf4meAsyncRequest,
@@ -620,7 +620,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(fileUrl);
 		} catch (error) {
-			throw new Error('Invalid URL format. Please provide a valid URL to the file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the file.', { itemIndex: index });
 		}
 
 		// 2. Extract filename from URL
@@ -691,11 +691,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(invoiceDataUrl);
 		} catch (error) {
-			throw new Error('Invalid URL format. Please provide a valid URL to the invoice data file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the invoice data file.', { itemIndex: index });
 		}
 
 		// Download and convert to base64
-		invoiceDataBase64 = await downloadInvoiceDataFromUrl.call(this, invoiceDataUrl);
+		invoiceDataBase64 = await downloadInvoiceDataFromUrl.call(this, index, invoiceDataUrl);
 	} else {
 		throw new Error(`Unsupported invoice data input type: ${invoiceDataInputType}`);
 	}
@@ -734,7 +734,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	// Apply advanced options if provided
 	if (advancedOptions.profiles) {
 		payload.profiles = advancedOptions.profiles;
-		sanitizeProfiles(payload);
+		sanitizeProfiles.call(this, payload);
 	}
 
 	// Determine file extension based on output mode
@@ -772,7 +772,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	return returnData;
 }
 
-async function downloadInvoiceDataFromUrl(this: IExecuteFunctions, dataUrl: string): Promise<string> {
+async function downloadInvoiceDataFromUrl(this: IExecuteFunctions, index: number, dataUrl: string): Promise<string> {
 	try {
 		// Use regular httpRequest for external URLs (XML/JSON/CSV files)
 		const response = await this.helpers.httpRequest({
@@ -798,9 +798,9 @@ async function downloadInvoiceDataFromUrl(this: IExecuteFunctions, dataUrl: stri
 
 		return buffer.toString('base64');
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: `Failed to download invoice data from URL: ${error instanceof Error ? error.message : String(error)}`,
+			itemIndex: index,
 		});
 	}
 }

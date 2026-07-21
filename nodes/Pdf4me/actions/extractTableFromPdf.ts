@@ -205,7 +205,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make API call
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ExtractTableFromPdf', body);

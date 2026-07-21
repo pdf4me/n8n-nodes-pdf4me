@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, INodeExecutionData, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -374,7 +375,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Validate PDF content (skip for blobId and URL formats)
 	if (inputDataType === 'base64') {
-		validatePdfContent(docContent, inputDataType);
+		validatePdfContent.call(this, index, docContent, inputDataType);
 	}
 
 	// Prepare the API request payload
@@ -436,7 +437,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 /**
  * Validate PDF content
  */
-function validatePdfContent(docContent: string, inputDataType: string): void {
+function validatePdfContent(this: IExecuteFunctions, index: number, docContent: string, inputDataType: string): void {
 	if (!docContent || typeof docContent !== 'string') {
 		throw new Error('Invalid PDF content provided');
 	}
@@ -450,7 +451,11 @@ function validatePdfContent(docContent: string, inputDataType: string): void {
 				throw new Error('Content does not appear to be a valid PDF (missing PDF header)');
 			}
 		} catch (error) {
-			throw new Error(`Failed to validate PDF content: ${error.message}`);
+			throw new NodeOperationError(
+				this.getNode(),
+				`Failed to validate PDF content: ${error instanceof Error ? error.message : String(error)}`,
+				{ itemIndex: index },
+			);
 		}
 	}
 }

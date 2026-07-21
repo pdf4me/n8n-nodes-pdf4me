@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -263,7 +264,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body.profiles = profiles;
 	}
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request using the shared function
 	let responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertWordToPdfForm', body);
@@ -294,7 +295,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
 				}
 			} catch (decodeError) {
-				throw new Error(`API returned invalid PDF data. Response starts with: ${errorText}`);
+								throw new NodeOperationError(this.getNode(), `API returned invalid PDF data. Response starts with: ${errorText}`, { itemIndex: index });
 			}
 		}
 

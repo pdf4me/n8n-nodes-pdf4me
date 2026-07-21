@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject, INodeExecutionData  } from 'n8n-workflow';
 import {
 	sanitizeProfiles,
@@ -332,7 +333,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Call the PDF4me SplitPdf endpoint
 	const response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdf', body);
@@ -343,7 +344,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		try {
 			parsedResponse = JSON.parse(response.toString('utf8'));
 		} catch (e) {
-			throw new Error('Failed to parse Buffer response as JSON: ' + e.message);
+						throw new NodeOperationError(this.getNode(), 'Failed to parse Buffer response as JSON: ' + e.message, { itemIndex: index });
 		}
 	} else if (typeof response === 'string') {
 		try {

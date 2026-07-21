@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -387,7 +388,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body.profiles = profiles;
 	}
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request to convert VISIO to PDF
 	let responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertVisio?schemaVal=PDF', body);
@@ -439,7 +440,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						}
 					} catch (jsonError) {
 						// Not JSON, so it's likely invalid data
-						throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+												throw new NodeOperationError(this.getNode(), `API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`, { itemIndex: index });
 					}
 				}
 			} catch (decodeError) {
@@ -447,10 +448,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				try {
 					const jsonResponse = JSON.parse(pdfBuffer.toString('utf8'));
 					if (jsonResponse.error || jsonResponse.message) {
-						throw new Error(`API returned error: ${jsonResponse.error || jsonResponse.message}`);
+												throw new NodeOperationError(this.getNode(), `API returned error: ${jsonResponse.error || jsonResponse.message}`, { itemIndex: index });
 					}
 				} catch (jsonError) {
-					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+										throw new NodeOperationError(this.getNode(), `API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`, { itemIndex: index });
 				}
 			}
 		}

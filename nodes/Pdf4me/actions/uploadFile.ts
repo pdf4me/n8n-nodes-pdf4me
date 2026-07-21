@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	ActionConstants,
@@ -134,7 +135,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(fileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the file.', { itemIndex: index });
 		}
 
 		// Download file from URL using regular httpRequest (not authenticated, as it's external)

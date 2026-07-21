@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -219,7 +220,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make API call
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ExtractAttachmentFromPdf', body);
@@ -245,14 +246,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				parsedResponse = JSON.parse(responseData.toString('utf8')) as ResponseItem | ResponseItem[];
 			} catch (error) {
-				throw new Error(`Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`, { itemIndex: index });
 			}
 		} else if (typeof responseData === 'string') {
 			// If it's a string, parse as JSON
 			try {
 				parsedResponse = JSON.parse(responseData) as ResponseItem | ResponseItem[];
 			} catch (error) {
-				throw new Error(`Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Failed to parse response as JSON: ${error instanceof Error ? error.message : 'Unknown error'}`, { itemIndex: index });
 			}
 		} else {
 			// Already parsed JSON object
@@ -308,7 +309,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				throw new Error('Failed to create buffer from base64 data');
 			}
 		} catch (error) {
-			throw new Error(`Failed to decode base64 streamFile to binary: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						throw new NodeOperationError(this.getNode(), `Failed to decode base64 streamFile to binary: ${error instanceof Error ? error.message : 'Unknown error'}`, { itemIndex: index });
 		}
 
 		// Determine MIME type based on file extension (respect the original fileName)

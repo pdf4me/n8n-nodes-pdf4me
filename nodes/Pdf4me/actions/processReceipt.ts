@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -324,7 +325,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the receipt file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the receipt file.', { itemIndex: index });
 		}
 
 		// 3. Extract filename from URL
@@ -375,7 +376,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) payload.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(payload);
+	sanitizeProfiles.call(this, payload);
 
 	const shouldRetryExpiredJobError = (error: unknown): boolean => {
 		const normalizedError = error as { message?: string; description?: string; statusCode?: number };
@@ -400,52 +401,30 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const requestError = error as { code?: string; statusCode?: number; message?: string };
 			const normalizedMessage = `${requestError.message || ''}`.toLowerCase();
 			if (requestError.code === 'ECONNRESET') {
-				throw new Error(
-					`Connection was reset. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Connection was reset. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (normalizedMessage.includes('authorization failed')) {
-				throw new Error(
-					`Authentication failed. Please check your PDF4ME API credentials. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Authentication failed. Please check your PDF4ME API credentials. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (
 				normalizedMessage.includes('connection to the server was closed unexpectedly') ||
 				normalizedMessage.includes('server was closed unexpectedly')
 			) {
-				throw new Error(
-					`PDF4ME server connection closed unexpectedly. Please retry. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `PDF4ME server connection closed unexpectedly. Please retry. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (normalizedMessage.includes('canceled')) {
-				throw new Error(
-					`Request was canceled before completion. Please retry the workflow run. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Request was canceled before completion. Please retry the workflow run. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (requestError.statusCode === 500) {
-				throw new Error(
-					`PDF4Me server error (500): ${requestError.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `PDF4Me server error (500): ${requestError.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (requestError.statusCode === 404) {
-				throw new Error(
-					`API endpoint not found. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `API endpoint not found. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (requestError.statusCode === 401) {
-				throw new Error(
-					`Authentication failed. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Authentication failed. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (requestError.statusCode === 403) {
-				throw new Error(
-					`Access denied. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Access denied. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (requestError.statusCode === 429) {
-				throw new Error(
-					`Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else if (requestError.statusCode) {
-				throw new Error(
-					`PDF4Me API error (${requestError.statusCode}): ${requestError.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}`,
-				);
+								throw new NodeOperationError(this.getNode(), `PDF4Me API error (${requestError.statusCode}): ${requestError.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}`, { itemIndex: index });
 			} else {
-				throw new Error(
-					`Connection error: ${requestError.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}, errorCode=${requestError.code}`,
-				);
+								throw new NodeOperationError(this.getNode(), `Connection error: ${requestError.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${inputDocName}, errorCode=${requestError.code}`, { itemIndex: index });
 			}
 		}
 	}
@@ -462,7 +441,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			}
 		} catch (error) {
 			const parseError = error as { message?: string };
-			throw new Error(`Failed to parse API response: ${parseError.message || 'Unknown parse error'}`);
+						throw new NodeOperationError(this.getNode(), `Failed to parse API response: ${parseError.message || 'Unknown parse error'}`, { itemIndex: index });
 		}
 
 		// Return both raw data and metadata

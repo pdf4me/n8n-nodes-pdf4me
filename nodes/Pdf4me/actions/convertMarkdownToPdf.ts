@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -250,7 +251,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				// Warning: Decoded base64 content does not appear to be Markdown
 			}
 		} catch (error) {
-			throw new Error(`Invalid base64 content: ${error.message}`);
+						throw new NodeOperationError(this.getNode(), `Invalid base64 content: ${error.message}`, { itemIndex: index });
 		}
 
 		// Handle data URLs (remove data: prefix if present)
@@ -289,7 +290,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(markdownUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the Markdown file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the Markdown file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -331,7 +332,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Use the standard pdf4meAsyncRequest function
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertMdToPdf', body);

@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, INodeExecutionData, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -662,7 +663,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(fileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -753,7 +754,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Apply advanced options if provided
 	if (advancedOptions.profiles) {
-		sanitizeProfiles(payload);
+		sanitizeProfiles.call(this, payload);
 	}
 
 	// Call the PDF4me API to create Swiss QR Bill

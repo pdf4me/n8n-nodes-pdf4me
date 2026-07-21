@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	sanitizeProfiles,
@@ -242,7 +243,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -287,7 +288,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Replace direct API call with helper
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/RotatePage', body);

@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -289,7 +290,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const profiles = advancedOptions?.profiles as string | undefined;
 		if (profiles) body.profiles = profiles;
 
-		sanitizeProfiles(body);
+		sanitizeProfiles.call(this, body);
 
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Merge', body);
 
@@ -337,7 +338,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`PDF merge operation failed: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `PDF merge operation failed: ${errorMessage}`, { itemIndex: index });
 	}
 }
 
@@ -407,7 +408,7 @@ async function getPdfContentsFromManual(this: IExecuteFunctions, index: number):
 			try {
 				new URL(pdfUrl);
 			} catch {
-				throw new Error(`Invalid URL format for file '${fileName}'. Please provide a valid URL to the PDF file.`);
+								throw new NodeOperationError(this.getNode(), `Invalid URL format for file '${fileName}'. Please provide a valid URL to the PDF file.`, { itemIndex: index });
 			}
 
 			pdfContents.push(String(pdfUrl));
@@ -441,7 +442,7 @@ async function getPdfContentsFromArray(this: IExecuteFunctions, index: number): 
 			try {
 				new URL(content);
 			} catch {
-				throw new Error(`Invalid URL at array index ${i}. Expected a valid PDF URL.`);
+								throw new NodeOperationError(this.getNode(), `Invalid URL at array index ${i}. Expected a valid PDF URL.`, { itemIndex: index });
 			}
 		} else if (arrayContentType === 'base64') {
 			content = typeof elem === 'string' ? elem : String(elem);
@@ -463,7 +464,7 @@ async function getPdfContentsFromArray(this: IExecuteFunctions, index: number): 
 					new URL(url);
 					content = url;
 				} catch {
-					throw new Error(`Invalid URL at array index ${i}.`);
+										throw new NodeOperationError(this.getNode(), `Invalid URL at array index ${i}.`, { itemIndex: index });
 				}
 			} else if (base64 && typeof base64 === 'string') {
 				content = base64.includes(',') ? base64.split(',')[1] : base64;

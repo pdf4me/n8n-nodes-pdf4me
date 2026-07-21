@@ -1,4 +1,5 @@
-import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -46,7 +47,7 @@ function normalizeParsedFormData(parsed: unknown): IDataObject {
 	return parsed as IDataObject;
 }
 
-function parseJsonFormData(raw: unknown): IDataObject {
+function parseJsonFormData(this: IExecuteFunctions, index: number, raw: unknown): IDataObject {
 	let parsed: unknown;
 
 	if (typeof raw === 'string') {
@@ -57,7 +58,7 @@ function parseJsonFormData(raw: unknown): IDataObject {
 		try {
 			parsed = JSON.parse(trimmed);
 		} catch {
-			throw new Error('Invalid JSON format for form data');
+						throw new NodeOperationError(this.getNode(), 'Invalid JSON format for form data', { itemIndex: index });
 		}
 	} else {
 		parsed = raw;
@@ -353,7 +354,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		docContent = String(pdfUrl);
@@ -397,7 +398,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		if (formDataInputType === 'text') {
 			const formDataJson = this.getNodeParameter('formDataJson', index);
-			formData = parseJsonFormData(formDataJson);
+			formData = parseJsonFormData.call(this, index, formDataJson);
 		} else if (formDataInputType === 'binaryData') {
 			const binaryPropertyName = this.getNodeParameter('formDataBinaryPropertyName', index) as string;
 			const item = this.getInputData(index);
@@ -407,15 +408,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 			const fileBuffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 			try {
-				formData = parseJsonFormData(fileBuffer.toString('utf-8'));
+				formData = parseJsonFormData.call(this, index, fileBuffer.toString('utf-8'));
 			} catch (error) {
-				if (error instanceof Error && (
-					error.message.startsWith('Form data') ||
-					error.message === 'Form data is empty'
-				)) {
-					throw error;
-				}
-				throw new Error(`Invalid JSON in binary data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						throw new NodeOperationError(
+					this.getNode(),
+					`Invalid JSON in binary data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+					{ itemIndex: index },
+				);
 			}
 		} else if (formDataInputType === 'base64') {
 			let base64Content = this.getNodeParameter('formDataBase64Content', index) as string;
@@ -426,15 +425,13 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 			try {
 				const jsonString = Buffer.from(base64Content, 'base64').toString('utf-8');
-				formData = parseJsonFormData(jsonString);
+				formData = parseJsonFormData.call(this, index, jsonString);
 			} catch (error) {
-				if (error instanceof Error && (
-					error.message.startsWith('Form data') ||
-					error.message === 'Form data is empty'
-				)) {
-					throw error;
-				}
-				throw new Error(`Invalid JSON in base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						throw new NodeOperationError(
+					this.getNode(),
+					`Invalid JSON in base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+					{ itemIndex: index },
+				);
 			}
 		} else {
 			throw new Error(`Unsupported form data input type: ${formDataInputType}`);

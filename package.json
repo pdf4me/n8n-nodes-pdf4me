@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@n8n/node-cli": ">=0.23.0",
+    "@n8n/scan-community-package": "^0.28.1",
     "@types/node": "20.19.7",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
@@ -46,7 +47,6 @@
     "eslint-plugin-n8n-nodes-base": "^1.16.6",
     "gulp": "^4.0.2",
     "merge-stream": "^2.0.0",
-    "n8n-workflow": "*",
     "prettier": "^3.8.3",
     "typescript": "^5.9.3"
   },

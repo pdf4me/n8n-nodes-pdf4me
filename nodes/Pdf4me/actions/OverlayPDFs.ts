@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -243,7 +244,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const profiles = advancedOptions?.profiles as string | undefined;
 		if (profiles) body.profiles = profiles;
 
-		sanitizeProfiles(body);
+		sanitizeProfiles.call(this, body);
 
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/MergeOverlay', body);
 
@@ -289,7 +290,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`PDF overlay operation failed: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `PDF overlay operation failed: ${errorMessage}`, { itemIndex: index });
 	}
 }
 
@@ -347,7 +348,7 @@ async function getPdfContents(
 		try {
 			new URL(basePdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the base PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the base PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in baseDocContent - no download or conversion
@@ -420,7 +421,7 @@ async function getPdfContents(
 		try {
 			new URL(layerPdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the layer PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the layer PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in layerDocContent - no download or conversion

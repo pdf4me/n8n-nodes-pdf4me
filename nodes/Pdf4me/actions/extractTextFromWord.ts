@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -269,7 +270,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make API call
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ExtractTextFromWord', body);
@@ -294,7 +295,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			parsedJson = JSON.parse(jsonString);
 		} catch (err) {
-			throw new Error('Response is not valid JSON');
+						throw new NodeOperationError(this.getNode(), 'Response is not valid JSON', { itemIndex: index });
 		}
 
 		// Save as JSON file

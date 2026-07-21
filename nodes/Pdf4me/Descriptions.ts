@@ -200,6 +200,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'AI Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -298,7 +299,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Ai process tax document',
 				},
 			],
-			default: ActionConstants.AiInvoiceParser,
+
 		},
 
 		// Barcode Operations
@@ -306,6 +307,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Barcode Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -338,7 +340,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Read swiss qr code',
 				},
 			],
-			default: ActionConstants.BarcodeGenerator,
+
 		},
 
 		// Convert Operations
@@ -346,6 +348,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Convert Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -432,7 +435,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Linearize PDF',
 				},
 			],
-			default: ActionConstants.ConvertToPdf,
+
 		},
 
 		// Edit Operations
@@ -440,6 +443,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Edit Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -496,7 +500,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Sign PDF',
 				},
 			],
-			default: ActionConstants.AddAttachmentToPdf,
+
 		},
 
 		// Extract Operations
@@ -504,6 +508,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Extract Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -566,7 +571,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Parse document',
 				},
 			],
-			default: ActionConstants.ExtractResources,
+
 		},
 
 		// Invoice Operations
@@ -574,6 +579,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Invoice Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -594,7 +600,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Create zugferd invoice',
 				},
 			],
-			default: ActionConstants.CreateSwissQrBill,
+
 		},
 
 		// Find Search Operations
@@ -602,6 +608,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Find Search Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -622,7 +629,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Find and replace text',
 				},
 			],
-			default: ActionConstants.FindAndReplaceText,
+
 		},
 
 		// Forms Operations
@@ -630,6 +637,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Forms Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -650,7 +658,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Fill a PDF form',
 				},
 			],
-			default: ActionConstants.FillPdfForm,
+
 		},
 
 		// Generate Operations
@@ -658,6 +666,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Generate Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -702,7 +711,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Replace text with image in word',
 				},
 			],
-			default: ActionConstants.GenerateDocumentSingle,
+
 		},
 
 		// Image Operations
@@ -710,6 +719,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Image Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -808,7 +818,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Rotate image by exif data',
 				},
 			],
-			default: ActionConstants.CompressImage,
+
 		},
 
 		// Merge & Split Operations
@@ -816,6 +826,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Merge & Split Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -859,7 +870,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Split PDF by text',
 				},
 			],
-			default: ActionConstants.MergeMultiplePDFs,
+
 		},
 
 		// Optimize Compress Operations
@@ -867,6 +878,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Optimize Compress Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -881,7 +893,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Compress PDF',
 				},
 			],
-			default: ActionConstants.CompressPdf,
+
 		},
 
 		// Organize Operations
@@ -889,6 +901,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Organize Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -927,7 +940,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Rotate page',
 				},
 			],
-			default: ActionConstants.DeleteBlankPagesFromPdf,
+
 		},
 
 		// PDF4me Operations
@@ -935,6 +948,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'PDF4me Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -961,7 +975,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Upload file to pdf4me',
 				},
 			],
-			default: ActionConstants.GetDocumentFromPdf4me,
+
 		},
 
 		// PDF Operations
@@ -969,6 +983,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'PDF Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -995,7 +1010,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Repair PDF document',
 				},
 			],
-			default: ActionConstants.GetPdfMetadata,
+
 		},
 
 		// Security Operations
@@ -1003,6 +1018,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Security Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -1023,7 +1039,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Unlock PDF',
 				},
 			],
-			default: ActionConstants.ProtectDocument,
+
 		},
 
 		// Word Operations
@@ -1031,6 +1047,7 @@ export const nodeProperties: INodeProperties[] = [
 			displayName: 'Word Operations',
 			name: 'operation',
 			type: 'options',
+			default: '',
 			noDataExpression: true,
 			displayOptions: {
 				show: {
@@ -1045,7 +1062,7 @@ export const nodeProperties: INodeProperties[] = [
 					action: 'Disable tracking changes in word',
 				},
 			],
-			default: ActionConstants.DisableTrackingChangesInWord,
+
 		},
 
 		// Spread all action descriptions

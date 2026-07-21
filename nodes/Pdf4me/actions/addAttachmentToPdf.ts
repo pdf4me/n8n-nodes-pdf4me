@@ -1,4 +1,5 @@
-import type { INodeExecutionData, INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeExecutionData, INodeProperties, IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -347,7 +348,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 	// Validate PDF content (skip for blobId and URL formats)
 	if (inputDataType === 'base64') {
-		validatePdfContent(docContent, inputDataType);
+		validatePdfContent.call(this, index, docContent, inputDataType);
 	}
 
 	// Process attachments
@@ -411,7 +412,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						throw new Error(`Attachment content is empty for: ${attachmentName}`);
 					}
 				} catch (error) {
-					throw new Error(`Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`);
+										throw new NodeOperationError(this.getNode(), `Invalid base64 encoded attachment content for ${attachmentName}: ${error.message}`, { itemIndex: index });
 				}
 			}
 
@@ -450,10 +451,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (advancedOptions.profiles) {
 		try {
 			const profiles = JSON.parse(advancedOptions.profiles as string);
-			sanitizeProfiles(profiles);
+			sanitizeProfiles.call(this, profiles);
 			Object.assign(body, profiles);
 		} catch (error) {
-			throw new Error(`Invalid custom profiles JSON: ${error}`);
+						throw new NodeOperationError(this.getNode(), `Invalid custom profiles JSON: ${error}`, { itemIndex: index });
 		}
 	}
 
@@ -518,7 +519,7 @@ function validateFileExtension(fileName: string, expectedExtension: string): voi
 /**
  * Validate PDF content (enhanced validation based on C# example)
  */
-function validatePdfContent(docContent: string, inputDataType: string): void {
+function validatePdfContent(this: IExecuteFunctions, index: number, docContent: string, inputDataType: string): void {
 	if (!docContent || docContent.trim() === '') {
 		throw new Error(`Empty PDF content provided via ${inputDataType}`);
 	}
@@ -538,9 +539,10 @@ function validatePdfContent(docContent: string, inputDataType: string): void {
 			// Don't throw error here as some PDFs might have different headers
 		}
 	} catch (error) {
-		if (error.message.includes('Decoded content too small') || error.message.includes('PDF signature')) {
-			throw error;
-		}
-		throw new Error(`Invalid base64 encoded PDF content: ${error.message}`);
+		throw new NodeOperationError(
+			this.getNode(),
+			`Invalid base64 encoded PDF content: ${error instanceof Error ? error.message : String(error)}`,
+			{ itemIndex: index },
+		);
 	}
 }

@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -606,7 +607,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -645,7 +646,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				// Warning: Content does not start with PDF signature (%PDF). This might not be a valid PDF file.
 			}
 		} catch (error) {
-			throw new Error(`Invalid base64 encoded PDF content: ${error.message}`);
+						throw new NodeOperationError(this.getNode(), `Invalid base64 encoded PDF content: ${error.message}`, { itemIndex: index });
 		}
 	} else if (inputDataType === 'binaryData') {
 		// For binary data, validate blobId is set
@@ -686,7 +687,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = outputOptions?.profiles as string | undefined;
 	if (profiles) {
 		body.profiles = profiles;
-		sanitizeProfiles(body);
+		sanitizeProfiles.call(this, body);
 	}
 
 	// Make the API request using async endpoint (always async)

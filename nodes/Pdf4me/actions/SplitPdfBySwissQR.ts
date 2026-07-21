@@ -1,4 +1,5 @@
-import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject, JsonObject } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 
@@ -272,7 +273,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(fileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in pdfContentBase64 - no download or conversion
@@ -298,13 +299,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			const testBuffer = Buffer.from(pdfContentBase64, 'base64');
 			if (testBuffer.length === 0 && pdfContentBase64.length > 0) {
-				throw new Error('Invalid base64 content: Unable to decode base64 string');
+				throw new NodeOperationError(
+					this.getNode(),
+					'Invalid base64 content: Unable to decode base64 string',
+					{ itemIndex: index },
+				);
 			}
 		} catch (error) {
-			if (error instanceof Error && error.message.includes('Invalid base64')) {
-				throw error;
-			}
-			throw new Error('Invalid base64 content format');
+				throw new NodeOperationError(this.getNode(), 'Invalid base64 content format', { itemIndex: index });
 		}
 	} else if (inputDataType === 'binaryData') {
 		// For binary data, validate blobId is set
@@ -342,19 +344,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Provide better error messages with debugging information
 		const errorObj = error as { statusCode?: number; message?: string };
 		if (errorObj.statusCode === 500) {
-			throw new Error(
-				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+						throw new NodeOperationError(this.getNode(), `PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
 				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}, ` +
 				`docContentLength=${pdfContentBase64?.length || 0}, ` +
-				`docContentType=${typeof pdfContentBase64 === 'string' && pdfContentBase64.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
-			);
+				`docContentType=${typeof pdfContentBase64 === 'string' && pdfContentBase64.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`, { itemIndex: index });
 		} else if (errorObj.statusCode === 400) {
-			throw new Error(
-				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
-				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}`
-			);
+						throw new NodeOperationError(this.getNode(), `Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${docNameForRequest}`, { itemIndex: index });
 		}
-		throw error;
+				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: index });
 	}
 
 	// --- BEGIN: Buffer/String Response Parsing ---

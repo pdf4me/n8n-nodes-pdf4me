@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -385,7 +386,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				// Warning: Decoded base64 content does not appear to be HTML
 			}
 		} catch (error) {
-			throw new Error(`Invalid base64 content: ${error.message}`);
+						throw new NodeOperationError(this.getNode(), `Invalid base64 content: ${error.message}`, { itemIndex: index });
 		}
 
 		docContent = base64Content;
@@ -423,7 +424,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(htmlUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the HTML file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the HTML file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -470,14 +471,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Note: async flag is automatically added by pdf4meAsyncRequest function
 	};
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Call the PDF4ME API
 	let responseData;
 	try {
 		responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertHtmlToPdf', body);
 	} catch (error) {
-		throw new Error(`Failed to convert HTML to PDF: ${error.message}`);
+				throw new NodeOperationError(this.getNode(), `Failed to convert HTML to PDF: ${error.message}`, { itemIndex: index });
 	}
 
 	// Handle the binary response

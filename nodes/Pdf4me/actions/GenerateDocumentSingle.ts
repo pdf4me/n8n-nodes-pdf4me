@@ -11,6 +11,7 @@
  * Content-Type: application/json
  */
 
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 import {
@@ -402,7 +403,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(templateFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the template file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the template file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in templateFileData - no download or conversion
@@ -473,7 +474,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentDataFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the document data file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the document data file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in documentDataFile - no download or conversion
@@ -513,7 +514,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				JSON.parse(documentDataText);
 			} catch (error) {
-				throw new Error(`Invalid JSON format in Document Data Text: ${error.message}`);
+								throw new NodeOperationError(this.getNode(), `Invalid JSON format in Document Data Text: ${error.message}`, { itemIndex: index });
 			}
 		} else if (documentDataType === 'XML') {
 			// Basic XML validation - check for proper XML structure

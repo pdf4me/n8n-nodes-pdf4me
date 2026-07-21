@@ -6,6 +6,7 @@
  * Async handling (202 + Location polling) is done by pdf4meAsyncRequest in GenericFunctions.
  */
 
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	ActionConstants,
@@ -184,7 +185,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the document file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the document file.', { itemIndex: index });
 		}
 		inputDocName = documentUrl.split('/').pop() || docNameParam || 'document.pdf';
 		docContent = documentUrl;
@@ -207,7 +208,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/AiAutoCropDocument', body);
 
