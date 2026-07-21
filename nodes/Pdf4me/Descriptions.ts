@@ -1,4 +1,3 @@
-/* eslint-disable n8n-nodes-base/node-param-default-missing */
 import { INodeProperties } from 'n8n-workflow';
 import * as addAttachmentToPdf from './actions/addAttachmentToPdf';
 import * as addBarcodeToPdf from './actions/addBarcodeToPdf';
