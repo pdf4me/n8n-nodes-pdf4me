@@ -152,11 +152,11 @@ function stringField(
 		typeOptions?: INodeProperties['typeOptions'];
 	},
 ): INodeProperties {
-	return {
+	const nodeProperty: INodeProperties = {
 		displayName: field.displayName,
 		name: field.name,
 		type: 'string',
-		default: field.default ?? '',
+		default: '',
 		description: field.description,
 		placeholder: field.placeholder,
 		...(field.required !== undefined && { required: field.required }),
@@ -169,6 +169,12 @@ function stringField(
 			},
 		},
 	};
+
+	if (field.default !== undefined) {
+		nodeProperty.default = field.default;
+	}
+
+	return nodeProperty;
 }
 
 export function pdfFileUrlField(

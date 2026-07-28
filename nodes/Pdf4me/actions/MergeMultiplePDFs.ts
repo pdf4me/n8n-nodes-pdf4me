@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -63,10 +63,34 @@ export const description: INodeProperties[] = [
 				name: 'pdfFile',
 				values: [
 					{
+						displayName: 'Base64 Content',
+						name: 'base64Content',
+						type: 'string',
+						default: '',
+						description: 'Base64 encoded PDF content',
+						placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
+					},
+					{
+						displayName: 'Binary Property Name',
+						name: 'binaryPropertyName',
+						type: 'string',
+						default: 'data',
+						description: 'Name of the binary property containing the PDF file',
+						placeholder: 'data',
+					},
+					{
+						displayName: 'File Name',
+						name: 'fileName',
+						type: 'string',
+						default: '',
+						description: 'Optional name for the PDF file (for reference)',
+						placeholder: 'document1.pdf',
+					},
+					{
 						displayName: 'Input Type',
 						name: 'inputType',
 						type: 'options',
-						required: true,
+							required:	true,
 						default: 'binaryData',
 						description: 'Choose how to provide this PDF file',
 						options: [
@@ -85,36 +109,7 @@ export const description: INodeProperties[] = [
 								value: 'url',
 								description: 'Provide URL to PDF file',
 							},
-						],
-					},
-					{
-						displayName: 'Binary Property Name',
-						name: 'binaryPropertyName',
-						type: 'string',
-						default: 'data',
-						description: 'Name of the binary property containing the PDF file',
-						placeholder: 'data',
-						displayOptions: {
-							show: {
-								inputType: ['binaryData'],
-							},
-						},
-					},
-					{
-						displayName: 'Base64 Content',
-						name: 'base64Content',
-						type: 'string',
-						typeOptions: {
-							alwaysOpenEditWindow: true,
-						},
-						default: '',
-						description: 'Base64 encoded PDF content',
-						placeholder: 'JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PA...',
-						displayOptions: {
-							show: {
-								inputType: ['base64'],
-							},
-						},
+						]
 					},
 					{
 						displayName: 'PDF URL',
@@ -123,21 +118,8 @@ export const description: INodeProperties[] = [
 						default: '',
 						description: 'URL to the PDF file',
 						placeholder: 'https://example.com/document.pdf',
-						displayOptions: {
-							show: {
-								inputType: ['url'],
-							},
-						},
 					},
-					{
-						displayName: 'File Name',
-						name: 'fileName',
-						type: 'string',
-						default: '',
-						description: 'Optional name for the PDF file (for reference)',
-						placeholder: 'document1.pdf',
-					},
-				],
+			],
 			},
 		],
 
@@ -148,7 +130,7 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		required: true,
-		description: 'Expression that returns an array of PDFs. Use base64 strings or URLs. E.g. {{ $json.pdfArray }}',
+		description: 'Expression that returns an array of PDFs. Use base64 strings or URLs. E.g. {{ $JSON.pdfArray }}',
 		placeholder: '{{ $json.pdfArray }}',
 		displayOptions: {
 			show: {
@@ -184,7 +166,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Objects with URL or Base64',
 				value: 'mixed',
-				description: 'Array of objects with "url" or "base64" property per item',
+				description: 'Array of objects with "URL" or "base64" property per item',
 			},
 		],
 	},
@@ -308,7 +290,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const profiles = advancedOptions?.profiles as string | undefined;
 		if (profiles) body.profiles = profiles;
 
-		sanitizeProfiles(body);
+		sanitizeProfiles.call(this, body);
 
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/Merge', body);
 
@@ -356,7 +338,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`PDF merge operation failed: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `PDF merge operation failed: ${errorMessage}`, { itemIndex: index });
 	}
 }
 
@@ -426,7 +408,7 @@ async function getPdfContentsFromManual(this: IExecuteFunctions, index: number):
 			try {
 				new URL(pdfUrl);
 			} catch {
-				throw new Error(`Invalid URL format for file '${fileName}'. Please provide a valid URL to the PDF file.`);
+								throw new NodeOperationError(this.getNode(), `Invalid URL format for file '${fileName}'. Please provide a valid URL to the PDF file.`, { itemIndex: index });
 			}
 
 			pdfContents.push(String(pdfUrl));
@@ -460,7 +442,7 @@ async function getPdfContentsFromArray(this: IExecuteFunctions, index: number): 
 			try {
 				new URL(content);
 			} catch {
-				throw new Error(`Invalid URL at array index ${i}. Expected a valid PDF URL.`);
+								throw new NodeOperationError(this.getNode(), `Invalid URL at array index ${i}. Expected a valid PDF URL.`, { itemIndex: index });
 			}
 		} else if (arrayContentType === 'base64') {
 			content = typeof elem === 'string' ? elem : String(elem);
@@ -482,7 +464,7 @@ async function getPdfContentsFromArray(this: IExecuteFunctions, index: number): 
 					new URL(url);
 					content = url;
 				} catch {
-					throw new Error(`Invalid URL at array index ${i}.`);
+										throw new NodeOperationError(this.getNode(), `Invalid URL at array index ${i}.`, { itemIndex: index });
 				}
 			} else if (base64 && typeof base64 === 'string') {
 				content = base64.includes(',') ? base64.split(',')[1] : base64;

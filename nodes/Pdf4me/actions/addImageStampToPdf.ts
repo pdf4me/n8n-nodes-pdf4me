@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -527,7 +527,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -600,7 +600,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(imageUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the image file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the image file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in imageContent - no download or conversion
@@ -626,7 +626,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			Buffer.from(imageContent, 'base64');
 		} catch {
-			throw new Error('Invalid base64 image content. Please ensure the image is properly encoded.');
+						throw new NodeOperationError(this.getNode(), 'Invalid base64 image content. Please ensure the image is properly encoded.', { itemIndex: index });
 		}
 	} else if (imageInputDataType === 'binaryData') {
 		// For binary data, validate blobId is set
@@ -684,10 +684,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (advancedOptions.profiles) {
 		try {
 			const profiles = JSON.parse(advancedOptions.profiles as string);
-			sanitizeProfiles(profiles);
+			sanitizeProfiles.call(this, profiles);
 			Object.assign(body, profiles);
 		} catch (error) {
-			throw new Error(`Invalid custom profiles JSON: ${error}`);
+						throw new NodeOperationError(this.getNode(), `Invalid custom profiles JSON: ${error}`, { itemIndex: index });
 		}
 	}
 

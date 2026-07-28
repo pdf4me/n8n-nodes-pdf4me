@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject, JsonObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -159,7 +159,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'High',
 				value: 'High',
-				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page',
+				description: 'Suitable for PDFs generated from Images and scanned documents. Consumes 2 API calls per page.',
 			},
 		],
 	},
@@ -349,7 +349,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(docContent);
 		} catch (error) {
-			throw new Error(`Invalid URL format: ${docContent}`);
+						throw new NodeOperationError(this.getNode(), `Invalid URL format: ${docContent}`, { itemIndex: index });
 		}
 		// Ensure docContent remains as the original URL string (no trimming)
 		// docContent is already set to the URL string above
@@ -362,13 +362,14 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			const testBuffer = Buffer.from(docContent, 'base64');
 			if (testBuffer.length === 0 && docContent.length > 0) {
-				throw new Error('Invalid base64 content: Unable to decode base64 string');
+				throw new NodeOperationError(
+					this.getNode(),
+					'Invalid base64 content: Unable to decode base64 string',
+					{ itemIndex: index },
+				);
 			}
 		} catch (error) {
-			if (error instanceof Error && error.message.includes('Invalid base64')) {
-				throw error;
-			}
-			throw new Error('Invalid base64 content format');
+				throw new NodeOperationError(this.getNode(), 'Invalid base64 content format', { itemIndex: index });
 		}
 	} else if (inputDataType === 'binaryData') {
 		// For binary data, validate blobId is set
@@ -398,7 +399,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body.profiles = profiles;
 	}
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request
 	let responseData;
@@ -408,19 +409,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Provide better error messages with debugging information
 		const errorObj = error as { statusCode?: number; message?: string };
 		if (errorObj.statusCode === 500) {
-			throw new Error(
-				`PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
+						throw new NodeOperationError(this.getNode(), `PDF4Me server error (500): ${errorObj.message || 'The service was not able to process your request.'} ` +
 				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}, ` +
 				`docContentLength=${docContent?.length || 0}, ` +
-				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`
-			);
+				`docContentType=${typeof docContent === 'string' && docContent.startsWith('http') ? 'URL' : inputDataType === 'binaryData' ? 'blobId' : 'base64'}`, { itemIndex: index });
 		} else if (errorObj.statusCode === 400) {
-			throw new Error(
-				`Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
-				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}`
-			);
+						throw new NodeOperationError(this.getNode(), `Bad request (400): ${errorObj.message || 'Please check your parameters.'} ` +
+				`| Debug: inputDataType=${inputDataType}, docName=${originalFileName}`, { itemIndex: index });
 		}
-		throw error;
+				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: index });
 	}
 
 	// Handle the binary response (PowerPoint document data)

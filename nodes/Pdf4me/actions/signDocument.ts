@@ -8,8 +8,8 @@
  * Async handling (202 + Location polling) is done by pdf4meAsyncRequest in GenericFunctions.
  */
 
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
@@ -236,7 +236,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 		docContent = String(pdfUrl);
 		inputDocName = pdfUrl.split('/').pop() || docNameParam || 'document.pdf';
@@ -262,7 +262,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			signBasicAction.customField = JSON.parse(customFieldStr);
 		} catch {
-			throw new Error('Custom Field must be valid JSON');
+						throw new NodeOperationError(this.getNode(), 'Custom Field must be valid JSON', { itemIndex: index });
 		}
 	}
 

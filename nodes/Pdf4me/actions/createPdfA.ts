@@ -1,3 +1,4 @@
+import { NodeOperationError } from 'n8n-workflow';
 import type { IExecuteFunctions, IDataObject, INodeProperties } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
@@ -22,16 +23,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -140,44 +141,44 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'PDF/A-1b (Level B Basic)',
-				value: 'PdfA1b',
-				description: 'Basic conformance for reliable reproduction of document visual appearance',
-			},
-			{
 				name: 'PDF/A-1a (Level A Accessible)',
 				value: 'PdfA1a',
 				description: 'Includes PDF/A-1b conformance with accessibility features, document structure, and tagging',
 			},
-			{
-				name: 'PDF/A-2b (Basic Compliance)',
-				value: 'PdfA2b',
-				description: 'Part 2 standard supporting new features, image compression, transparency, and digital signatures',
+{
+				name: 'PDF/A-1b (Level B Basic)',
+				value: 'PdfA1b',
+				description: 'Basic conformance for reliable reproduction of document visual appearance',
 			},
-			{
-				name: 'PDF/A-2u (Basic with Unicode)',
-				value: 'PdfA2u',
-				description: 'PDF/A-2b level with all text as unicode mapped',
-			},
-			{
+{
 				name: 'PDF/A-2a (Accessible Compliance)',
 				value: 'PdfA2a',
 				description: 'PDF/A-2b level with accessibility features same as PDF/A-1a',
 			},
-			{
+{
+				name: 'PDF/A-2b (Basic Compliance)',
+				value: 'PdfA2b',
+				description: 'Part 2 standard supporting new features, image compression, transparency, and digital signatures',
+			},
+{
+				name: 'PDF/A-2u (Basic with Unicode)',
+				value: 'PdfA2u',
+				description: 'PDF/A-2b level with all text as unicode mapped',
+			},
+{
+				name: 'PDF/A-3a (Accessible Compliance)',
+				value: 'PdfA3a',
+				description: 'PDF/A-3b level with accessibility features same as PDF/A-1a',
+			},
+{
 				name: 'PDF/A-3b (Basic Compliance)',
 				value: 'PdfA3b',
 				description: 'Part 3 standard allowing embedding of files (XML, CSV, CAD, Word) along with Part 2 features',
 			},
-			{
+{
 				name: 'PDF/A-3u (Basic with Unicode)',
 				value: 'PdfA3u',
 				description: 'PDF/A-3b level with all text as unicode mapped',
-			},
-			{
-				name: 'PDF/A-3a (Accessible Compliance)',
-				value: 'PdfA3a',
-				description: 'PDF/A-3b level with accessibility features same as PDF/A-1a',
 			},
 		],
 	},
@@ -194,20 +195,20 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Allow Upgrade',
-				name: 'allowUpgrade',
-				type: 'boolean',
-				default: true,
-				description: 'Whether to allow upgrading to a higher PDF/A version if needed',
-			},
-			{
 				displayName: 'Allow Downgrade',
 				name: 'allowDowngrade',
 				type: 'boolean',
 				default: true,
 				description: 'Whether to allow downgrading to a lower PDF/A version if needed',
 			},
-			{
+{
+				displayName: 'Allow Upgrade',
+				name: 'allowUpgrade',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to allow upgrading to a higher PDF/A version if needed',
+			},
+{
 				displayName: 'Custom Profiles',
 				name: 'profiles',
 				type: 'string',
@@ -269,7 +270,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -312,7 +313,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/PdfA', body);
 

@@ -21,7 +21,7 @@ function copyIcons() {
 
 function copyConfig() {
 	// Copy ESLint configuration files and tsconfig.json to dist directory
-	const configStream = src(['.eslintrc.js', '.eslintrc.prepublish.js', 'tsconfig.json'])
+	const configStream = src(['eslint.config.mjs', 'tsconfig.json'])
 		.pipe(dest('dist'));
 
 	// Return the configStream to signal async completion

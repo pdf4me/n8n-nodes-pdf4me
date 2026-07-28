@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	uploadBlobToPdf4me,
@@ -41,7 +41,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Input Binary Field',
 		name: 'binaryPropertyName',
 		type: 'string',
-		required: false,
 		default: 'data',
 		description: 'Name of the binary property that contains the contract file',
 		displayOptions: {
@@ -176,21 +175,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		// Enhanced error handling with debugging context
 		if (error.code === 'ECONNRESET') {
-			throw new Error(`Connection was reset. Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `Connection was reset. Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else if (error.statusCode === 500) {
-			throw new Error(`PDF4Me server error (500): ${error.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `PDF4Me server error (500): ${error.message || 'The service was not able to process your request.'} | Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else if (error.statusCode === 404) {
-			throw new Error(`API endpoint not found. Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `API endpoint not found. Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else if (error.statusCode === 401) {
-			throw new Error(`Authentication failed. Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `Authentication failed. Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else if (error.statusCode === 403) {
-			throw new Error(`Access denied. Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `Access denied. Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else if (error.statusCode === 429) {
-			throw new Error(`Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `Rate limit exceeded. Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else if (error.statusCode) {
-			throw new Error(`PDF4Me API error (${error.statusCode}): ${error.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${docName}`);
+						throw new NodeOperationError(this.getNode(), `PDF4Me API error (${error.statusCode}): ${error.message || 'Unknown error'} | Debug: docLength=${docContent?.length}, docName=${docName}`, { itemIndex: index });
 		} else {
-			throw new Error(`Connection error: ${error.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${docName}, errorCode=${error.code}`);
+						throw new NodeOperationError(this.getNode(), `Connection error: ${error.message || 'Unknown connection issue'} | Debug: docLength=${docContent?.length}, docName=${docName}, errorCode=${error.code}`, { itemIndex: index });
 		}
 	}
 
@@ -206,7 +205,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				processedData = result;
 			}
 		} catch (error) {
-			throw new Error(`Failed to parse API response: ${error.message}`);
+						throw new NodeOperationError(this.getNode(), `Failed to parse API response: ${error.message}`, { itemIndex: index });
 		}
 
 		// Return both raw data and metadata

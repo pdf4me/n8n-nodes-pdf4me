@@ -6,6 +6,7 @@
  */
 
 import type { INodeProperties, IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import {
 	ActionConstants,
 	pdf4meGenerateDocumentV2Request,
@@ -57,7 +58,7 @@ function stringifyJsonField(value: unknown): string {
 
 export const description: INodeProperties[] = [
 	{
-		displayName: 'Template Name',
+		displayName: 'Template Name or ID',
 		name: 'templateName',
 		type: 'options',
 		typeOptions: {
@@ -65,7 +66,8 @@ export const description: INodeProperties[] = [
 		},
 		required: true,
 		default: '',
-		description: 'Select the document template to use for generating the output document',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.GenerateDocumentFromTemplate],
@@ -113,7 +115,7 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'Json',
-		description: 'The data type for the template. Choose JSON, XML, or CSV format',
+		description: 'The data type for the template. Choose JSON, XML, or CSV format.',
 		options: [
 			{ name: 'JSON', value: 'Json' },
 			{ name: 'XML', value: 'XML' },
@@ -171,7 +173,7 @@ export const description: INodeProperties[] = [
 	),
 	...documentDataFileUrlFields(generateDocumentFromTemplateOp, ['Json', 'XML', 'Csv']),
 	{
-		displayName: 'Meta Data Json',
+		displayName: 'Meta Data JSON',
 		name: 'metaDataJson',
 		type: 'string',
 		typeOptions: {
@@ -229,7 +231,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const item = this.getInputData(index);
 
 		if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+			throw new NodeOperationError(
+				this.getNode(),
+				`No binary data found in property '${binaryPropertyName}'`,
+			);
 		}
 
 		const binaryData = item[0].binary[binaryPropertyName];
@@ -251,30 +256,36 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentDataFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the document data file.');
+			throw new NodeOperationError(
+				this.getNode(),
+				'Invalid URL format. Please provide a valid URL to the document data file.',
+			);
 		}
 
 		documentDataFile = String(documentDataFileUrl);
 	} else {
-		throw new Error(`Unsupported document input type: ${documentInputDataType}`);
+		throw new NodeOperationError(this.getNode(), `Unsupported document input type: ${documentInputDataType}`);
 	}
 
 	if (documentInputDataType === 'url') {
 		if (!documentDataFile || typeof documentDataFile !== 'string' || documentDataFile.trim() === '') {
-			throw new Error('Document data file URL is required and must be a non-empty string');
+			throw new NodeOperationError(
+				this.getNode(),
+				'Document data file URL is required and must be a non-empty string',
+			);
 		}
 	} else if (documentInputDataType === 'base64') {
 		if (!documentDataFile || documentDataFile.trim() === '') {
-			throw new Error('Document data file content is required');
+			throw new NodeOperationError(this.getNode(), 'Document data file content is required');
 		}
 	} else if (documentInputDataType === 'binaryData') {
 		if (!documentDataFile || documentDataFile.trim() === '') {
-			throw new Error('Document data file content is required');
+			throw new NodeOperationError(this.getNode(), 'Document data file content is required');
 		}
 	}
 
 	if (!documentDataFile && !documentDataText) {
-		throw new Error('Either Document Data File or Document Data Text must be provided');
+		throw new NodeOperationError(this.getNode(), 'Either Document Data File or Document Data Text must be provided');
 	}
 
 	if (documentDataText && documentInputDataType === 'text') {
@@ -282,15 +293,24 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				JSON.parse(documentDataText);
 			} catch (error) {
-				throw new Error(`Invalid JSON format in Document Data Text: ${(error as Error).message}`);
+				throw new NodeOperationError(
+					this.getNode(),
+					`Invalid JSON format in Document Data Text: ${(error as Error).message}`,
+				);
 			}
 		} else if (documentDataType === 'XML') {
 			if (!documentDataText.trim().startsWith('<') || !documentDataText.trim().includes('>')) {
-				throw new Error('Invalid XML format in Document Data Text: XML must start with < and contain proper tags');
+				throw new NodeOperationError(
+					this.getNode(),
+					'Invalid XML format in Document Data Text: XML must start with < and contain proper tags',
+				);
 			}
 		} else if (documentDataType === 'Csv') {
 			if (!documentDataText.trim()) {
-				throw new Error('Document Data Text cannot be empty when Document Data Type is CSV');
+				throw new NodeOperationError(
+					this.getNode(),
+					'Document Data Text cannot be empty when Document Data Type is CSV',
+				);
 			}
 		}
 	}
@@ -300,7 +320,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			JSON.parse(metaDataJson);
 		} catch (error) {
-			throw new Error(`Invalid JSON format in Meta Data Json: ${(error as Error).message}`);
+			throw new NodeOperationError(
+				this.getNode(),
+				`Invalid JSON format in Meta Data JSON: ${(error as Error).message}`,
+			);
 		}
 	}
 
@@ -320,11 +343,11 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	try {
 		documentContent = Buffer.from(document.docData, 'base64');
 	} catch {
-		throw new Error('Failed to decode document data from API response');
+		throw new NodeOperationError(this.getNode(), 'Failed to decode document data from API response');
 	}
 
 	if (documentContent.length === 0) {
-		throw new Error('Generated document is empty');
+		throw new NodeOperationError(this.getNode(), 'Generated document is empty');
 	}
 
 	const fileName = document.name;

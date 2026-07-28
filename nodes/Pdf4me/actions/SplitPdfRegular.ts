@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject, INodeExecutionData  } from 'n8n-workflow';
 import {
 	sanitizeProfiles,
 	ActionConstants,
@@ -140,7 +140,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Split Action Number',
 		name: 'splitActionNumber',
 		type: 'number',
-		required: false,
 		default: 1,
 		description: 'Page number for split action (e.g., split after page 1, or every N pages)',
 		displayOptions: {
@@ -154,7 +153,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Split Sequence',
 		name: 'splitSequence',
 		type: 'string',
-		required: false,
 		default: '',
 		description: 'Comma-separated list of page numbers to split at (e.g., 1,3,8)',
 		displayOptions: {
@@ -168,7 +166,6 @@ export const description: INodeProperties[] = [
 		displayName: 'Split Ranges',
 		name: 'splitRanges',
 		type: 'string',
-		required: false,
 		default: '',
 		description: 'Page ranges to extract (e.g., 1-4,10-21)',
 		displayOptions: {
@@ -336,7 +333,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Call the PDF4me SplitPdf endpoint
 	const response = await pdf4meAsyncRequest.call(this, '/api/v2/SplitPdf', body);
@@ -347,7 +344,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		try {
 			parsedResponse = JSON.parse(response.toString('utf8'));
 		} catch (e) {
-			throw new Error('Failed to parse Buffer response as JSON: ' + e.message);
+						throw new NodeOperationError(this.getNode(), 'Failed to parse Buffer response as JSON: ' + e.message, { itemIndex: index });
 		}
 	} else if (typeof response === 'string') {
 		try {

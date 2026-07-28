@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -169,7 +169,7 @@ export const description: INodeProperties[] = [
 				name: 'pages',
 				type: 'string',
 				default: 'all',
-				description: 'Specify pages to extract resources from. Use format: "1,2" for specific pages, "2-5" for page range, or "all" for all pages',
+				description: 'Specify pages to extract resources from. Use format: "1,2" for specific pages, "2-5" for page range, or "all" for all pages.',
 				placeholder: 'all, 1,2, 2-5, 1-3,5,7',
 			},
 			{
@@ -257,7 +257,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -308,7 +308,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	if (profiles) body.profiles = profiles;
 
 	// Sanitize profiles
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make API call
 	const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ExtractResources', body);

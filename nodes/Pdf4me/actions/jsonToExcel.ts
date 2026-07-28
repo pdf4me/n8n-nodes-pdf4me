@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -283,7 +283,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				JSON.parse(jsonContent);
 			} catch (error) {
-				throw new Error(`Invalid JSON content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Invalid JSON content: ${error instanceof Error ? error.message : 'Unknown error'}`, { itemIndex: index });
 			}
 
 			// Convert to base64
@@ -310,7 +310,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				JSON.parse(jsonString);
 			} catch (error) {
-				throw new Error(`Invalid JSON in binary data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Invalid JSON in binary data: ${error instanceof Error ? error.message : 'Unknown error'}`, { itemIndex: index });
 			}
 
 			// 5. Upload to UploadBlob
@@ -332,7 +332,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				const jsonString = Buffer.from(docContent, 'base64').toString('utf-8');
 				JSON.parse(jsonString);
 			} catch (error) {
-				throw new Error(`Invalid JSON in base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Invalid JSON in base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`, { itemIndex: index });
 			}
 
 			blobId = '';
@@ -363,7 +363,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const profiles = advancedOptions?.profiles as string | undefined;
 		if (profiles) body.profiles = profiles;
 
-		sanitizeProfiles(body);
+		sanitizeProfiles.call(this, body);
 
 		const responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertJsonToExcel', body);
 
@@ -413,6 +413,6 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	} catch (error) {
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`JSON to Excel conversion failed: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `JSON to Excel conversion failed: ${errorMessage}`, { itemIndex: index });
 	}
 }

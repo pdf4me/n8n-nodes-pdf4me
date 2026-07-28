@@ -8,7 +8,7 @@ import type {
 	IHttpRequestMethods,
 	IHttpRequestOptions,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 /**
  * Build a readable error string from PDF4me JSON error responses.
@@ -125,7 +125,10 @@ export async function pdf4meApiRequest(
 				try {
 					return Buffer.from(response.body, 'base64');
 				} catch (error) {
-					throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+					throw new NodeOperationError(
+						this.getNode(),
+						`API returned unexpected string response: ${response.body.substring(0, 100)}...`,
+					);
 				}
 			} else {
 				return Buffer.from(response.body, 'binary');
@@ -134,7 +137,6 @@ export async function pdf4meApiRequest(
 			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -229,7 +231,7 @@ export async function pdf4meAsyncRequest(
 					try {
 						return Buffer.from(response.body, 'base64');
 					} catch {
-						throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+												throw new NodeOperationError(this.getNode(), `API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 					}
 				} else {
 					return Buffer.from(response.body, 'binary');
@@ -249,7 +251,6 @@ export async function pdf4meAsyncRequest(
 			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -391,14 +392,20 @@ export async function getAnalyzerIdList(
 export async function getTemplateNameList(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
-	const body = await pdf4meApiRequest.call(this, '/api/v2/GetTemplateName', {}, 'GET');
-	const options = parseGetAnalyzerIdOptions(body);
+	try {
+		const body = await pdf4meApiRequest.call(this, '/api/v2/GetTemplateName', {}, 'GET');
+		const options = parseGetAnalyzerIdOptions(body);
 
-	if (options.length === 0) {
-		throw new Error('GetTemplateName returned no template options');
+		if (options.length === 0) {
+			throw new Error('GetTemplateName returned no template options');
+		}
+
+		return options;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
-
-	return options;
 }
 
 interface GenerateDocumentV2Result {
@@ -648,64 +655,70 @@ async function pollV2StatusUrl(
 	templateFileName: string,
 	maxRetries: number = 720,
 ): Promise<GenerateDocumentV2Result> {
-	let retryCount = 0;
-	let pollBody: IDataObject = {};
-	const fallbackName = templateFileName
-		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
-		: 'generated_document.pdf';
+	try {
+		let retryCount = 0;
+		let pollBody: IDataObject = {};
+		const fallbackName = templateFileName
+			? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+			: 'generated_document.pdf';
 
-	while (retryCount < maxRetries) {
-		const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-			url: statusUrl,
-			method: 'GET',
-			encoding: 'arraybuffer' as const,
-			returnFullResponse: true,
-			ignoreHttpStatusErrors: true,
-		});
+		while (retryCount < maxRetries) {
+			const pollResponse = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+				url: statusUrl,
+				method: 'GET',
+				encoding: 'arraybuffer' as const,
+				returnFullResponse: true,
+				ignoreHttpStatusErrors: true,
+			});
 
-		if (pollResponse.statusCode === 404 || pollResponse.statusCode === 202) {
-			retryCount++;
-			await delayAsync.call(this);
-			continue;
-		}
+			if (pollResponse.statusCode === 404 || pollResponse.statusCode === 202) {
+				retryCount++;
+				await delayAsync.call(this);
+				continue;
+			}
 
-		if (pollResponse.statusCode !== 200) {
-			throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
-		}
+			if (pollResponse.statusCode !== 200) {
+				throw new Error(formatPdf4meHttpError(pollResponse.statusCode, pollResponse.body));
+			}
 
-		const pollBinaryDocument = documentFromV2BinaryResponse(
-			pollResponse.body,
-			pollResponse.headers,
-			templateFileName,
-		);
-		if (pollBinaryDocument) {
-			return pollBinaryDocument;
-		}
+			const pollBinaryDocument = documentFromV2BinaryResponse(
+				pollResponse.body,
+				pollResponse.headers,
+				templateFileName,
+			);
+			if (pollBinaryDocument) {
+				return pollBinaryDocument;
+			}
 
-		pollBody = parseV2JsonBody(pollResponse.body);
-		const status = String(pollBody.status ?? pollBody.Status ?? '');
-		const completedDocument = resolveV2DocumentFromBody(pollBody, fallbackName);
+			pollBody = parseV2JsonBody(pollResponse.body);
+			const status = String(pollBody.status ?? pollBody.Status ?? '');
+			const completedDocument = resolveV2DocumentFromBody(pollBody, fallbackName);
 
-		if (completedDocument) {
-			return completedDocument;
-		}
+			if (completedDocument) {
+				return completedDocument;
+			}
 
-		if (isV2CallInProgress(status)) {
-			retryCount++;
-			await delayAsync.call(this);
-			continue;
+			if (isV2CallInProgress(status)) {
+				retryCount++;
+				await delayAsync.call(this);
+				continue;
+			}
+
+			throw new Error(
+				`GenerateDocumentSingleV2 job finished with status "${status || 'unknown'}" but no document could be parsed: ${formatV2ResponseForError(pollBody)}`,
+			);
 		}
 
 		throw new Error(
-			`GenerateDocumentSingleV2 job finished with status "${status || 'unknown'}" but no document could be parsed: ${formatV2ResponseForError(pollBody)}`,
+			`GenerateDocumentSingleV2 polling timed out after ${maxRetries} attempts. Last status: ${
+				String(pollBody.status ?? pollBody.Status ?? 'unknown')
+			}. Last body: ${formatV2ResponseForError(pollBody)}`,
 		);
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
-
-	throw new Error(
-		`GenerateDocumentSingleV2 polling timed out after ${maxRetries} attempts. Last status: ${
-			String(pollBody.status ?? pollBody.Status ?? 'unknown')
-		}. Last body: ${formatV2ResponseForError(pollBody)}`,
-	);
 }
 
 /**
@@ -716,58 +729,64 @@ export async function pdf4meGenerateDocumentV2Request(
 	url: string,
 	payload: IDataObject,
 ): Promise<GenerateDocumentV2Result> {
-	const templateFileName = String(payload.TemplateFileName ?? '');
+	try {
+		const templateFileName = String(payload.TemplateFileName ?? '');
 
-	const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
-		url: `https://api.pdf4me.com${url}`,
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: payload,
-		encoding: 'arraybuffer' as const,
-		returnFullResponse: true,
-		ignoreHttpStatusErrors: true,
-	});
+		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'pdf4meApi', {
+			url: `https://api.pdf4me.com${url}`,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: payload,
+			encoding: 'arraybuffer' as const,
+			returnFullResponse: true,
+			ignoreHttpStatusErrors: true,
+		});
 
-	if (response.statusCode !== 200 && response.statusCode !== 202) {
-		throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
-	}
+		if (response.statusCode !== 200 && response.statusCode !== 202) {
+			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
+		}
 
-	const body = parseV2JsonBody(response.body);
-	const statusUrl = resolveV2StatusUrl(body, response.headers);
+		const body = parseV2JsonBody(response.body);
+		const statusUrl = resolveV2StatusUrl(body, response.headers);
 
-	if (statusUrl) {
-		return await pollV2StatusUrl.call(this, statusUrl, templateFileName);
-	}
+		if (statusUrl) {
+			return await pollV2StatusUrl.call(this, statusUrl, templateFileName);
+		}
 
-	if (response.statusCode === 202) {
-		throw new Error('No polling URL found in async GenerateDocumentSingleV2 response');
-	}
+		if (response.statusCode === 202) {
+			throw new Error('No polling URL found in async GenerateDocumentSingleV2 response');
+		}
 
-	const binaryDocument = documentFromV2BinaryResponse(
-		response.body,
-		response.headers,
-		templateFileName,
-	);
-	if (binaryDocument) {
-		return binaryDocument;
-	}
-
-	const fallbackName = templateFileName
-		? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
-		: 'generated_document.pdf';
-	const document = resolveV2DocumentFromBody(body, fallbackName);
-	if (!document) {
-		throw new Error(
-			`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
+		const binaryDocument = documentFromV2BinaryResponse(
+			response.body,
+			response.headers,
+			templateFileName,
 		);
-	}
+		if (binaryDocument) {
+			return binaryDocument;
+		}
 
-	return document;
+		const fallbackName = templateFileName
+			? `${templateFileName.replace(/\.[^.]+$/, '')}_generated.pdf`
+			: 'generated_document.pdf';
+		const document = resolveV2DocumentFromBody(body, fallbackName);
+		if (!document) {
+			throw new Error(
+				`No document found in GenerateDocumentSingleV2 response: ${formatV2ResponseForError(body)}`,
+			);
+		}
+
+		return document;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: error instanceof Error ? error.message : String(error),
+		});
+	}
 }
 
-export function sanitizeProfiles(data: IDataObject): void {
+export function sanitizeProfiles(this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions, data: IDataObject): void {
 	// Convert profiles to a trimmed string (or empty string if not provided)
 	const profilesValue = data.profiles ? String(data.profiles).trim() : '';
 
@@ -788,7 +807,8 @@ export function sanitizeProfiles(data: IDataObject): void {
 		}
 		data.profiles = sanitized;
 	} catch (error) {
-		throw new Error(
+		throw new NodeOperationError(
+			this.getNode(),
 			'Invalid JSON in Profiles. Check https://dev.pdf4me.com/ or contact support@pdf4me.com for help. ' +
 				(error as Error).message,
 		);
@@ -909,7 +929,7 @@ export async function uploadBlobToPdf4me(
 					responseBody = response.body as IDataObject;
 				}
 			} catch (parseError) {
-				throw new Error(`Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+								throw new NodeOperationError(this.getNode(), `Failed to parse UploadBlob response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
 			}
 
 			// Check for BlobId (capital B) first, then fallback to blobId for backward compatibility
@@ -923,7 +943,6 @@ export async function uploadBlobToPdf4me(
 			throw new Error(formatPdf4meHttpError(response.statusCode, response.body));
 		}
 	} catch (error) {
-		if (error instanceof NodeApiError) throw error;
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: error instanceof Error ? error.message : String(error),
 		});
@@ -1068,7 +1087,7 @@ async function pollForCompletion(
 						try {
 							return Buffer.from(pollResponse.body, 'base64');
 						} catch {
-							throw new Error(`API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
+														throw new NodeOperationError(this.getNode(), `API returned unexpected string response: ${pollResponse.body.substring(0, 100)}...`);
 						}
 					} else {
 						return Buffer.from(pollResponse.body, 'binary');
@@ -1091,14 +1110,16 @@ async function pollForCompletion(
 			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNRESET') || error.message.includes('timeout')) {
 				retryCount++;
 				if (retryCount >= maxRetries) {
-					throw new Error(`Network error during polling after ${maxRetries} attempts: ${error.message}`);
+										throw new NodeOperationError(this.getNode(), `Network error during polling after ${maxRetries} attempts: ${error.message}`);
 				}
 				// Use PDF4ME's DelayAsync endpoint for 10 second delay on network errors
 				await delayAsync.call(this);
 				continue;
 			}
 			// For other errors, throw immediately
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject, {
+				message: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 

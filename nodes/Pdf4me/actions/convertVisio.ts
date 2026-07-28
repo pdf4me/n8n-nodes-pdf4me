@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -153,7 +153,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Make PDF compliant with standards',
+		description: 'Whether to make PDF compliant with standards',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -196,7 +196,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Include hidden pages (True/False)',
+		description: 'Whether to include hidden pages (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -209,7 +209,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Save foreground elements (True/False)',
+		description: 'Whether to save foreground elements (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -222,7 +222,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Include toolbar (True/False)',
+		description: 'Whether to include toolbar (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -235,7 +235,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Auto-fit content to page (True/False)',
+		description: 'Whether to auto-fit content to page (True/False)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -248,7 +248,7 @@ export const description: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		required: true,
-		description: 'Enable asynchronous processing',
+		description: 'Whether to enable asynchronous processing',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ConvertVisio],
@@ -388,7 +388,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		body.profiles = profiles;
 	}
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request to convert VISIO to PDF
 	let responseData = await pdf4meAsyncRequest.call(this, '/api/v2/ConvertVisio?schemaVal=PDF', body);
@@ -440,7 +440,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						}
 					} catch (jsonError) {
 						// Not JSON, so it's likely invalid data
-						throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+												throw new NodeOperationError(this.getNode(), `API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`, { itemIndex: index });
 					}
 				}
 			} catch (decodeError) {
@@ -448,10 +448,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				try {
 					const jsonResponse = JSON.parse(pdfBuffer.toString('utf8'));
 					if (jsonResponse.error || jsonResponse.message) {
-						throw new Error(`API returned error: ${jsonResponse.error || jsonResponse.message}`);
+												throw new NodeOperationError(this.getNode(), `API returned error: ${jsonResponse.error || jsonResponse.message}`, { itemIndex: index });
 					}
 				} catch (jsonError) {
-					throw new Error(`API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`);
+										throw new NodeOperationError(this.getNode(), `API returned invalid PDF data. Response starts with: ${errorText.substring(0, 100)}...`, { itemIndex: index });
 				}
 			}
 		}

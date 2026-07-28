@@ -11,6 +11,7 @@
  * Content-Type: application/json
  */
 
+import { NodeOperationError } from 'n8n-workflow';
 import type { INodeProperties, IExecuteFunctions } from 'n8n-workflow';
 import { ActionConstants, pdf4meAsyncRequest, uploadBlobToPdf4me } from '../GenericFunctions';
 import {
@@ -32,13 +33,13 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'Docx',
-		description: 'Template file type. Set this value when sending a Word, HTML, PDF, Mail Merge, or Google Docs template',
+		description: 'Template file type. Set this value when sending a Word, HTML, PDF, Mail Merge, or Google Docs template.',
 		options: [
-			{ name: 'PDF4me Word Template', value: 'Docx' },
-			{ name: 'HTML', value: 'HTML' },
-			{ name: 'Pdf Form', value: 'PDF' },
-			{ name: 'Mail Merge', value: 'MailMerge' },
 			{ name: 'Google Docs', value: 'GoogleDocs' },
+{ name: 'HTML', value: 'HTML' },
+{ name: 'Mail Merge', value: 'MailMerge' },
+{ name: 'Pdf Form', value: 'PDF' },
+{ name: 'PDF4me Word Template', value: 'Docx' },
 		],
 		displayOptions: {
 			show: {
@@ -104,24 +105,24 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		default: 'binaryData',
-		description: 'How to provide the template file. Note: This action can be looped to generate multiple documents',
+		description: 'How to provide the template file. Note: This action can be looped to generate multiple documents.',
 		options: [
-			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use template file from previous node',
-			},
 			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide base64 encoded template file',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use template file from previous node',
+			},
+{
 				name: 'HTML Code',
 				value: 'htmlCode',
 				description: 'Write raw HTML code manually (only available for HTML template type)',
 			},
-			{
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the template file',
@@ -196,21 +197,21 @@ export const description: INodeProperties[] = [
 		description: 'How to provide the document data',
 		options: [
 			{
-				name: 'Text',
-				value: 'text',
-				description: 'Manually enter JSON or XML data',
-			},
-			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use data file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide base64 encoded data file',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use data file from previous node',
+			},
+{
+				name: 'Text',
+				value: 'text',
+				description: 'Manually enter JSON or XML data',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide a URL to the data file',
@@ -228,11 +229,11 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		default: 'Json',
 		required: true,
-		description: 'The data type for the template. Choose JSON, XML, or CSV format',
+		description: 'The data type for the template. Choose JSON, XML, or CSV format.',
 		options: [
-			{ name: 'JSON', value: 'Json' },
-			{ name: 'XML', value: 'XML' },
 			{ name: 'CSV', value: 'Csv' },
+{ name: 'JSON', value: 'Json' },
+{ name: 'XML', value: 'XML' },
 		],
 		displayOptions: {
 			show: {
@@ -402,7 +403,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(templateFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the template file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the template file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in templateFileData - no download or conversion
@@ -473,7 +474,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(documentDataFileUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the document data file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the document data file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in documentDataFile - no download or conversion
@@ -513,7 +514,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				JSON.parse(documentDataText);
 			} catch (error) {
-				throw new Error(`Invalid JSON format in Document Data Text: ${error.message}`);
+								throw new NodeOperationError(this.getNode(), `Invalid JSON format in Document Data Text: ${error.message}`, { itemIndex: index });
 			}
 		} else if (documentDataType === 'XML') {
 			// Basic XML validation - check for proper XML structure

@@ -1,5 +1,4 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	sanitizeProfiles,
 	ActionConstants,
@@ -401,7 +400,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Use generic async request function with query parameter
 	const responseData = await pdf4meAsyncRequest.call(

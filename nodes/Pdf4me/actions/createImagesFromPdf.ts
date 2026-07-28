@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject, JsonObject } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -23,16 +23,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -103,7 +103,7 @@ export const description: INodeProperties[] = [
 		hint: 'Convert PDF to images. See our <b><a href="https://docs.pdf4me.com/integration/n8n/image/create-image-from-pdf/" target="_blank">complete guide</a></b> for detailed instructions and examples.',
 	},
 	{
-		displayName: 'Image Width (pixels)',
+		displayName: 'Image Width (Pixels)',
 		name: 'widthPixel',
 		type: 'number',
 		default: 800,
@@ -126,56 +126,56 @@ export const description: INodeProperties[] = [
 		description: 'Output format for the images',
 		options: [
 			{
-				name: 'JPG',
-				value: 'jpg',
-				description: 'JPEG image format',
-			},
-			{
-				name: 'JPEG',
-				value: 'jpeg',
-				description: 'JPEG image format',
-			},
-			{
 				name: 'BMP',
 				value: 'bmp',
 				description: 'Bitmap image format',
 			},
-			{
+{
 				name: 'GIF',
 				value: 'gif',
 				description: 'GIF image format',
 			},
-			{
+{
 				name: 'JB2',
 				value: 'jb2',
 				description: 'JBIG2 image format',
 			},
-			{
+{
 				name: 'JP2',
 				value: 'jp2',
 				description: 'JPEG 2000 image format',
 			},
-			{
+{
+				name: 'JPEG',
+				value: 'jpeg',
+				description: 'JPEG image format',
+			},
+{
 				name: 'JPF',
 				value: 'jpf',
 				description: 'JPEG 2000 image format',
 			},
-			{
+{
+				name: 'JPG',
+				value: 'jpg',
+				description: 'JPEG image format',
+			},
+{
 				name: 'JPX',
 				value: 'jpx',
 				description: 'JPEG 2000 image format',
 			},
-			{
+{
 				name: 'PNG',
 				value: 'png',
 				description: 'PNG image format',
 			},
-			{
+{
 				name: 'TIF',
 				value: 'tif',
 				description: 'TIFF image format',
 			},
-			{
+{
 				name: 'TIFF',
 				value: 'tiff',
 				description: 'TIFF image format',
@@ -204,15 +204,15 @@ export const description: INodeProperties[] = [
 				value: 'all',
 				description: 'Convert all pages to images',
 			},
-			{
-				name: 'Specific Pages',
-				value: 'specific',
-				description: 'Convert only specific page numbers',
-			},
-			{
+{
 				name: 'Page Range',
 				value: 'range',
 				description: 'Convert a range of pages',
+			},
+{
+				name: 'Specific Pages',
+				value: 'specific',
+				description: 'Convert only specific page numbers',
 			},
 		],
 	},
@@ -326,7 +326,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -350,7 +350,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			throw new Error('PDF content is required');
 		}
 		// Validate PDF content for base64
-		validatePdfContent(docContent);
+		validatePdfContent.call(this, index, docContent);
 	} else if (inputDataType === 'binaryData') {
 		// For binary data, validate blobId is set
 		if (!docContent || docContent.trim() === '') {
@@ -407,7 +407,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			try {
 				parsedResponse = JSON.parse(responseData.toString('utf8'));
 			} catch (e) {
-				throw new Error('Failed to parse Buffer response as JSON: ' + e.message);
+								throw new NodeOperationError(this.getNode(), 'Failed to parse Buffer response as JSON: ' + e.message, { itemIndex: index });
 			}
 		} else if (typeof responseData === 'string') {
 			try {
@@ -553,22 +553,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 
 		if (errorMessage && errorMessage.includes('File is Empty')) {
-			throw new Error(
-				'PDF4ME API Error: File is Empty. This usually means:\n' +
+						throw new NodeOperationError(this.getNode(), 'PDF4ME API Error: File is Empty. This usually means:\n' +
 				'1. The PDF file is corrupted or invalid\n' +
 				'2. The file content wasn\'t properly encoded\n' +
 				'3. The input data type doesn\'t match the actual data\n\n' +
 				`Input Type: ${inputDataType}\n` +
 				`Content Length: ${body.docContent && typeof body.docContent === 'string' ? body.docContent.length : 0}\n` +
 				`Content Type: ${inputDataType === 'binaryData' ? 'blobId' : inputDataType === 'url' ? 'URL' : 'base64'}\n` +
-				`Has Content: ${!!body.docContent}`,
-			);
+				`Has Content: ${!!body.docContent}`, { itemIndex: index });
 		}
 
 		// Provide more context for 500 errors
 		if (errorMessage && (errorMessage.includes('500') || errorMessage.includes('service was not able to process'))) {
-			throw new Error(
-				'PDF4ME API Error (500): The service was not able to process your request.\n\n' +
+						throw new NodeOperationError(this.getNode(), 'PDF4ME API Error (500): The service was not able to process your request.\n\n' +
 				'Debug Information:\n' +
 				`- Input Type: ${inputDataType}\n` +
 				`- Document Name: ${finalDocName}\n` +
@@ -583,18 +580,17 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				'2. The blobId/URL is accessible (for binary data/URL inputs)\n' +
 				'3. The page numbers are valid for the document\n' +
 				'4. The image settings are within acceptable ranges\n\n' +
-				`Original Error: ${errorMessage}`,
-			);
+				`Original Error: ${errorMessage}`, { itemIndex: index });
 		}
 
-		throw error;
+				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: index });
 	}
 }
 
 /**
  * Validate PDF content (for base64 input only)
  */
-function validatePdfContent(docContent: string): void {
+function validatePdfContent(this: IExecuteFunctions, index: number, docContent: string): void {
 	if (!docContent || docContent.trim() === '') {
 		throw new Error('PDF content is empty or missing');
 	}
@@ -609,17 +605,20 @@ function validatePdfContent(docContent: string): void {
 		// Check if it starts with PDF header
 		const header = decoded.toString('ascii', 0, 10);
 		if (!header.startsWith('%PDF')) {
-			throw new Error(
+			throw new NodeOperationError(
+				this.getNode(),
 				'The content does not appear to be a valid PDF file. ' +
-				'PDF files should start with "%PDF".\n\n' +
-				`Content starts with: "${header}"`,
+					'PDF files should start with "%PDF".\n\n' +
+					`Content starts with: "${header}"`,
+				{ itemIndex: index },
 			);
 		}
 	} catch (error) {
-		if (error instanceof Error && error.message.includes('PDF files should start with')) {
-			throw error;
-		}
-		throw new Error('Invalid base64 content. Please ensure the PDF content is properly base64 encoded.');
+		throw new NodeOperationError(
+			this.getNode(),
+			'Invalid base64 content. Please ensure the PDF content is properly base64 encoded.',
+			{ itemIndex: index },
+		);
 	}
 }
 

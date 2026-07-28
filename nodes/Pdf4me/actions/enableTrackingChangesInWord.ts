@@ -85,7 +85,7 @@ export const description: INodeProperties[] = [
 		name: 'async',
 		type: 'boolean',
 		default: true,
-		description: 'Process asynchronously',
+		description: 'Whether to process asynchronously',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.EnableTrackingChangesInWord],

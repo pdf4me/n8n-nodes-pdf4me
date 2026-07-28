@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "2.4.0",
+  "version": "2.4.3",
   "description": "n8n community node for PDF4me API integration",
   "keywords": [
     "n8n-community-node-package"
@@ -30,15 +30,16 @@
     "build": "tsc && gulp build",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint nodes credentials package.json",
-    "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint nodes credentials package.json --fix",
-    "lintfix": "ESLINT_USE_FLAT_CONFIG=false eslint nodes credentials package.json --fix",
+    "lint": "eslint nodes credentials package.json",
+    "lint:fix": "eslint nodes credentials package.json --fix",
+    "lintfix": "eslint nodes credentials package.json --fix",
     "release": "n8n-node release",
-    "prepublishOnly": "npm run build && npm run validate-build && ESLINT_USE_FLAT_CONFIG=false eslint -c .eslintrc.prepublish.js nodes credentials package.json",
+    "prepublishOnly": "npm run build && npm run validate-build && eslint nodes credentials package.json",
     "validate-build": "node -e \"const fs=require('fs'); const path=require('path'); const requiredFiles=['dist/nodes/Pdf4me/Pdf4me.node.js','dist/credentials/Pdf4meApi.credentials.js']; requiredFiles.forEach(f=>{if(!fs.existsSync(f))throw new Error('Missing required file: '+f);}); \""
   },
   "devDependencies": {
     "@n8n/node-cli": ">=0.23.0",
+    "@n8n/scan-community-package": "^0.28.1",
     "@types/node": "20.19.7",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
@@ -46,7 +47,6 @@
     "eslint-plugin-n8n-nodes-base": "^1.16.6",
     "gulp": "^4.0.2",
     "merge-stream": "^2.0.0",
-    "n8n-workflow": "*",
     "prettier": "^3.8.3",
     "typescript": "^5.9.3"
   },

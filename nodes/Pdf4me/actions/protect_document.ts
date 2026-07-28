@@ -1,4 +1,4 @@
-import { IExecuteFunctions, INodeExecutionData, INodeProperties, IDataObject } from 'n8n-workflow';
+import { IExecuteFunctions, INodeExecutionData, INodeProperties, IDataObject, NodeOperationError } from 'n8n-workflow';
 import { pdf4meAsyncRequest, ActionConstants, uploadBlobToPdf4me } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
@@ -10,9 +10,9 @@ export const description: INodeProperties[] = [
 		default: 'binaryData',
 		description: 'Choose how to provide the PDF file to protect',
 		options: [
-			{ name: 'Binary Data', value: 'binaryData', description: 'Use PDF file from previous node' },
 			{ name: 'Base64 String', value: 'base64', description: 'Provide PDF content as base64 encoded string' },
-			{ name: 'URL', value: 'url', description: 'Provide URL to PDF file' },
+{ name: 'Binary Data', value: 'binaryData', description: 'Use PDF file from previous node' },
+{ name: 'URL', value: 'url', description: 'Provide URL to PDF file' },
 		],
 		displayOptions: {
 			show: {
@@ -99,12 +99,12 @@ export const description: INodeProperties[] = [
 		type: 'options',
 		options: [
 			{ name: 'All', value: 'All' },
-			{ name: 'Print', value: 'Print' },
-			{ name: 'Copy', value: 'Copy' },
-			{ name: 'Edit', value: 'Edit' },
-			{ name: 'Fill Forms', value: 'FillForms' },
-			{ name: 'Comment', value: 'Comment' },
-			{ name: 'Assemble', value: 'Assemble' },
+{ name: 'Assemble', value: 'Assemble' },
+{ name: 'Comment', value: 'Comment' },
+{ name: 'Copy', value: 'Copy' },
+{ name: 'Edit', value: 'Edit' },
+{ name: 'Fill Forms', value: 'FillForms' },
+{ name: 'Print', value: 'Print' },
 		],
 		default: 'All',
 		description: 'Permissions to allow on the protected PDF',
@@ -179,7 +179,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion

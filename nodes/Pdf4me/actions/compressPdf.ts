@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -22,16 +22,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -107,15 +107,15 @@ export const description: INodeProperties[] = [
 		default: 'Web',
 		description: 'Optimization profile for compression',
 		options: [
-			{ name: 'Max', value: 'Max' },
-			{ name: 'Web', value: 'Web' },
-			{ name: 'Print', value: 'Print' },
-			{ name: 'Default', value: 'Default' },
-			{ name: 'WebMax', value: 'WebMax' },
-			{ name: 'PrintMax', value: 'PrintMax' },
-			{ name: 'PrintGray', value: 'PrintGray' },
 			{ name: 'Compress', value: 'Compress' },
-			{ name: 'CompressMax', value: 'CompressMax' },
+{ name: 'CompressMax', value: 'CompressMax' },
+{ name: 'Default', value: 'Default' },
+{ name: 'Max', value: 'Max' },
+{ name: 'Print', value: 'Print' },
+{ name: 'PrintGray', value: 'PrintGray' },
+{ name: 'PrintMax', value: 'PrintMax' },
+{ name: 'Web', value: 'Web' },
+{ name: 'WebMax', value: 'WebMax' },
 		],
 		displayOptions: {
 			show: {
@@ -187,7 +187,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion

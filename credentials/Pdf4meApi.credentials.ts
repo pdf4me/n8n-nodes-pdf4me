@@ -2,6 +2,7 @@ import {
 	IAuthenticateGeneric,
 	ICredentialTestRequest,
 	ICredentialType,
+	Icon,
 	INodeProperties,
 } from 'n8n-workflow';
 
@@ -9,6 +10,10 @@ export class Pdf4meApi implements ICredentialType {
 	name = 'pdf4meApi';
 	displayName = 'PDF4ME API';
 	documentationUrl = 'https://dev.pdf4me.com/pricing/';
+	icon: Icon = {
+		light: 'file:../nodes/Pdf4me/300.light.svg',
+		dark: 'file:../nodes/Pdf4me/300.dark.svg',
+	};
 	properties: INodeProperties[] = [
 		{
 			displayName: 'PDF4ME API Key',

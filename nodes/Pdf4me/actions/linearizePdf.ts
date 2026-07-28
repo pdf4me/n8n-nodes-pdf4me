@@ -1,5 +1,5 @@
-import type { INodeProperties } from 'n8n-workflow';
-import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
+import type { INodeProperties, IExecuteFunctions, IDataObject  } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	sanitizeProfiles,
@@ -25,16 +25,16 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Binary Data',
-				value: 'binaryData',
-				description: 'Use PDF file from previous node',
-			},
-			{
 				name: 'Base64 String',
 				value: 'base64',
 				description: 'Provide PDF content as base64 encoded string',
 			},
-			{
+{
+				name: 'Binary Data',
+				value: 'binaryData',
+				description: 'Use PDF file from previous node',
+			},
+{
 				name: 'URL',
 				value: 'url',
 				description: 'Provide URL to PDF file',
@@ -129,49 +129,49 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Web',
-				value: 'web',
-				description: 'Optimized for web viewing (fast loading, progressive display)',
-			},
-			{
-				name: 'Max',
-				value: 'Max',
-				description: 'Maximum compression (smallest file size, slower processing)',
-			},
-			{
-				name: 'Print',
-				value: 'Print',
-				description: 'Optimized for printing (correct fonts, colors, resolution)',
-			},
-			{
-				name: 'Default',
-				value: 'Default',
-				description: 'Standard optimization balance',
-			},
-			{
-				name: 'WebMax',
-				value: 'WebMax',
-				description: 'Maximum web optimization (best for online viewing)',
-			},
-			{
-				name: 'PrintMax',
-				value: 'PrintMax',
-				description: 'Maximum print optimization (best quality for printing)',
-			},
-			{
-				name: 'PrintGray',
-				value: 'PrintGray',
-				description: 'Print optimized with grayscale conversion',
-			},
-			{
 				name: 'Compress',
 				value: 'Compress',
 				description: 'General compression without specific optimization',
 			},
-			{
+{
 				name: 'CompressMax',
 				value: 'CompressMax',
 				description: 'Maximum compression with aggressive size reduction',
+			},
+{
+				name: 'Default',
+				value: 'Default',
+				description: 'Standard optimization balance',
+			},
+{
+				name: 'Max',
+				value: 'Max',
+				description: 'Maximum compression (smallest file size, slower processing)',
+			},
+{
+				name: 'Print',
+				value: 'Print',
+				description: 'Optimized for printing (correct fonts, colors, resolution)',
+			},
+{
+				name: 'PrintGray',
+				value: 'PrintGray',
+				description: 'Print optimized with grayscale conversion',
+			},
+{
+				name: 'PrintMax',
+				value: 'PrintMax',
+				description: 'Maximum print optimization (best quality for printing)',
+			},
+{
+				name: 'Web',
+				value: 'web',
+				description: 'Optimized for web viewing (fast loading, progressive display)',
+			},
+{
+				name: 'WebMax',
+				value: 'WebMax',
+				description: 'Maximum web optimization (best for online viewing)',
 			},
 		],
 	},
@@ -273,7 +273,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		try {
 			new URL(pdfUrl);
 		} catch {
-			throw new Error('Invalid URL format. Please provide a valid URL to the PDF file.');
+						throw new NodeOperationError(this.getNode(), 'Invalid URL format. Please provide a valid URL to the PDF file.', { itemIndex: index });
 		}
 
 		// Send URL as string directly in docContent - no download or conversion
@@ -323,7 +323,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 	const profiles = advancedOptions?.profiles as string | undefined;
 	if (profiles) body.profiles = profiles;
 
-	sanitizeProfiles(body);
+	sanitizeProfiles.call(this, body);
 
 	// Make the API request
 	const result: any = await pdf4meAsyncRequest.call(this, '/api/v2/LinearizePdf', body);
