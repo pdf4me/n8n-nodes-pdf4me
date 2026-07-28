@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf4me",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "description": "n8n community node for PDF4me API integration",
   "keywords": [
     "n8n-community-node-package"
@@ -64,7 +64,8 @@
     ],
     "nodes": [
       "dist/nodes/Pdf4me/Pdf4me.node.js"
-    ]  },
+    ]
+  },
   "release-it": {
     "$schema": "https://unpkg.com/release-it/schema/release-it.json",
     "github": {
