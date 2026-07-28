@@ -48,6 +48,7 @@
     "gulp": "^4.0.2",
     "merge-stream": "^2.0.0",
     "prettier": "^3.8.3",
+    "release-it": "^21.0.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
@@ -63,6 +64,11 @@
     ],
     "nodes": [
       "dist/nodes/Pdf4me/Pdf4me.node.js"
-    ]
+    ]  },
+  "release-it": {
+    "$schema": "https://unpkg.com/release-it/schema/release-it.json",
+    "github": {
+      "release": true
+    }
   }
 }
